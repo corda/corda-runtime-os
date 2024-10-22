@@ -1,10 +1,9 @@
 package net.corda.ledger.libs.uniqueness.backingstore.impl
 
+import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
-import net.corda.ledger.libs.uniqueness.data.UniquenessSecureHashImpl
-import net.corda.ledger.libs.uniqueness.data.bytes
 import net.corda.orm.PersistenceExceptionCategorizer
 import net.corda.orm.PersistenceExceptionType
 import net.corda.orm.impl.PersistenceExceptionCategorizerImpl
@@ -38,6 +37,7 @@ import javax.persistence.EntityManagerFactory
  */
 abstract class JPABackingStoreBase(
     private val metricsFactory: BackingStoreMetricsFactory,
+    private val uniquenessSecureHashFactory: UniquenessSecureHashFactory,
     private val persistenceExceptionCategorizer: PersistenceExceptionCategorizer = PersistenceExceptionCategorizerImpl()
 ) : BackingStore {
 
@@ -170,7 +170,7 @@ abstract class JPABackingStoreBase(
                     UniquenessCheckStateRef, UniquenessCheckStateDetails>()
 
             val statePks = states.map{
-                UniquenessTxAlgoStateRefKey(it.txHash.algorithm, it.txHash.bytes, it.stateIndex)
+                UniquenessTxAlgoStateRefKey(it.txHash.algorithm, uniquenessSecureHashFactory.getBytes(it.txHash), it.stateIndex)
             }
 
             // Use Hibernate Session to fetch multiple state entities by their primary keys.
@@ -184,10 +184,10 @@ abstract class JPABackingStoreBase(
             existing.forEach { stateEntity ->
                 val consumingTxId =
                     if (stateEntity.consumingTxId != null) {
-                        UniquenessSecureHashImpl(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
+                        uniquenessSecureHashFactory.createSecureHash(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
                     } else null
                 val returnedState = UniquenessCheckStateRefImpl(
-                    UniquenessSecureHashImpl(stateEntity.issueTxIdAlgo, stateEntity.issueTxId),
+                    uniquenessSecureHashFactory.createSecureHash(stateEntity.issueTxIdAlgo, stateEntity.issueTxId),
                     stateEntity.issueTxOutputIndex)
                 results[returnedState] = UniquenessCheckStateDetailsImpl(returnedState, consumingTxId)
             }
@@ -206,7 +206,7 @@ abstract class JPABackingStoreBase(
             val queryStartTime = System.nanoTime()
 
             val txPks = txIds.map {
-                UniquenessTxAlgoIdKey(it.algorithm, it.bytes)
+                UniquenessTxAlgoIdKey(it.algorithm, uniquenessSecureHashFactory.getBytes(it))
             }
 
             // Use Hibernate Session to fetch multiple transaction entities by their primary keys.
@@ -238,7 +238,7 @@ abstract class JPABackingStoreBase(
                                 "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'"
                     )
                 }
-                val txHash = UniquenessSecureHashImpl(txEntity.txIdAlgo, txEntity.txId)
+                val txHash = uniquenessSecureHashFactory.createSecureHash(txEntity.txIdAlgo, txEntity.txId)
                 txHash to UniquenessCheckTransactionDetailsInternal(txHash, result)
             }.toMap()
 
@@ -264,7 +264,7 @@ abstract class JPABackingStoreBase(
                 .resultList as List<UniquenessRejectedTransactionEntity>
 
             return existing.firstOrNull()?.let { rejectedTxEntity ->
-                jpaBackingStoreObjectMapper().readValue(
+                jpaBackingStoreObjectMapper(uniquenessSecureHashFactory).readValue(
                     rejectedTxEntity.errorDetails, UniquenessCheckError::class.java
                 )
             }.also {
@@ -284,7 +284,7 @@ abstract class JPABackingStoreBase(
                     entityManager.persist(
                         UniquenessStateDetailEntity(
                             stateRef.txHash.algorithm,
-                            stateRef.txHash.bytes,
+                            uniquenessSecureHashFactory.getBytes(stateRef.txHash),
                             stateRef.stateIndex,
                             null, // Unconsumed
                             null // Unconsumed
@@ -302,9 +302,9 @@ abstract class JPABackingStoreBase(
                         "UniquenessStateDetailEntity.consumeWithProtection"
                     )
                         .setParameter("consumingTxAlgo", consumingTxId.algorithm)
-                        .setParameter("consumingTxId", consumingTxId.bytes)
+                        .setParameter("consumingTxId", uniquenessSecureHashFactory.getBytes(consumingTxId))
                         .setParameter("issueTxAlgo", stateRef.txHash.algorithm)
-                        .setParameter("issueTxId", stateRef.txHash.bytes)
+                        .setParameter("issueTxId", uniquenessSecureHashFactory.getBytes(stateRef.txHash))
                         .setParameter("stateIndex", stateRef.stateIndex)
 
                     val updatedRowCount = safeUpdate.executeUpdate()
@@ -328,7 +328,7 @@ abstract class JPABackingStoreBase(
                     entityManager.persist(
                         UniquenessTransactionDetailEntity(
                             request.txId.algorithm,
-                            request.txId.bytes,
+                            uniquenessSecureHashFactory.getBytes(request.txId),
                             request.originatorX500Name,
                             request.timeWindowUpperBound,
                             result.resultTimestamp,
@@ -340,8 +340,8 @@ abstract class JPABackingStoreBase(
                         entityManager.persist(
                             UniquenessRejectedTransactionEntity(
                                 request.txId.algorithm,
-                                request.txId.bytes,
-                                jpaBackingStoreObjectMapper().writeValueAsBytes(result.error)
+                                uniquenessSecureHashFactory.getBytes(request.txId),
+                                jpaBackingStoreObjectMapper(uniquenessSecureHashFactory).writeValueAsBytes(result.error)
                             )
                         )
                     }

@@ -1,5 +1,7 @@
 package net.corda.uniqueness.backingstore.impl
 
+import net.corda.crypto.core.bytes
+import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
@@ -10,8 +12,6 @@ import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTxAlgoIdKey
 import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTxAlgoStateRefKey
 import net.corda.ledger.libs.uniqueness.backingstore.impl.jpaBackingStoreObjectMapper
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
-import net.corda.ledger.libs.uniqueness.data.bytes
-import net.corda.ledger.libs.uniqueness.data.randomUniquenessSecureHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
@@ -19,6 +19,7 @@ import net.corda.orm.PersistenceExceptionCategorizer
 import net.corda.orm.PersistenceExceptionType
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiImpl
+import net.corda.uniqueness.backingstore.impl.osgi.UniquenessSecureHashFactoryOsgiImpl
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
@@ -67,12 +68,17 @@ class JPABackingStoreOsgiImplTest {
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val metricsFactory = mock<BackingStoreMetricsFactory>()
 
+    // Consider mocking this in the future. For now, we are not mocking this since the functionality didn't change,
+    // we just exported the logic to a class
+    private val secureHashFactory = UniquenessSecureHashFactoryOsgiImpl()
+
     private val backingStore = JPABackingStoreOsgiImpl(
         jpaEntitiesRegistry,
         dbConnectionManager,
         persistenceExceptionCategorizer,
         virtualNodeInfoReadService,
-        metricsFactory
+        metricsFactory,
+        secureHashFactory
     )
 
     /* These lists act as the database, the data added to these lists will be returned by the multi loads */
@@ -135,7 +141,7 @@ class JPABackingStoreOsgiImplTest {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(
             VirtualNodeInfo(
                 holdingIdentity = mock(),
-                cpiIdentifier = CpiIdentifier("", "", randomUniquenessSecureHash()),
+                cpiIdentifier = CpiIdentifier("", "", randomSecureHash()),
                 vaultDmlConnectionId = UUID.randomUUID(),
                 cryptoDmlConnectionId = UUID.randomUUID(),
                 uniquenessDmlConnectionId = UUID.randomUUID(),
@@ -202,14 +208,14 @@ class JPABackingStoreOsgiImplTest {
         // Expect an exception because no error details is available from the mock.
         assertThrows<IllegalStateException> {
             backingStore.session(notaryRepIdentity) { session ->
-                session.getTransactionDetails(List(1) { randomUniquenessSecureHash() })
+                session.getTransactionDetails(List(1) { randomSecureHash() })
             }
         }
     }
 
     @Test
     fun `Retrieve correct failed status without exceptions when both tx details and rejection details are present`() {
-        val txId = randomUniquenessSecureHash()
+        val txId = randomSecureHash()
         // Prepare a rejected transaction
         txnDetails.add(
             UniquenessTransactionDetailEntity(
@@ -226,7 +232,7 @@ class JPABackingStoreOsgiImplTest {
             UniquenessRejectedTransactionEntity(
                 "SHA-256",
                 txId.bytes,
-                jpaBackingStoreObjectMapper().writeValueAsBytes(
+                jpaBackingStoreObjectMapper(secureHashFactory).writeValueAsBytes(
                     UniquenessCheckErrorMalformedRequestImpl("Error")
                 )
             )

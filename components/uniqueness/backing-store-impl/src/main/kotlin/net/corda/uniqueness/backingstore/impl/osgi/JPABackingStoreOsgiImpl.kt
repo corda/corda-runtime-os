@@ -2,6 +2,7 @@ package net.corda.uniqueness.backingstore.impl.osgi
 
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
 import net.corda.ledger.libs.uniqueness.backingstore.impl.JPABackingStoreEntities
@@ -28,8 +29,10 @@ class JPABackingStoreOsgiImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = BackingStoreMetricsFactory::class)
-    private val backingStoreMetricsFactory: BackingStoreMetricsFactory
-) : JPABackingStoreBase(backingStoreMetricsFactory, persistenceExceptionCategorizer) {
+    private val backingStoreMetricsFactory: BackingStoreMetricsFactory,
+    @Reference(service = UniquenessSecureHashFactory::class)
+    private val uniquenessSecureHashFactory: UniquenessSecureHashFactory
+) : JPABackingStoreBase(backingStoreMetricsFactory, uniquenessSecureHashFactory, persistenceExceptionCategorizer) {
 
     init {
         jpaEntitiesRegistry.register(

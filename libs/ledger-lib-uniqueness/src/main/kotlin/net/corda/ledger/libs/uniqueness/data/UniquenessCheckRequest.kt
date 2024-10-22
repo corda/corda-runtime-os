@@ -1,5 +1,6 @@
 package net.corda.ledger.libs.uniqueness.data
 
+import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
@@ -24,7 +25,7 @@ data class UniquenessCheckRequest(
     val holdingIdentity: UniquenessHoldingIdentity,
     val additionalData: Map<String, Any> = emptyMap()
 ) {
-    fun toInternal(): UniquenessCheckRequestInternal {
+    fun toInternal(uniquenessSecureHashFactory: UniquenessSecureHashFactory): UniquenessCheckRequestInternal {
 
         require(numOutputStates >= 0) { "Number of output states cannot be less than 0." }
 
@@ -44,11 +45,11 @@ data class UniquenessCheckRequest(
         }
         
         return UniquenessCheckRequestInternal(
-            parseSecureHash(transactionId),
+            uniquenessSecureHashFactory.parseSecureHash(transactionId),
             transactionId,
             initiator,
-            inputStates.map { it.toStateRef() },
-            referenceStates.map { it.toStateRef() },
+            inputStates.map { it.toStateRef(uniquenessSecureHashFactory) },
+            referenceStates.map { it.toStateRef(uniquenessSecureHashFactory) },
             numOutputStates,
             timeWindowLowerBound,
             timeWindowUpperBound
@@ -56,9 +57,9 @@ data class UniquenessCheckRequest(
     }
 }
 
-fun String.toStateRef(): UniquenessCheckStateRef {
+fun String.toStateRef(uniquenessSecureHashFactory: UniquenessSecureHashFactory): UniquenessCheckStateRef {
     return UniquenessCheckStateRefImpl(
-        parseSecureHash(substringBeforeLast(":")),
+        uniquenessSecureHashFactory.parseSecureHash(substringBeforeLast(":")),
         substringAfterLast(":").toInt()
     )
 }

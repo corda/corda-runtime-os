@@ -2,6 +2,7 @@ package net.corda.uniqueness.checker.impl
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.testkit.SecureHashUtils
+import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DBConfigurationException
@@ -13,7 +14,6 @@ import net.corda.ledger.libs.uniqueness.UniquenessChecker
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
-import net.corda.ledger.libs.uniqueness.data.randomUniquenessSecureHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
@@ -23,6 +23,7 @@ import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.impl.JPABackingStoreTestUtilities
 import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiImpl
 import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiMetricsFactory
+import net.corda.uniqueness.backingstore.impl.osgi.UniquenessSecureHashFactoryOsgiImpl
 import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertNotPreviouslySeenTransactionResponse
@@ -136,7 +137,7 @@ class UniquenessCheckerImplDBIntegrationTests {
     )
 
     private fun newRequestBuilder(
-        txId: SecureHash = randomUniquenessSecureHash()
+        txId: SecureHash = randomSecureHash()
     ) = UniquenessCheckRequestBuilder(
         txId,
         groupId,
@@ -269,6 +270,8 @@ class UniquenessCheckerImplDBIntegrationTests {
         val uniquenessMetricsFactory = BatchedUniquenessCheckerMetricsFactoryOsgiImpl()
         val backingStoreMetricsFactory = JPABackingStoreOsgiMetricsFactory()
 
+        val secureHashFactory = UniquenessSecureHashFactoryOsgiImpl()
+
         val backingStore = JPABackingStoreOsgiImpl(
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
@@ -325,10 +328,16 @@ class UniquenessCheckerImplDBIntegrationTests {
                     )
                 )
             },
-            backingStoreMetricsFactory
+            backingStoreMetricsFactory,
+            secureHashFactory
         )
 
-        uniquenessChecker = BatchedUniquenessCheckerOsgiImpl(backingStore, uniquenessMetricsFactory, testClock)
+        uniquenessChecker = BatchedUniquenessCheckerOsgiImpl(
+            backingStore,
+            uniquenessMetricsFactory,
+            secureHashFactory,
+            testClock
+        )
     }
 
     @Nested

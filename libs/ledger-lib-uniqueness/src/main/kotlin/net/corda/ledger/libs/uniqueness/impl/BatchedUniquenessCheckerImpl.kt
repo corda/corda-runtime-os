@@ -2,6 +2,7 @@ package net.corda.ledger.libs.uniqueness.impl
 
 import net.corda.ledger.libs.uniqueness.UniquenessChecker
 import net.corda.ledger.libs.uniqueness.UniquenessCheckerMetricsFactory
+import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
@@ -46,6 +47,7 @@ import java.util.LinkedList
 open class BatchedUniquenessCheckerImpl(
     private val backingStore: BackingStore,
     private val uniquenessCheckerMetricsFactory: UniquenessCheckerMetricsFactory,
+    private val uniquenessSecureHashFactory: UniquenessSecureHashFactory,
     private val clock: Clock = UTCClock()
 ) : UniquenessChecker {
 
@@ -106,7 +108,7 @@ open class BatchedUniquenessCheckerImpl(
         for ( request in requests ) {
             try {
                 requestsToProcess.add(
-                    Pair(request.toInternal(), request))
+                    Pair(request.toInternal(uniquenessSecureHashFactory), request))
             } catch (e: IllegalArgumentException) {
                 results[request] = UniquenessCheckResponse(
                     request.transactionId,

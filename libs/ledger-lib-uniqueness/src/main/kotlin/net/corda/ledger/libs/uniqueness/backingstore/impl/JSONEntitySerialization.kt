@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import net.corda.ledger.libs.uniqueness.data.parseSecureHash
+import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
 import net.corda.uniqueness.datamodel.serialize.UniquenessCheckErrorTypeMixin
 import net.corda.uniqueness.datamodel.serialize.UniquenessCheckStateDetailsTypeMixin
 import net.corda.uniqueness.datamodel.serialize.UniquenessCheckStateRefTypeMixin
@@ -25,11 +25,11 @@ import net.corda.v5.crypto.SecureHash
  */
 @Suppress("ForbiddenComment")
 // TODO: Remove this entirely and use standard Corda serialization libraries
-fun jpaBackingStoreObjectMapper() = jacksonObjectMapper().apply {
+fun jpaBackingStoreObjectMapper(uniquenessSecureHashFactory: UniquenessSecureHashFactory) = jacksonObjectMapper().apply {
     registerModule(JavaTimeModule())
     val module = SimpleModule()
     module.addSerializer(SecureHash::class.java, SecureHashSerializer)
-    module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
+    module.addDeserializer(SecureHash::class.java, SecureHashDeserializer(uniquenessSecureHashFactory))
     registerModule(module)
 
     addMixIn(UniquenessCheckError::class.java, UniquenessCheckErrorTypeMixin::class.java)
@@ -43,8 +43,10 @@ internal object SecureHashSerializer : JsonSerializer<SecureHash>() {
     }
 }
 
-internal object SecureHashDeserializer : JsonDeserializer<SecureHash>() {
+internal class SecureHashDeserializer(
+    private val uniquenessSecureHashFactory: UniquenessSecureHashFactory
+) : JsonDeserializer<SecureHash>() {
     override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash {
-        return parseSecureHash(parser.text)
+        return uniquenessSecureHashFactory.parseSecureHash(parser.text)
     }
 }

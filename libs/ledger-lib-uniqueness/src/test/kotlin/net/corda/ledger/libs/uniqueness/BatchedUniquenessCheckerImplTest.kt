@@ -6,9 +6,6 @@ import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
-import net.corda.ledger.libs.uniqueness.data.UniquenessSecureHashImpl
-import net.corda.ledger.libs.uniqueness.data.randomBytes
-import net.corda.ledger.libs.uniqueness.data.randomUniquenessSecureHash
 import net.corda.ledger.libs.uniqueness.impl.BatchedUniquenessCheckerImpl
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.impl.fake.BackingStoreImplFake
@@ -58,9 +55,23 @@ class BatchedUniquenessCheckerImplTest {
 
     private val groupId = UUID.randomUUID().toString()
 
+    private val uniquenessTestSecureHashFactory = UniquenessSecureHashFactoryTestImpl()
+
     fun createTestHoldingIdentity(x500Name: String, groupId: String): UniquenessHoldingIdentity {
         return UniquenessHoldingIdentity(MemberX500Name.parse(x500Name), groupId, mock<ShortHash>(), mock<SecureHash>())
     }
+
+    /**
+     * Returns a random set of bytes
+     */
+    private fun randomBytes(): ByteArray {
+        return (1..16).map { ('0'..'9').random() }.joinToString("").toByteArray()
+    }
+
+    private fun createUniquenessSecureHash(
+        algo: String = "SHA-256D",
+        bytes: ByteArray = randomBytes()
+    ) = uniquenessTestSecureHashFactory.createSecureHash(algo, bytes)
 
     private val baseTime: Instant = Instant.EPOCH
 
@@ -78,7 +89,7 @@ class BatchedUniquenessCheckerImplTest {
 
     private fun currentTime(): Instant = testClock.peekTime()
 
-    private fun newRequestBuilder(txId: SecureHash = randomUniquenessSecureHash()) = UniquenessCheckRequestBuilder(
+    private fun newRequestBuilder(txId: SecureHash = createUniquenessSecureHash()) = UniquenessCheckRequestBuilder(
         txId,
         groupId,
         defaultTimeWindowUpperBound
@@ -95,7 +106,7 @@ class BatchedUniquenessCheckerImplTest {
     }
 
     private fun generateUnspentStates(numOutputStates: Int): List<String> {
-        val issueTxId = randomUniquenessSecureHash()
+        val issueTxId = createUniquenessSecureHash()
         val unspentStateRefs = LinkedList<String>()
 
         repeat(numOutputStates) {
@@ -138,7 +149,12 @@ class BatchedUniquenessCheckerImplTest {
             on { incrementSuccessfulRequestCount(any(), any(), any()) } doAnswer {}
         }
 
-        uniquenessChecker = BatchedUniquenessCheckerImpl(backingStore, uniquenessCheckerMetricsFactory, testClock)
+        uniquenessChecker = BatchedUniquenessCheckerImpl(
+            backingStore,
+            uniquenessCheckerMetricsFactory,
+            uniquenessTestSecureHashFactory,
+            testClock
+        )
     }
 
     @Nested
@@ -166,7 +182,7 @@ class BatchedUniquenessCheckerImplTest {
     inner class InputStates {
         @Test
         fun `Attempting to spend an unknown input state fails`() {
-            val inputStateRef = "${randomUniquenessSecureHash()}:0"
+            val inputStateRef = "${createUniquenessSecureHash()}:0"
 
             processRequests(
                 newRequestBuilder()
@@ -528,7 +544,7 @@ class BatchedUniquenessCheckerImplTest {
     inner class ReferenceStates {
         @Test
         fun `Attempting to spend an unknown reference state fails`() {
-            val referenceStateRef = "${randomUniquenessSecureHash()}:0"
+            val referenceStateRef = "${createUniquenessSecureHash()}:0"
 
             processRequests(
                 newRequestBuilder()
@@ -921,7 +937,7 @@ class BatchedUniquenessCheckerImplTest {
     inner class OutputStates {
         @Test
         fun `Replaying an issuance transaction in same batch is successful`() {
-            val issueTxId = randomUniquenessSecureHash()
+            val issueTxId = createUniquenessSecureHash()
 
             processRequests(
                 newRequestBuilder(issueTxId)
@@ -943,7 +959,7 @@ class BatchedUniquenessCheckerImplTest {
 
         @Test
         fun `Replaying an issuance transaction in different batch is successful`() {
-            val issueTxId = randomUniquenessSecureHash()
+            val issueTxId = createUniquenessSecureHash()
             lateinit var initialResponse: UniquenessCheckResponse
 
             processRequests(
@@ -976,7 +992,7 @@ class BatchedUniquenessCheckerImplTest {
 
         @Test
         fun `Generation and subsequent spend of large number of states is successful`() {
-            val issueTxId = randomUniquenessSecureHash()
+            val issueTxId = createUniquenessSecureHash()
             val numStates = Short.MAX_VALUE
 
             processRequests(
@@ -1234,7 +1250,7 @@ class BatchedUniquenessCheckerImplTest {
 
         @Test
         fun `Spending the same state across different holding identities is accepted`() {
-            val issueTxId = randomUniquenessSecureHash()
+            val issueTxId = createUniquenessSecureHash()
 
             processRequests(
                 newRequestBuilder(issueTxId)
@@ -1305,9 +1321,9 @@ class BatchedUniquenessCheckerImplTest {
         @Test
         fun `The same hash code produced by different algorithms are distinct states`() {
             val randomBytes = randomBytes()
-            val hash1 = UniquenessSecureHashImpl("SHA-256", randomBytes)
-            val hash2 = UniquenessSecureHashImpl("SHA-512", randomBytes)
-            val hash3 = UniquenessSecureHashImpl("SHAKE256", randomBytes)
+            val hash1 = createUniquenessSecureHash("SHA-256", randomBytes)
+            val hash2 = createUniquenessSecureHash("SHA-512", randomBytes)
+            val hash3 = createUniquenessSecureHash("SHAKE256", randomBytes)
 
             processRequests(
                 newRequestBuilder(hash1)
@@ -1348,7 +1364,7 @@ class BatchedUniquenessCheckerImplTest {
 
         @Test
         fun `Issue and subsequent spend of same state in a batch is successful`() {
-            val issueTxId = randomUniquenessSecureHash()
+            val issueTxId = createUniquenessSecureHash()
 
             processRequests(
                 newRequestBuilder(issueTxId)
@@ -1369,7 +1385,7 @@ class BatchedUniquenessCheckerImplTest {
 
         @Test
         fun `Spend and subsequent issue of same state in a batch fails spend, succeeds issue`() {
-            val issueTxId = randomUniquenessSecureHash()
+            val issueTxId = createUniquenessSecureHash()
 
             processRequests(
                 newRequestBuilder()
@@ -1457,6 +1473,7 @@ class BatchedUniquenessCheckerImplTest {
             val exceptionThrowingUniquenessChecker = BatchedUniquenessCheckerImpl(
                 exceptionThrowingBackingStore,
                 uniquenessCheckerMetricsFactory,
+                uniquenessTestSecureHashFactory,
                 testClock
             )
 
