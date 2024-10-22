@@ -24,8 +24,6 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    // TODO This can be removed once we have our own SecureHash implementation, we only need this for the OpaqueBytes
-    implementation project(":libs:base-internal")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:db:db-orm")
     implementation project(":libs:db:db-orm-impl")
