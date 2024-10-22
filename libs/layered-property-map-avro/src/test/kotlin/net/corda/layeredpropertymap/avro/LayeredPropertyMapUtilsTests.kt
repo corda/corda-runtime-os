@@ -1,4 +1,4 @@
-package net.corda.layeredpropertymap
+package net.corda.layeredpropertymap.avro
 
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter

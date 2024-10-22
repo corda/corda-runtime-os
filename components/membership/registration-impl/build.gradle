@@ -31,6 +31,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:crypto:cipher-suite')
     implementation project(":libs:crypto:crypto-core")
+    implementation project(":libs:layered-property-map-avro")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:membership:schema-validation")

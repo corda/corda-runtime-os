@@ -54,6 +54,7 @@ dependencies {
 
     testImplementation project(":libs:crypto:crypto-impl")
     testImplementation project(":libs:membership:membership-impl")
+    testImplementation project(":libs:layered-property-map-avro")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")
 

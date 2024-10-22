@@ -14,4 +14,6 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
+    testImplementation project(':libs:crypto:crypto-core')
+    testImplementation project(':libs:layered-property-map')
 }
