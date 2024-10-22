@@ -22,7 +22,7 @@ import org.osgi.service.component.annotations.ServiceScope
     service = [TransactionSignatureService::class, TransactionSignatureServiceInternal::class, UsedByFlow::class],
     scope = ServiceScope.PROTOTYPE
 )
-class TransactionSignatureServiceOsgiImpl(
+class TransactionSignatureServiceOsgiImpl private constructor(
     delegate: TransactionSignatureServiceImpl
 ) : TransactionSignatureService,
     TransactionSignatureServiceInternal by delegate,

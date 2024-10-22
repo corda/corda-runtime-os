@@ -28,11 +28,7 @@ class TransactionSignatureVerificationServiceImpl constructor(
     private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
     private val keyEncodingService: KeyEncodingService
-) : TransactionSignatureVerificationService,
-    TransactionSignatureVerificationServiceInternal,
-    SingletonSerializeAsToken,
-    UsedByFlow,
-    UsedByVerification {
+) : TransactionSignatureVerificationServiceInternal {
 
     override fun verifySignature(
         transaction: TransactionWithMetadata,
