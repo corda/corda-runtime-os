@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.data.groupparameters.serializer.amqp
+package net.corda.membership.lib.impl.serializer.amqp
 
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.membership.lib.GroupParametersFactory
