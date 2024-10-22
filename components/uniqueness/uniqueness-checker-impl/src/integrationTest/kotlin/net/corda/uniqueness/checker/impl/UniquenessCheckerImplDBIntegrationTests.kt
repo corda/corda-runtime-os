@@ -13,7 +13,6 @@ import net.corda.db.testkit.DbUtils
 import net.corda.ledger.libs.uniqueness.UniquenessChecker
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
-import net.corda.ledger.libs.uniqueness.data.UniquenessCheckType
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
@@ -157,7 +156,7 @@ class UniquenessCheckerImplDBIntegrationTests {
     }
 
     private fun generateUnspentStates(numOutputStates: Int): List<String> {
-        val issueTxId = SecureHashUtils.randomSecureHash()
+        val issueTxId = randomSecureHash()
         val unspentStateRefs = LinkedList<String>()
 
         repeat(numOutputStates) {
@@ -291,7 +290,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 whenever(getByHoldingIdentityShortHash(eq(defaultHoldingIdentity.shortHash))).thenReturn(
                     VirtualNodeInfo(
                         holdingIdentity = defaultHoldingIdentity,
-                        cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                        cpiIdentifier = CpiIdentifier("", "", randomSecureHash()),
                         vaultDmlConnectionId = UUID.randomUUID(),
                         cryptoDmlConnectionId = UUID.randomUUID(),
                         uniquenessDmlConnectionId = defaultHoldingIdentityDbId,
@@ -301,7 +300,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 whenever(getByHoldingIdentityShortHash(eq(bobHoldingIdentity.shortHash))).thenReturn(
                     VirtualNodeInfo(
                         holdingIdentity = bobHoldingIdentity,
-                        cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                        cpiIdentifier = CpiIdentifier("", "", randomSecureHash()),
                         vaultDmlConnectionId = UUID.randomUUID(),
                         cryptoDmlConnectionId = UUID.randomUUID(),
                         uniquenessDmlConnectionId = bobHoldingIdentityDbId,
@@ -311,7 +310,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 whenever(getByHoldingIdentityShortHash(eq(charlieHoldingIdentity.shortHash))).thenReturn(
                     VirtualNodeInfo(
                         holdingIdentity = charlieHoldingIdentity,
-                        cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                        cpiIdentifier = CpiIdentifier("", "", randomSecureHash()),
                         vaultDmlConnectionId = UUID.randomUUID(),
                         cryptoDmlConnectionId = UUID.randomUUID(),
                         uniquenessDmlConnectionId = charlieHoldingIdentityDbId,
@@ -321,7 +320,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 whenever(getByHoldingIdentityShortHash(eq(noDbHoldingIdentity.shortHash))).thenReturn(
                     VirtualNodeInfo(
                         holdingIdentity = noDbHoldingIdentity,
-                        cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                        cpiIdentifier = CpiIdentifier("", "", randomSecureHash()),
                         vaultDmlConnectionId = UUID.randomUUID(),
                         cryptoDmlConnectionId = UUID.randomUUID(),
                         uniquenessDmlConnectionId = noDbHoldingIdentityDbId,
@@ -376,7 +375,7 @@ class UniquenessCheckerImplDBIntegrationTests {
     inner class InputStates {
         @Test
         fun `Attempting to spend an unknown input state fails`() {
-            val inputStateRef = "${SecureHashUtils.randomSecureHash()}:0"
+            val inputStateRef = "${randomSecureHash()}:0"
 
             processRequests(
                 newRequestBuilder()
@@ -789,7 +788,7 @@ class UniquenessCheckerImplDBIntegrationTests {
     inner class ReferenceStates {
         @Test
         fun `Attempting to spend an unknown reference state fails`() {
-            val referenceStateRef = "${SecureHashUtils.randomSecureHash()}:0"
+            val referenceStateRef = "${randomSecureHash()}:0"
 
             processRequests(
                 newRequestBuilder()
@@ -1211,7 +1210,7 @@ class UniquenessCheckerImplDBIntegrationTests {
     inner class OutputStates {
         @Test
         fun `Replaying an issuance transaction in same batch is successful`() {
-            val issueTxId = SecureHashUtils.randomSecureHash()
+            val issueTxId = randomSecureHash()
 
             processRequests(
                 newRequestBuilder(issueTxId)
@@ -1233,7 +1232,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
         @Test
         fun `Replaying an issuance transaction in different batch is successful`() {
-            val issueTxId = SecureHashUtils.randomSecureHash()
+            val issueTxId = randomSecureHash()
             lateinit var initialResponse: UniquenessCheckResponse
 
             processRequests(
@@ -1266,7 +1265,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
         @Test
         fun `Generation and subsequent spend of large number of states is successful`() {
-            val issueTxId = SecureHashUtils.randomSecureHash()
+            val issueTxId = randomSecureHash()
             val numStates = Short.MAX_VALUE
 
             processRequests(
@@ -1498,7 +1497,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
         @Test
         fun `Spending the same state across different holding identities is accepted`() {
-            val issueTxId = SecureHashUtils.randomSecureHash()
+            val issueTxId = randomSecureHash()
 
             processRequests(
                 newRequestBuilder(issueTxId)
@@ -1624,7 +1623,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
         @Test
         fun `Issue and subsequent spend of same state in a batch is successful`() {
-            val issueTxId = SecureHashUtils.randomSecureHash()
+            val issueTxId = randomSecureHash()
 
             processRequests(
                 newRequestBuilder(issueTxId)
@@ -1645,7 +1644,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
         @Test
         fun `Spend and subsequent issue of same state in a batch fails spend, succeeds issue`() {
-            val issueTxId = SecureHashUtils.randomSecureHash()
+            val issueTxId = randomSecureHash()
 
             processRequests(
                 newRequestBuilder()
@@ -1901,7 +1900,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         @Test
         fun `transaction that has been notarized successfully is returned as success`(){
 
-            val transactionId = SecureHashUtils.randomSecureHash()
+            val transactionId = randomSecureHash()
             // create notarized transaction
             processRequests(
                 newRequestBuilder(transactionId)
@@ -1928,8 +1927,8 @@ class UniquenessCheckerImplDBIntegrationTests {
 
         @Test
         fun `failed transaction get failure replayed on check`(){
-            val transactionId = SecureHashUtils.randomSecureHash()
-            val inputId = "${SecureHashUtils.randomSecureHash()}:1"
+            val transactionId = randomSecureHash()
+            val inputId = "${randomSecureHash()}:1"
 
             // create notarization failure
             processRequests(
@@ -1947,7 +1946,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             // check that the failure gets replayed via the checker
             processRequests(
                 newRequestBuilder(transactionId)
-                    .setCheckType(UniquenessCheckType.READ)
+                    .setCheckType(UniquenessCheckRequest.Type.READ)
                     .build()
             ).let { responses ->
                 assertAll(
@@ -1964,12 +1963,12 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             val inputs = generateUnspentStates(2)
 
-            val transactionId = SecureHashUtils.randomSecureHash()
+            val transactionId = randomSecureHash()
 
             // check if transaction has yet been notarized
             processRequests(
                 newRequestBuilder(transactionId)
-                    .setCheckType(UniquenessCheckType.READ)
+                    .setCheckType(UniquenessCheckRequest.Type.READ)
                     .setTimeWindowLowerBound(currentTime().minusSeconds(10))
                     .setTimeWindowUpperBound(currentTime().plusSeconds(10))
                     .build()
@@ -2003,7 +2002,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             // check for unknown transaction after time window elapsed
             processRequests(
                 newRequestBuilder()
-                    .setCheckType(UniquenessCheckType.READ)
+                    .setCheckType(UniquenessCheckRequest.Type.READ)
                     .setTimeWindowUpperBound(upperBound)
                     .build()
             ).let { responses ->
@@ -2022,10 +2021,10 @@ class UniquenessCheckerImplDBIntegrationTests {
         fun `transaction that is not notarized and before time window fails in check but can still be notarized later`(){
             // check for unknown transaction before time window
             val lowerBound = currentTime().plusSeconds(100)
-            val transactionId = SecureHashUtils.randomSecureHash()
+            val transactionId = randomSecureHash()
             processRequests(
                 newRequestBuilder(transactionId)
-                    .setCheckType(UniquenessCheckType.READ)
+                    .setCheckType(UniquenessCheckRequest.Type.READ)
                     .setTimeWindowLowerBound(lowerBound)
                     .build()
             ).let { responses ->
@@ -2041,7 +2040,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             // check for transaction now should return that the notary doesn't know about it
             processRequests(
                 newRequestBuilder(transactionId)
-                    .setCheckType(UniquenessCheckType.READ)
+                    .setCheckType(UniquenessCheckRequest.Type.READ)
                     .setTimeWindowLowerBound(lowerBound)
                     .build()
             ).let { responses ->
@@ -2055,7 +2054,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         @Test
         fun `transaction that had been notarized but is now out of time window succeeds`(){
 
-            val transactionId = SecureHashUtils.randomSecureHash()
+            val transactionId = randomSecureHash()
             // create notarized transaction
 
             val lowerBound = currentTime().minusSeconds(10)
@@ -2085,7 +2084,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .setNumOutputStates(3)
                     .build(),
                 newRequestBuilder(transactionId)
-                    .setCheckType(UniquenessCheckType.READ)
+                    .setCheckType(UniquenessCheckRequest.Type.READ)
                     .setTimeWindowLowerBound(currentTime().minusSeconds(10))
                     .setTimeWindowUpperBound(currentTime().plusSeconds(10))
                     .build()

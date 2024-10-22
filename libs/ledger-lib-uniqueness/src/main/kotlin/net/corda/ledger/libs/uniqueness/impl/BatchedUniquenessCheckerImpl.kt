@@ -6,7 +6,6 @@ import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
-import net.corda.ledger.libs.uniqueness.data.UniquenessCheckType
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
@@ -123,7 +122,7 @@ open class BatchedUniquenessCheckerImpl(
 
         if ( numMalformed > 0 ) { log.debug { "$numMalformed malformed requests were rejected" } }
 
-        val groupedRequests = requestsToProcess.groupBy { (_, request) -> request.uniquenessCheckType }
+        val groupedRequests = requestsToProcess.groupBy { (_, request) -> request.uniquenessCheckRequestType }
 
         // TODO - Re-instate batch processing logic based on number of states if needed - need to
         // establish what batching there is in the message bus layer first
@@ -141,10 +140,10 @@ open class BatchedUniquenessCheckerImpl(
     }
 
     private fun processUniquenessCheckWrites(
-        groupedRequests: Map<UniquenessCheckType, List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequest>>>,
+        groupedRequests: Map<UniquenessCheckRequest.Type, List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequest>>>,
         results: HashMap<UniquenessCheckRequest, UniquenessCheckResponse>
     ) {
-        groupedRequests[UniquenessCheckType.WRITE]?.let { notarizations ->
+        groupedRequests[UniquenessCheckRequest.Type.WRITE]?.let { notarizations ->
             processBatches(
                 notarizations,
                 results,
@@ -154,10 +153,10 @@ open class BatchedUniquenessCheckerImpl(
     }
 
     private fun processUniquenessCheckReads(
-        groupedRequests: Map<UniquenessCheckType, List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequest>>>,
+        groupedRequests: Map<UniquenessCheckRequest.Type, List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequest>>>,
         results: HashMap<UniquenessCheckRequest, UniquenessCheckResponse>
     ) {
-        groupedRequests[UniquenessCheckType.READ]?.let { checks ->
+        groupedRequests[UniquenessCheckRequest.Type.READ]?.let { checks ->
             processBatches(checks, results, ::processUniquenessCheckReadBatch)
         }
     }

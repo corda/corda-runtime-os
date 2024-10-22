@@ -52,7 +52,7 @@ object UniquenessCheckerAvroUtils {
         }
 
         return UniquenessCheckRequest(
-            uniquenessCheckType = uniquenessCheckType.toCorda(),
+            uniquenessCheckRequestType = uniquenessCheckType.toCorda(),
             transactionId = txId,
             initiator = originatorX500Name,
             inputStates = inputStates,
@@ -131,7 +131,7 @@ object UniquenessCheckerAvroUtils {
         }
     }
 
-    private fun UniquenessCheckType.toCorda() = net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.valueOf(toString())
+    private fun UniquenessCheckType.toCorda() = UniquenessCheckRequest.Type.valueOf(toString())
 
     private fun HoldingIdentity.toCorda() = UniquenessHoldingIdentity(x500Name, groupId, shortHash, hash)
 }

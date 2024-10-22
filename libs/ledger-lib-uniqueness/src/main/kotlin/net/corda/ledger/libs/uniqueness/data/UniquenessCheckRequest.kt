@@ -7,14 +7,9 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.annotations.CordaSerializable
 import java.time.Instant
 
-@CordaSerializable
-enum class UniquenessCheckType {
-    WRITE, READ;
-}
-
 // We have raw strings here because this is an "external" API so we can't expect the caller to know our data types
 data class UniquenessCheckRequest(
-    val uniquenessCheckType: UniquenessCheckType,
+    val uniquenessCheckRequestType: Type,
     val transactionId: String,
     val initiator: String, // x500
     val inputStates: List<String>,
@@ -25,6 +20,11 @@ data class UniquenessCheckRequest(
     val holdingIdentity: UniquenessHoldingIdentity,
     val additionalData: Map<String, Any> = emptyMap()
 ) {
+    @CordaSerializable
+    enum class Type {
+        WRITE, READ;
+    }
+
     fun toInternal(uniquenessSecureHashFactory: UniquenessSecureHashFactory): UniquenessCheckRequestInternal {
 
         require(numOutputStates >= 0) { "Number of output states cannot be less than 0." }
