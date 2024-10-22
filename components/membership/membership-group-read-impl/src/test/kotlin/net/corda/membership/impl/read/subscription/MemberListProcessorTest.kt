@@ -10,8 +10,8 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedData
-import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.layeredpropertymap.avro.toAvro
+import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID

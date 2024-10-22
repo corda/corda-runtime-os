@@ -1,9 +1,7 @@
 package net.corda.layeredpropertymap.avro
 
-import net.corda.crypto.core.parseSecureHash
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
-import net.corda.v5.crypto.SecureHash
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
