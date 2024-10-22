@@ -13,11 +13,8 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(service = [ UniquenessChecker::class ])
 class BatchedUniquenessCheckerOsgiImpl(
-    backingStore: BackingStore,
-    uniquenessCheckerMetricsFactory: UniquenessCheckerMetricsFactory,
-    uniquenessSecureHashFactory: UniquenessSecureHashFactory,
-    clock: Clock
-) : BatchedUniquenessCheckerImpl(backingStore, uniquenessCheckerMetricsFactory, uniquenessSecureHashFactory, clock) {
+    delegate: UniquenessChecker
+) : UniquenessChecker by delegate {
 
     @Activate
     constructor(
@@ -27,5 +24,12 @@ class BatchedUniquenessCheckerOsgiImpl(
         uniquenessCheckerMetricsFactory: UniquenessCheckerMetricsFactory,
         @Reference(service = UniquenessSecureHashFactory::class)
         uniquenessSecureHashFactory: UniquenessSecureHashFactory
-    ) : this(backingStore, uniquenessCheckerMetricsFactory, uniquenessSecureHashFactory, UTCClock())
+    ) : this(BatchedUniquenessCheckerImpl(backingStore, uniquenessCheckerMetricsFactory, uniquenessSecureHashFactory, UTCClock()))
+
+    constructor(
+        backingStore: BackingStore,
+        uniquenessCheckerMetricsFactory: UniquenessCheckerMetricsFactory,
+        uniquenessSecureHashFactory: UniquenessSecureHashFactory,
+        clock: Clock
+    ): this(BatchedUniquenessCheckerImpl(backingStore, uniquenessCheckerMetricsFactory, uniquenessSecureHashFactory, clock))
 }
