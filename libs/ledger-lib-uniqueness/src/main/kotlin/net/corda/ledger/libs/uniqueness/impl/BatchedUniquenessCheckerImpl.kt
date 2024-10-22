@@ -463,7 +463,7 @@ open class BatchedUniquenessCheckerImpl(
 
             log.debug {
                 "Finished processing read batch for $holdingIdentity. " +
-                        "$numSuccessful successful, $notFound not found, $numRejected rejected"
+                    "$numSuccessful successful, $notFound not found, $numRejected rejected"
             }
         }
 
