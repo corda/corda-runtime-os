@@ -53,7 +53,6 @@ open class JPABackingStoreImpl(
         holdingIdentity: UniquenessHoldingIdentity,
         block: (BackingStore.Session) -> Unit
     ) {
-
         val sessionStartTime = System.nanoTime()
 
         val entityManager = getEntityManagerFactory(holdingIdentity).createEntityManager()
@@ -125,13 +124,13 @@ open class JPABackingStoreImpl(
                                 if (attemptNumber < MAX_ATTEMPTS) {
                                     log.warn(
                                         "Retrying DB operation. The request might have been " +
-                                                "handled by a different notary worker or a DB error " +
-                                                "occurred when attempting to commit. Message: ${e.message}."
+                                            "handled by a different notary worker or a DB error " +
+                                            "occurred when attempting to commit. Message: ${e.message}."
                                     )
                                 } else {
                                     throw IllegalStateException(
                                         "Failed to execute transaction after the maximum number of " +
-                                                "attempts ($MAX_ATTEMPTS). Message: ${e.message}."
+                                            "attempts ($MAX_ATTEMPTS). Message: ${e.message}."
                                     )
                                 }
                             }
@@ -162,13 +161,14 @@ open class JPABackingStoreImpl(
         override fun getStateDetails(
             states: Collection<UniquenessCheckStateRef>
         ): Map<UniquenessCheckStateRef, UniquenessCheckStateDetails> {
-
             val queryStartTime = System.nanoTime()
 
             val results = HashMap<
-                    UniquenessCheckStateRef, UniquenessCheckStateDetails>()
+                UniquenessCheckStateRef,
+                UniquenessCheckStateDetails
+                >()
 
-            val statePks = states.map{
+            val statePks = states.map {
                 UniquenessTxAlgoStateRefKey(it.txHash.algorithm, uniquenessSecureHashFactory.getBytes(it.txHash), it.stateIndex)
             }
 
@@ -184,10 +184,13 @@ open class JPABackingStoreImpl(
                 val consumingTxId =
                     if (stateEntity.consumingTxId != null) {
                         uniquenessSecureHashFactory.createSecureHash(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
-                    } else null
+                    } else {
+                        null
+                    }
                 val returnedState = UniquenessCheckStateRefImpl(
                     uniquenessSecureHashFactory.createSecureHash(stateEntity.issueTxIdAlgo, stateEntity.issueTxId),
-                    stateEntity.issueTxOutputIndex)
+                    stateEntity.issueTxOutputIndex
+                )
                 results[returnedState] = UniquenessCheckStateDetailsImpl(returnedState, consumingTxId)
             }
 
@@ -201,7 +204,6 @@ open class JPABackingStoreImpl(
         override fun getTransactionDetails(
             txIds: Collection<SecureHash>
         ): Map<out SecureHash, UniquenessCheckTransactionDetailsInternal> {
-
             val queryStartTime = System.nanoTime()
 
             val txPks = txIds.map {
@@ -228,13 +230,13 @@ open class JPABackingStoreImpl(
                             txEntity.commitTimestamp,
                             getTransactionError(txEntity) ?: throw IllegalStateException(
                                 "Transaction with id ${txEntity.txId} was rejected but no records were " +
-                                        "found in the rejected transactions table"
+                                    "found in the rejected transactions table"
                             )
                         )
                     }
                     else -> throw IllegalStateException(
                         "Transaction result can only be " +
-                                "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'"
+                            "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'"
                     )
                 }
                 val txHash = uniquenessSecureHashFactory.createSecureHash(txEntity.txIdAlgo, txEntity.txId)
@@ -251,7 +253,6 @@ open class JPABackingStoreImpl(
         private fun getTransactionError(
             txEntity: UniquenessTransactionDetailEntity
         ): UniquenessCheckError? {
-
             val queryStartTime = System.nanoTime()
 
             val existing = entityManager.createNamedQuery(
@@ -264,7 +265,8 @@ open class JPABackingStoreImpl(
 
             return existing.firstOrNull()?.let { rejectedTxEntity ->
                 jpaBackingStoreObjectMapper(uniquenessSecureHashFactory).readValue(
-                    rejectedTxEntity.errorDetails, UniquenessCheckError::class.java
+                    rejectedTxEntity.errorDetails,
+                    UniquenessCheckError::class.java
                 )
             }.also {
                 backingStoreMetricsFactory.recordDatabaseReadTime(
@@ -318,8 +320,12 @@ open class JPABackingStoreImpl(
             }
 
             override fun commitTransactions(
-                transactionDetails: Collection<Pair<
-                        UniquenessCheckRequestInternal, UniquenessCheckResult>>
+                transactionDetails: Collection<
+                    Pair<
+                        UniquenessCheckRequestInternal,
+                        UniquenessCheckResult
+                        >
+                    >
             ) {
                 val commitStartTime = System.nanoTime()
 

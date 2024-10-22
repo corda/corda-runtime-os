@@ -1,9 +1,9 @@
 package net.corda.ledger.libs.uniqueness.backingstore.impl
 
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.ORIGINATOR_X500_NAME_LENGTH
+import net.corda.uniqueness.datamodel.common.UniquenessConstants.REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.TRANSACTION_ID_ALGO_LENGTH
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.TRANSACTION_ID_LENGTH
-import net.corda.uniqueness.datamodel.common.UniquenessConstants.REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH
 import java.io.Serializable
 import java.time.Instant
 import javax.persistence.Column
@@ -83,7 +83,6 @@ class UniquenessTxAlgoIdKey(
 
 @Entity
 @Table(name = "uniqueness_state_details")
-
 // TODO this query needs refining because this way records are retrieved one-by-one which is extremely slow
 @NamedQueries(
     NamedQuery(
@@ -99,7 +98,6 @@ class UniquenessTxAlgoIdKey(
             "AND consumingTxId IS NULL" // In-flight double spend protection
     )
 )
-
 @IdClass(UniquenessTxAlgoStateRefKey::class)
 class UniquenessStateDetailEntity(
     @Id
@@ -149,13 +147,11 @@ class UniquenessStateDetailEntity(
 
 @Entity
 @Table(name = "uniqueness_tx_details")
-
 // TODO this query needs refining because this way records are retrieved one-by-one which is extremely slow
 @NamedQuery(
     name = "UniquenessTransactionDetailEntity.select",
     query = "SELECT t FROM UniquenessTransactionDetailEntity t WHERE t.txIdAlgo = :txAlgo AND t.txId = :txId"
 )
-
 @IdClass(UniquenessTxAlgoIdKey::class)
 @Suppress("LongParameterList")
 class UniquenessTransactionDetailEntity(

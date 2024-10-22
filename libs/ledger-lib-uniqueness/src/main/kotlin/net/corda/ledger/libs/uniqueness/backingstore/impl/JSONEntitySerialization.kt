@@ -23,8 +23,8 @@ import net.corda.v5.crypto.SecureHash
  * required to store the Uniqueness Service result in the database
  * as a JSON format.
  */
-@Suppress("ForbiddenComment")
 // TODO: Remove this entirely and use standard Corda serialization libraries
+@Suppress("ForbiddenComment")
 fun jpaBackingStoreObjectMapper(uniquenessSecureHashFactory: UniquenessSecureHashFactory) = jacksonObjectMapper().apply {
     registerModule(JavaTimeModule())
     val module = SimpleModule()

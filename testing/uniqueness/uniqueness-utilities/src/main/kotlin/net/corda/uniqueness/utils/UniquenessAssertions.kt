@@ -1,9 +1,7 @@
 @file:Suppress("SpreadOperator", "WildcardImport")
 package net.corda.uniqueness.utils
 
-import net.corda.data.uniqueness.*
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
-import net.corda.ledger.libs.uniqueness.data.toStateRef
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation

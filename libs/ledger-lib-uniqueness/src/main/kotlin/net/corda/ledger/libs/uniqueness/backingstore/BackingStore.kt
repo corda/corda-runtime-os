@@ -117,8 +117,12 @@ interface BackingStore {
              * Instructs the backing store to commit the details of the specified transactions.
              */
             fun commitTransactions(
-                transactionDetails: Collection<Pair<
-                        UniquenessCheckRequestInternal, UniquenessCheckResult>>
+                transactionDetails: Collection<
+                    Pair<
+                        UniquenessCheckRequestInternal,
+                        UniquenessCheckResult
+                        >
+                    >
             )
         }
     }

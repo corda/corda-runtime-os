@@ -22,11 +22,10 @@ data class UniquenessCheckRequest(
 ) {
     @CordaSerializable
     enum class Type {
-        WRITE, READ;
+        WRITE, READ
     }
 
     fun toInternal(uniquenessSecureHashFactory: UniquenessSecureHashFactory): UniquenessCheckRequestInternal {
-
         require(numOutputStates >= 0) { "Number of output states cannot be less than 0." }
 
         val duplicateInputs = inputStates.groupingBy { it }.eachCount().filter { it.value > 1 }
@@ -41,9 +40,9 @@ data class UniquenessCheckRequest(
 
         require(intersection.isEmpty()) {
             "A state cannot be both an input and a reference input in the same request. Offending " +
-                    "states: $intersection"
+                "states: $intersection"
         }
-        
+
         return UniquenessCheckRequestInternal(
             uniquenessSecureHashFactory.parseSecureHash(transactionId),
             transactionId,

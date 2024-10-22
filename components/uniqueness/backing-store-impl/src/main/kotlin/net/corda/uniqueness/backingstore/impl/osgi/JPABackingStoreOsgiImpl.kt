@@ -20,6 +20,7 @@ import javax.persistence.EntityManagerFactory
 @Component(service = [BackingStore::class])
 class JPABackingStoreOsgiImpl(delegate: BackingStore, jpaEntitiesRegistry: JpaEntitiesRegistry) : BackingStore by delegate {
 
+    @Suppress("LongParameterList")
     @Activate constructor(
         @Reference(service = JpaEntitiesRegistry::class)
         jpaEntitiesRegistry: JpaEntitiesRegistry,

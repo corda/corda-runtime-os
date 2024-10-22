@@ -89,7 +89,8 @@ open class BatchedUniquenessCheckerImpl(
 
         val results = HashMap<UniquenessCheckRequest, UniquenessCheckResponse>()
         val requestsToProcess = ArrayList<
-                Pair<UniquenessCheckRequestInternal, UniquenessCheckRequest>>(requests.size)
+            Pair<UniquenessCheckRequestInternal, UniquenessCheckRequest>
+            >(requests.size)
 
         log.debug("Processing ${requests.size} requests")
 
@@ -104,10 +105,11 @@ open class BatchedUniquenessCheckerImpl(
         //  server anymore, so we need to make sure that not having the 10k limit for reference states is,
         //  okay, if not, we need to re-add the check in this class.
 
-        for ( request in requests ) {
+        for (request in requests) {
             try {
                 requestsToProcess.add(
-                    Pair(request.toInternal(uniquenessSecureHashFactory), request))
+                    Pair(request.toInternal(uniquenessSecureHashFactory), request)
+                )
             } catch (e: IllegalArgumentException) {
                 results[request] = UniquenessCheckResponse(
                     request.transactionId,
@@ -120,7 +122,7 @@ open class BatchedUniquenessCheckerImpl(
             }
         }
 
-        if ( numMalformed > 0 ) { log.debug { "$numMalformed malformed requests were rejected" } }
+        if (numMalformed > 0) { log.debug { "$numMalformed malformed requests were rejected" } }
 
         val groupedRequests = requestsToProcess.groupBy { (_, request) -> request.uniquenessCheckRequestType }
 
@@ -165,7 +167,7 @@ open class BatchedUniquenessCheckerImpl(
         requestsToProcess: List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequest>>,
         results: HashMap<UniquenessCheckRequest, UniquenessCheckResponse>,
         processingCallback: (holdingIdentity: UniquenessHoldingIdentity, batch: List<UniquenessCheckRequestInternal>)
-            -> List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>>
+        -> List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>>
     ) {
         requestsToProcess
             // Partition the data based on holding identity, as each should be processed separately
@@ -199,8 +201,10 @@ open class BatchedUniquenessCheckerImpl(
                     // In practice, if we've received an unhandled exception then this will be before we
                     // managed to commit to the DB, so raise an exception against all requests in the
                     // batch
-                    log.warn("Unhandled exception was thrown for transaction(s) " +
-                            "${partitionedRequests.map { it.second.transactionId }}: $e")
+                    log.warn(
+                        "Unhandled exception was thrown for transaction(s) " +
+                            "${partitionedRequests.map { it.second.transactionId }}: $e"
+                    )
 
                     partitionedRequests.forEachIndexed { idx, (internalRequest, _) ->
                         results[partitionedRequests[idx].second] = UniquenessCheckResponse(
@@ -238,7 +242,6 @@ open class BatchedUniquenessCheckerImpl(
         holdingIdentity: UniquenessHoldingIdentity,
         batch: List<UniquenessCheckRequestInternal>
     ): List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>> {
-
         val resultsToRespondWith =
             mutableListOf<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>>()
 
@@ -264,8 +267,12 @@ open class BatchedUniquenessCheckerImpl(
             // 2. Process requests one by one and run checks on them. The resultsToCommit is a
             //    subset of resultsToRespondWith and reflects only those results that need to be
             //    written to the backing store
-            val resultsToCommit = LinkedList<Pair<
-                    UniquenessCheckRequestInternal, UniquenessCheckResult>>()
+            val resultsToCommit = LinkedList<
+                Pair<
+                    UniquenessCheckRequestInternal,
+                    UniquenessCheckResult
+                    >
+                >()
 
             batch.forEach { request ->
                 // Already processed -> Return same result as in DB (idempotency) but no need to
@@ -275,7 +282,9 @@ open class BatchedUniquenessCheckerImpl(
                         Pair(
                             request,
                             InternalUniquenessCheckResultWithContext(
-                                transactionDetailsCache[request.txId]!!.result, isDuplicate = true)
+                                transactionDetailsCache[request.txId]!!.result,
+                                isDuplicate = true
+                            )
                         )
                     )
                 } else {
@@ -298,8 +307,10 @@ open class BatchedUniquenessCheckerImpl(
                     val result = when {
                         // Unknown input state -> Immediate failure
                         unknownInputStates.isNotEmpty() -> {
-                            log.info("Request for transaction ${request.txId} failed due to unknown " +
-                                    "input states $unknownInputStates")
+                            log.info(
+                                "Request for transaction ${request.txId} failed due to unknown " +
+                                    "input states $unknownInputStates"
+                            )
                             handleRejectedRequest(
                                 request,
                                 UniquenessCheckErrorInputStateUnknownImpl(unknownInputStates)
@@ -307,8 +318,10 @@ open class BatchedUniquenessCheckerImpl(
                         }
                         // Unknown reference state -> Immediate failure
                         unknownReferenceStates.isNotEmpty() -> {
-                            log.info("Request for transaction ${request.txId} failed due to unknown " +
-                                    "reference states $unknownReferenceStates")
+                            log.info(
+                                "Request for transaction ${request.txId} failed due to unknown " +
+                                    "reference states $unknownReferenceStates"
+                            )
                             handleRejectedRequest(
                                 request,
                                 UniquenessCheckErrorReferenceStateUnknownImpl(unknownReferenceStates)
@@ -317,15 +330,19 @@ open class BatchedUniquenessCheckerImpl(
                         // Input state conflict check
                         inputStateConflicts.isNotEmpty() -> {
                             val conflicts = inputStateConflicts.map { stateDetailsCache[it]!! }
-                            log.info("Request for transaction ${request.txId} failed due to conflicting " +
-                                    "input states $conflicts")
+                            log.info(
+                                "Request for transaction ${request.txId} failed due to conflicting " +
+                                    "input states $conflicts"
+                            )
                             handleRejectedRequest(request, UniquenessCheckErrorInputStateConflictImpl(conflicts))
                         }
                         // Reference state conflict check
                         referenceStateConflicts.isNotEmpty() -> {
                             val conflicts = referenceStateConflicts.map { stateDetailsCache[it]!! }
-                            log.info("Request for transaction ${request.txId} failed due to conflicting " +
-                                    "reference states $conflicts")
+                            log.info(
+                                "Request for transaction ${request.txId} failed due to conflicting " +
+                                    "reference states $conflicts"
+                            )
                             handleRejectedRequest(request, UniquenessCheckErrorReferenceStateConflictImpl(conflicts))
                         }
                         // Time window check
@@ -346,9 +363,11 @@ open class BatchedUniquenessCheckerImpl(
                         else -> handleSuccessfulRequest(request)
                     }
 
-                    resultsToRespondWith.add(Pair(
-                        result.first,
-                        InternalUniquenessCheckResultWithContext(result.second, isDuplicate = false))
+                    resultsToRespondWith.add(
+                        Pair(
+                            result.first,
+                            InternalUniquenessCheckResultWithContext(result.second, isDuplicate = false)
+                        )
                     )
                     resultsToCommit.add(result)
                 }
@@ -360,11 +379,14 @@ open class BatchedUniquenessCheckerImpl(
 
         if (log.isDebugEnabled) {
             val numSuccessful = resultsToRespondWith.filter {
-                it.second.result is UniquenessCheckResultSuccess }.size
+                it.second.result is UniquenessCheckResultSuccess
+            }.size
 
-            log.debug ( "Finished processing write batch for $holdingIdentity. " +
+            log.debug(
+                "Finished processing write batch for $holdingIdentity. " +
                     "$numSuccessful successful, " +
-                    "${resultsToRespondWith.size - numSuccessful} rejected" )
+                    "${resultsToRespondWith.size - numSuccessful} rejected"
+            )
         }
 
         return resultsToRespondWith
@@ -375,11 +397,10 @@ open class BatchedUniquenessCheckerImpl(
         holdingIdentity: UniquenessHoldingIdentity,
         batch: List<UniquenessCheckRequestInternal>
     ): List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>> {
-
         val resultsToRespondWith =
             mutableListOf<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>>()
 
-        log.debug ( "Processing uniqueness check read batch of ${batch.size} requests for $holdingIdentity" )
+        log.debug("Processing uniqueness check read batch of ${batch.size} requests for $holdingIdentity")
 
         // DB operations are retried, removing conflicts from the batch on each attempt.
         backingStore.transactionSession(holdingIdentity) { session, _ ->
@@ -431,7 +452,8 @@ open class BatchedUniquenessCheckerImpl(
 
         if (log.isDebugEnabled) {
             val numSuccessful = resultsToRespondWith.filter {
-                it.second.result is UniquenessCheckResultSuccess }.size
+                it.second.result is UniquenessCheckResultSuccess
+            }.size
 
             val numRejected = resultsToRespondWith.filter {
                 (it.second.result as? UniquenessCheckResultFailure)?.error is UniquenessCheckErrorTimeWindowOutOfBounds
@@ -441,7 +463,7 @@ open class BatchedUniquenessCheckerImpl(
 
             log.debug(
                 "Finished processing read batch for $holdingIdentity. " +
-                "$numSuccessful successful, $notFound not found, $numRejected rejected"
+                    "$numSuccessful successful, $notFound not found, $numRejected rejected"
             )
         }
 
@@ -452,7 +474,6 @@ open class BatchedUniquenessCheckerImpl(
         request: UniquenessCheckRequestInternal,
         error: UniquenessCheckError
     ): Pair<UniquenessCheckRequestInternal, UniquenessCheckResult> {
-
         val rejectedResult = UniquenessCheckResultFailureImpl(clock.instant(), error)
 
         transactionDetailsCache[request.txId] = UniquenessCheckTransactionDetailsInternal(
@@ -466,7 +487,6 @@ open class BatchedUniquenessCheckerImpl(
     private fun handleSuccessfulRequest(
         request: UniquenessCheckRequestInternal
     ): Pair<UniquenessCheckRequestInternal, UniquenessCheckResult> {
-
         val txDetails = UniquenessCheckTransactionDetailsInternal(
             request.txId,
             UniquenessCheckResultSuccessImpl(clock.instant())

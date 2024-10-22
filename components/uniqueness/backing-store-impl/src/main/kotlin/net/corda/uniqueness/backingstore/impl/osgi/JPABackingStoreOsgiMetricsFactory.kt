@@ -3,7 +3,6 @@ package net.corda.uniqueness.backingstore.impl.osgi
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.metrics.CordaMetrics
-import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.time.Duration

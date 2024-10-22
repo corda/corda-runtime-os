@@ -1,4 +1,5 @@
 @file:Suppress("SpreadOperator", "WildcardImport")
+
 package net.corda.ledger.libs.uniqueness
 
 import net.corda.crypto.core.ShortHash
@@ -97,7 +98,7 @@ class BatchedUniquenessCheckerImplTest {
 
     private fun processRequests(
         vararg requests: UniquenessCheckRequest
-    ) : List<UniquenessCheckResponse> {
+    ): List<UniquenessCheckResponse> {
         val requestsList = requests.asList()
 
         val responses = uniquenessChecker.processRequests(requests.asList())
@@ -140,7 +141,7 @@ class BatchedUniquenessCheckerImplTest {
 
         backingStore = spy(BackingStoreImplFake())
 
-        uniquenessCheckerMetricsFactory = mock<UniquenessCheckerMetricsFactory>() {
+        uniquenessCheckerMetricsFactory = mock<UniquenessCheckerMetricsFactory> {
             on { recordBatchSize(any()) } doAnswer {}
             on { recordBatchExecutionTime(any()) } doAnswer {}
             on { recordSubBatchSize(any(), any()) } doAnswer {}
@@ -170,7 +171,8 @@ class BatchedUniquenessCheckerImplTest {
                     { assertThat(responses).hasSize(1) },
                     {
                         assertMalformedRequestResponse(
-                            responses[0], "Number of output states cannot be less than 0."
+                            responses[0],
+                            "Number of output states cannot be less than 0."
                         )
                     },
                 )
@@ -212,7 +214,6 @@ class BatchedUniquenessCheckerImplTest {
 
         @Test
         fun `Single tx and multiple state spends is successful`() {
-
             processRequests(
                 newRequestBuilder()
                     .setInputStates(generateUnspentStates(7))
@@ -293,8 +294,12 @@ class BatchedUniquenessCheckerImplTest {
                     { assertStandardSuccessResponse(responses[requests[4]]!!, testClock) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
-                    { assertIterableEquals(
-                        responses.keys.map { it.transactionId }, responses.values.map { it.transactionId }) },
+                    {
+                        assertIterableEquals(
+                            responses.keys.map { it.transactionId },
+                            responses.values.map { it.transactionId }
+                        )
+                    },
                     { assertUniqueCommitTimestamps(responses.values) }
                 )
             }
@@ -347,8 +352,12 @@ class BatchedUniquenessCheckerImplTest {
                     { assertStandardSuccessResponse(responses[requests[2]]!!, testClock) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
-                    { assertIterableEquals(
-                        responses.keys.map { it.transactionId }, responses.values.map { it.transactionId }) },
+                    {
+                        assertIterableEquals(
+                            responses.keys.map { it.transactionId },
+                            responses.values.map { it.transactionId }
+                        )
+                    },
                     { assertUniqueCommitTimestamps(responses.values) }
                 )
             }
@@ -387,7 +396,6 @@ class BatchedUniquenessCheckerImplTest {
 
         @Test
         fun `Multiple txs spending single duplicate input state in same batch fails for second tx`() {
-
             val sharedState = generateUnspentStates(1)
 
             processRequests(
@@ -770,9 +778,12 @@ class BatchedUniquenessCheckerImplTest {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertMalformedRequestResponse(
-                        responses[0],
-                        "Duplicate input states detected: ${listOf(state)}") }
+                    {
+                        assertMalformedRequestResponse(
+                            responses[0],
+                            "Duplicate input states detected: ${listOf(state)}"
+                        )
+                    }
                 )
             }
         }
@@ -788,9 +799,12 @@ class BatchedUniquenessCheckerImplTest {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertMalformedRequestResponse(
-                        responses[0],
-                        "Duplicate reference states detected: ${listOf(state)}") }
+                    {
+                        assertMalformedRequestResponse(
+                            responses[0],
+                            "Duplicate reference states detected: ${listOf(state)}"
+                        )
+                    }
                 )
             }
         }
@@ -807,10 +821,13 @@ class BatchedUniquenessCheckerImplTest {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertMalformedRequestResponse(
-                        responses[0],
-                        "A state cannot be both an input and a reference input in the same " +
-                                "request. Offending states: $state") }
+                    {
+                        assertMalformedRequestResponse(
+                            responses[0],
+                            "A state cannot be both an input and a reference input in the same " +
+                                "request. Offending states: $state"
+                        )
+                    }
                 )
             }
         }
@@ -967,7 +984,7 @@ class BatchedUniquenessCheckerImplTest {
                     .setNumOutputStates(3)
                     .build(),
 
-                ).let { responses ->
+            ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     { assertStandardSuccessResponse(responses[0], testClock) }
@@ -1019,7 +1036,8 @@ class BatchedUniquenessCheckerImplTest {
                     { assertStandardSuccessResponse(responses[0], testClock) },
                     {
                         assertUnknownInputStateResponse(
-                            responses[1], listOf("$issueTxId:${Short.MAX_VALUE}")
+                            responses[1],
+                            listOf("$issueTxId:${Short.MAX_VALUE}")
                         )
                     }
                 )
@@ -1151,7 +1169,8 @@ class BatchedUniquenessCheckerImplTest {
                     { assertThat(responses).hasSize(1) },
                     {
                         assertTimeWindowOutOfBoundsResponse(
-                            responses[0], expectedUpperBound = upperBound
+                            responses[0],
+                            expectedUpperBound = upperBound
                         )
                     }
                 )
@@ -1162,15 +1181,20 @@ class BatchedUniquenessCheckerImplTest {
     @Nested
     inner class MultiTenancy {
         private val bobHoldingIdentity = createTestHoldingIdentity(
-            "C=GB, L=London, O=Bob", groupId)
+            "C=GB, L=London, O=Bob",
+            groupId
+        )
         private val charlieHoldingIdentity = createTestHoldingIdentity(
-            "C=GB, L=London, O=Charlie", groupId)
+            "C=GB, L=London, O=Charlie",
+            groupId
+        )
         private val davidHoldingIdentity = createTestHoldingIdentity(
-            "C=GB, L=London, O=David", groupId)
+            "C=GB, L=London, O=David",
+            groupId
+        )
 
         @Test
         fun `Requests for different holding identities are processed independently`() {
-
             processRequests(
                 newRequestBuilder()
                     .setHoldingIdentity(bobHoldingIdentity)
@@ -1269,7 +1293,7 @@ class BatchedUniquenessCheckerImplTest {
                 )
             }
 
-            val unspentStateRef = "${issueTxId}:0"
+            val unspentStateRef = "$issueTxId:0"
 
             processRequests(
                 newRequestBuilder()
@@ -1486,9 +1510,12 @@ class BatchedUniquenessCheckerImplTest {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertUnhandledExceptionResponse(
-                        responses.values.single(),
-                        UnsupportedOperationException::class.java.typeName) }
+                    {
+                        assertUnhandledExceptionResponse(
+                            responses.values.single(),
+                            UnsupportedOperationException::class.java.typeName
+                        )
+                    }
                 )
             }
         }
@@ -1506,9 +1533,12 @@ class BatchedUniquenessCheckerImplTest {
                 assertAll(
                     { assertThat(responses).hasSize(2) },
                     { assertStandardSuccessResponse(responses[0], testClock) },
-                    { assertMalformedRequestResponse(
-                        responses[1],
-                        "Number of output states cannot be less than 0.") }
+                    {
+                        assertMalformedRequestResponse(
+                            responses[1],
+                            "Number of output states cannot be less than 0."
+                        )
+                    }
                 )
             }
         }
@@ -1556,7 +1586,8 @@ class BatchedUniquenessCheckerImplTest {
                     { assertStandardSuccessResponse(responses[0], testClock) },
                     {
                         assertReferenceStateConflictResponse(
-                            responses[1], listOf(priorSpentStates[0])
+                            responses[1],
+                            listOf(priorSpentStates[0])
                         )
                     }
                 )
@@ -1600,8 +1631,8 @@ class BatchedUniquenessCheckerImplTest {
                 newRequestBuilder()
                     .setInputStates(
                         generateUnspentStates(10) +
-                                priorSpentStates[0] +
-                                priorSpentStates[1]
+                            priorSpentStates[0] +
+                            priorSpentStates[1]
                     )
                     .build(),
                 retryableFailedRequest,
@@ -1641,7 +1672,8 @@ class BatchedUniquenessCheckerImplTest {
                     { assertEquals(initialRetryableSuccessfulRequestResponse, responses[5]) },
                     {
                         assertTimeWindowOutOfBoundsResponse(
-                            responses[6], expectedUpperBound = timeWindowUpperBound
+                            responses[6],
+                            expectedUpperBound = timeWindowUpperBound
                         )
                     },
                     { assertStandardSuccessResponse(responses[7], testClock) },
