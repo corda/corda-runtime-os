@@ -18,7 +18,7 @@ class TransactionMetadataFactoryImpl(
         val metadata = mapOf(
             TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
             TransactionMetadataImpl.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
-            TransactionMetadataImpl.CPI_METADATA_KEY to getCpiSummary,
+            TransactionMetadataImpl.CPI_METADATA_KEY to getCpiSummary(),
             TransactionMetadataImpl.CPK_METADATA_KEY to getCpkSummaries(),
             TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION
         )

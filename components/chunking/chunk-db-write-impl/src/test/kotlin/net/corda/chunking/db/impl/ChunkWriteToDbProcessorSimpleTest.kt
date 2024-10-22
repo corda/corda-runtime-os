@@ -15,6 +15,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.nio.ByteBuffer
 import java.util.UUID
+import net.corda.crypto.core.avro.toAvro
 
 class ChunkWriteToDbProcessorSimpleTest {
     companion object {
