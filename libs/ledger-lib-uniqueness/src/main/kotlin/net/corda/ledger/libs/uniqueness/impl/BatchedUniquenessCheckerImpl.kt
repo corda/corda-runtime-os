@@ -121,7 +121,7 @@ open class BatchedUniquenessCheckerImpl(
             }
         }
 
-        if ( numMalformed > 0 ) { log.debug ( "$numMalformed malformed requests were rejected" ) }
+        if ( numMalformed > 0 ) { log.debug { "$numMalformed malformed requests were rejected" } }
 
         val groupedRequests = requestsToProcess.groupBy { (_, request) -> request.uniquenessCheckType }
 

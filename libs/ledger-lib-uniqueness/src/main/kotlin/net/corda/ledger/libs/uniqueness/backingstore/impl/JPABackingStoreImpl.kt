@@ -35,8 +35,9 @@ import javax.persistence.EntityManagerFactory
 /**
  * JPA backing store implementation, which uses a JPA compliant database to persist data.
  */
-abstract class JPABackingStoreBase(
-    private val metricsFactory: BackingStoreMetricsFactory,
+open class JPABackingStoreImpl(
+    private val getEntityManagerFactory: (holdingIdentity: UniquenessHoldingIdentity) -> EntityManagerFactory,
+    private val backingStoreMetricsFactory: BackingStoreMetricsFactory,
     private val uniquenessSecureHashFactory: UniquenessSecureHashFactory,
     private val persistenceExceptionCategorizer: PersistenceExceptionCategorizer = PersistenceExceptionCategorizerImpl()
 ) : BackingStore {
@@ -47,8 +48,6 @@ abstract class JPABackingStoreBase(
         // TODO: Replace constants with config
         const val MAX_ATTEMPTS = 10
     }
-
-    abstract fun getEntityManagerFactory(holdingIdentity: UniquenessHoldingIdentity): EntityManagerFactory
 
     override fun session(
         holdingIdentity: UniquenessHoldingIdentity,
@@ -71,7 +70,7 @@ abstract class JPABackingStoreBase(
             entityManager.close()
             throw e
         } finally {
-            metricsFactory.recordSessionExecutionTime(
+            backingStoreMetricsFactory.recordSessionExecutionTime(
                 Duration.ofNanos(System.nanoTime() - sessionStartTime),
                 holdingIdentity
             )
@@ -99,7 +98,7 @@ abstract class JPABackingStoreBase(
                         block(this, transactionOps)
                         entityManager.transaction.commit()
 
-                        metricsFactory.recordTransactionAttempts(
+                        backingStoreMetricsFactory.recordTransactionAttempts(
                             attemptNumber,
                             holdingIdentity
                         )
@@ -121,7 +120,7 @@ abstract class JPABackingStoreBase(
                                     entityManager.transaction.rollback()
                                     log.warn("Rolled back transaction")
                                 }
-                                metricsFactory.incrementTransactionErrorCount(e, holdingIdentity)
+                                backingStoreMetricsFactory.incrementTransactionErrorCount(e, holdingIdentity)
 
                                 if (attemptNumber < MAX_ATTEMPTS) {
                                     log.warn(
@@ -145,7 +144,7 @@ abstract class JPABackingStoreBase(
                                     entityManager.transaction.rollback()
                                     log.warn("Rolled back transaction")
                                 }
-                                metricsFactory.incrementTransactionErrorCount(e, holdingIdentity)
+                                backingStoreMetricsFactory.incrementTransactionErrorCount(e, holdingIdentity)
 
                                 throw e
                             }
@@ -153,7 +152,7 @@ abstract class JPABackingStoreBase(
                     }
                 }
             } finally {
-                metricsFactory.recordTransactionExecutionTime(
+                backingStoreMetricsFactory.recordTransactionExecutionTime(
                     Duration.ofNanos(System.nanoTime() - transactionStartTime),
                     holdingIdentity
                 )
@@ -192,7 +191,7 @@ abstract class JPABackingStoreBase(
                 results[returnedState] = UniquenessCheckStateDetailsImpl(returnedState, consumingTxId)
             }
 
-            metricsFactory.recordDatabaseReadTime(
+            backingStoreMetricsFactory.recordDatabaseReadTime(
                 Duration.ofNanos(System.nanoTime() - queryStartTime),
                 holdingIdentity
             )
@@ -242,7 +241,7 @@ abstract class JPABackingStoreBase(
                 txHash to UniquenessCheckTransactionDetailsInternal(txHash, result)
             }.toMap()
 
-            metricsFactory.recordDatabaseReadTime(
+            backingStoreMetricsFactory.recordDatabaseReadTime(
                 Duration.ofNanos(System.nanoTime() - queryStartTime),
                 holdingIdentity
             )
@@ -268,7 +267,7 @@ abstract class JPABackingStoreBase(
                     rejectedTxEntity.errorDetails, UniquenessCheckError::class.java
                 )
             }.also {
-                metricsFactory.recordDatabaseReadTime(
+                backingStoreMetricsFactory.recordDatabaseReadTime(
                     Duration.ofNanos(System.nanoTime() - queryStartTime),
                     holdingIdentity
                 )
@@ -346,7 +345,7 @@ abstract class JPABackingStoreBase(
                         )
                     }
                 }
-                metricsFactory.recordDatabaseCommitTime(
+                backingStoreMetricsFactory.recordDatabaseCommitTime(
                     Duration.ofNanos(System.nanoTime() - commitStartTime),
                     holdingIdentity
                 )
