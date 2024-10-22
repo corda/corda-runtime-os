@@ -35,3 +35,11 @@ dependencies {
     testImplementation project(":testing:uniqueness:backing-store-fake")
     testImplementation project(":testing:uniqueness:uniqueness-utilities")
 }
+
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
+    }
+}
