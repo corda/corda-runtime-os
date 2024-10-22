@@ -14,8 +14,11 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation "net.corda:corda-application"
 
-    implementation project(":libs:virtual-node:sandbox-group-context")
+//    implementation project(":libs:virtual-node:sandbox-group-context")
     api project(":libs:serialization:json-serializers")
+    implementation project(':libs:crypto:cipher-suite')
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:sandbox-types')
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation libs.jackson.module.kotlin
