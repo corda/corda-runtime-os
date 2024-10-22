@@ -343,16 +343,6 @@ class UniquenessCheckerImplDBIntegrationTests {
     @Nested
     inner class MalformedRequests {
         @Test
-        @Disabled("Setting null is not possible anymore")
-        fun `Request is missing time window upper bound`() {
-            assertThrows(AvroRuntimeException::class.java, {
-                newRequestBuilder()
-                    //.setTimeWindowUpperBound(null)
-                    .build()
-            }, "Field timeWindowUpperBound type:LONG pos:5 does not accept null values")
-        }
-
-        @Test
         fun `Request contains a negative number of output states`() {
             processRequests(
                 newRequestBuilder()

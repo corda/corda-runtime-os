@@ -92,7 +92,7 @@ open class BatchedUniquenessCheckerImpl(
             Pair<UniquenessCheckRequestInternal, UniquenessCheckRequest>
             >(requests.size)
 
-        log.debug("Processing ${requests.size} requests")
+        log.debug { "Processing ${requests.size} requests" }
 
         // Convert the supplied batch of external requests to internal requests. Doing this can
         // throw an exception if the request is malformed. These are filtered out immediately with
@@ -382,11 +382,11 @@ open class BatchedUniquenessCheckerImpl(
                 it.second.result is UniquenessCheckResultSuccess
             }.size
 
-            log.debug(
+            log.debug {
                 "Finished processing write batch for $holdingIdentity. " +
                     "$numSuccessful successful, " +
                     "${resultsToRespondWith.size - numSuccessful} rejected"
-            )
+            }
         }
 
         return resultsToRespondWith
@@ -400,7 +400,7 @@ open class BatchedUniquenessCheckerImpl(
         val resultsToRespondWith =
             mutableListOf<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>>()
 
-        log.debug("Processing uniqueness check read batch of ${batch.size} requests for $holdingIdentity")
+        log.debug { "Processing uniqueness check read batch of ${batch.size} requests for $holdingIdentity" }
 
         // DB operations are retried, removing conflicts from the batch on each attempt.
         backingStore.transactionSession(holdingIdentity) { session, _ ->
@@ -461,10 +461,10 @@ open class BatchedUniquenessCheckerImpl(
 
             val notFound = resultsToRespondWith.size - (numSuccessful + numRejected)
 
-            log.debug(
+            log.debug {
                 "Finished processing read batch for $holdingIdentity. " +
-                    "$numSuccessful successful, $notFound not found, $numRejected rejected"
-            )
+                        "$numSuccessful successful, $notFound not found, $numRejected rejected"
+            }
         }
 
         return resultsToRespondWith
