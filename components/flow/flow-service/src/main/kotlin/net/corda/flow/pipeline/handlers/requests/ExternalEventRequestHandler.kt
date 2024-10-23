@@ -2,6 +2,7 @@ package net.corda.flow.pipeline.handlers.requests
 
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.external.ExternalEventResponse
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.external.events.impl.factory.ExternalEventFactoryMap
 import net.corda.flow.fiber.FlowIORequest
@@ -13,7 +14,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Instant
-import net.corda.flow.external.events.ExternalEventContext
 
 @Component(service = [FlowRequestHandler::class])
 class ExternalEventRequestHandler @Activate constructor(

@@ -4,7 +4,9 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -12,8 +14,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import net.corda.flow.external.events.ExternalEventContext
-import net.corda.flow.utils.toAvro
 
 class AbstractPersistenceExternalEventFactoryTest {
 
