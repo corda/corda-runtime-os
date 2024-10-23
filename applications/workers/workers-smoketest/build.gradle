@@ -77,6 +77,8 @@ dependencies {
     smokeTestImplementation project(":libs:schema-registry:schema-registry")
     smokeTestImplementation project(":libs:schema-registry:schema-registry-impl")
     smokeTestImplementation project(":libs:serialization:serialization-avro")
+    smokeTestImplementation project(":libs:uniqueness:common")
+    smokeTestImplementation project(":libs:ledger-lib-uniqueness")
     smokeTestImplementation project(':testing:e2e-test-utilities')
     smokeTestImplementation project(":testing:packaging-test-utilities")
     smokeTestImplementation project(':testing:test-utilities')

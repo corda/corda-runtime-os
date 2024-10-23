@@ -1,7 +1,8 @@
-package net.corda.uniqueness.backingstore.impl
+package net.corda.uniqueness.backingstore.impl.osgi
 
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -12,8 +13,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
-import net.corda.uniqueness.backingstore.BackingStore
-import net.corda.uniqueness.backingstore.BackingStoreLifecycle
+import net.corda.uniqueness.backingstore.osgi.BackingStoreLifecycle
 import net.corda.utilities.VisibleForTesting
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

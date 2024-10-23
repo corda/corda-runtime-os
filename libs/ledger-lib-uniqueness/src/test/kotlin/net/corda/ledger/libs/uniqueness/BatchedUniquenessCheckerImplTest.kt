@@ -1,19 +1,15 @@
 @file:Suppress("SpreadOperator", "WildcardImport")
-package net.corda.uniqueness.checker.impl
 
-import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.testkit.SecureHashUtils.randomBytes
-import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
-import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.uniqueness.UniquenessCheckRequestAvro
-import net.corda.data.uniqueness.UniquenessCheckResponseAvro
-import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
-import net.corda.data.uniqueness.UniquenessCheckType
-import net.corda.test.util.identity.createTestHoldingIdentity
+package net.corda.ledger.libs.uniqueness
+
+import net.corda.crypto.core.ShortHash
+import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
+import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
+import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
+import net.corda.ledger.libs.uniqueness.impl.BatchedUniquenessCheckerImpl
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.backingstore.impl.fake.BackingStoreImplFake
-import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertReferenceStateConflictResponse
@@ -23,11 +19,12 @@ import net.corda.uniqueness.utils.UniquenessAssertions.assertUnhandledExceptionR
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUniqueCommitTimestamps
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownReferenceStateResponse
+import net.corda.uniqueness.utils.UniquenessCheckRequestBuilder
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertIterableEquals
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -35,6 +32,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertAll
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -54,17 +52,29 @@ import kotlin.test.assertEquals
  * uniqueness checker implementation, using a "fake" backing store.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class UniquenessCheckerImplTests {
-
-    private val baseTime: Instant = Instant.EPOCH
+class BatchedUniquenessCheckerImplTest {
 
     private val groupId = UUID.randomUUID().toString()
 
-    // Default holding id used in most tests
-    private val defaultNotaryVNodeHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=NotaryRep1", groupId).toAvro()
+    private val uniquenessTestSecureHashFactory = UniquenessSecureHashFactoryTestImpl()
 
-    private val originatorX500Name = "C=GB, L=London, O=Alice"
+    fun createTestHoldingIdentity(x500Name: String, groupId: String): UniquenessHoldingIdentity {
+        return UniquenessHoldingIdentity(MemberX500Name.parse(x500Name), groupId, mock<ShortHash>(), mock<SecureHash>())
+    }
+
+    /**
+     * Returns a random set of bytes
+     */
+    private fun randomBytes(): ByteArray {
+        return (1..16).map { ('0'..'9').random() }.joinToString("").toByteArray()
+    }
+
+    private fun createUniquenessSecureHash(
+        algo: String = "SHA-256D",
+        bytes: ByteArray = randomBytes()
+    ) = uniquenessTestSecureHashFactory.createSecureHash(algo, bytes)
+
+    private val baseTime: Instant = Instant.EPOCH
 
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound: Instant =
@@ -76,27 +86,19 @@ class UniquenessCheckerImplTests {
 
     private lateinit var backingStore: BackingStore
 
+    private lateinit var uniquenessCheckerMetricsFactory: UniquenessCheckerMetricsFactory
+
     private fun currentTime(): Instant = testClock.peekTime()
 
-    private fun newRequestBuilder(txId: SecureHash = randomSecureHash()): UniquenessCheckRequestAvro.Builder =
-        UniquenessCheckRequestAvro.newBuilder(
-            UniquenessCheckRequestAvro(
-                defaultNotaryVNodeHoldingIdentity,
-                ExternalEventContext(),
-                txId.toString(),
-                originatorX500Name,
-                emptyList(),
-                emptyList(),
-                0,
-                null,
-                defaultTimeWindowUpperBound,
-                UniquenessCheckType.WRITE
-            )
-        )
+    private fun newRequestBuilder(txId: SecureHash = createUniquenessSecureHash()) = UniquenessCheckRequestBuilder(
+        txId,
+        groupId,
+        defaultTimeWindowUpperBound
+    )
 
     private fun processRequests(
-        vararg requests: UniquenessCheckRequestAvro
-    ) : List<UniquenessCheckResponseAvro> {
+        vararg requests: UniquenessCheckRequest
+    ): List<UniquenessCheckResponse> {
         val requestsList = requests.asList()
 
         val responses = uniquenessChecker.processRequests(requests.asList())
@@ -105,7 +107,7 @@ class UniquenessCheckerImplTests {
     }
 
     private fun generateUnspentStates(numOutputStates: Int): List<String> {
-        val issueTxId = randomSecureHash()
+        val issueTxId = createUniquenessSecureHash()
         val unspentStateRefs = LinkedList<String>()
 
         repeat(numOutputStates) {
@@ -137,22 +139,27 @@ class UniquenessCheckerImplTests {
          */
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
 
-        backingStore = spy(BackingStoreImplFake(mock()))
+        backingStore = spy(BackingStoreImplFake())
 
-        uniquenessChecker = BatchedUniquenessCheckerImpl(backingStore, testClock)
+        uniquenessCheckerMetricsFactory = mock<UniquenessCheckerMetricsFactory> {
+            on { recordBatchSize(any()) } doAnswer {}
+            on { recordBatchExecutionTime(any()) } doAnswer {}
+            on { recordSubBatchSize(any(), any()) } doAnswer {}
+            on { recordSubBatchExecutionTime(any(), any()) } doAnswer {}
+            on { incrementUnhandledErrorRequestCount(any(), any()) } doAnswer {}
+            on { incrementSuccessfulRequestCount(any(), any(), any()) } doAnswer {}
+        }
+
+        uniquenessChecker = BatchedUniquenessCheckerImpl(
+            backingStore,
+            uniquenessCheckerMetricsFactory,
+            uniquenessTestSecureHashFactory,
+            testClock
+        )
     }
 
     @Nested
     inner class MalformedRequests {
-        @Test
-        fun `Request is missing time window upper bound`() {
-            assertThrows(org.apache.avro.AvroRuntimeException::class.java, {
-                newRequestBuilder()
-                    .setTimeWindowUpperBound(null)
-                    .build()
-            }, "Field timeWindowUpperBound type:LONG pos:5 does not accept null values")
-        }
-
         @Test
         fun `Request contains a negative number of output states`() {
             processRequests(
@@ -164,7 +171,8 @@ class UniquenessCheckerImplTests {
                     { assertThat(responses).hasSize(1) },
                     {
                         assertMalformedRequestResponse(
-                            responses[0], "Number of output states cannot be less than 0."
+                            responses[0],
+                            "Number of output states cannot be less than 0."
                         )
                     },
                 )
@@ -176,7 +184,7 @@ class UniquenessCheckerImplTests {
     inner class InputStates {
         @Test
         fun `Attempting to spend an unknown input state fails`() {
-            val inputStateRef = "${randomSecureHash()}:0"
+            val inputStateRef = "${createUniquenessSecureHash()}:0"
 
             processRequests(
                 newRequestBuilder()
@@ -206,7 +214,6 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Single tx and multiple state spends is successful`() {
-
             processRequests(
                 newRequestBuilder()
                     .setInputStates(generateUnspentStates(7))
@@ -245,7 +252,7 @@ class UniquenessCheckerImplTests {
                 .setInputStates(generateUnspentStates(1))
                 .build()
 
-            var initialResponse: UniquenessCheckResponseAvro? = null
+            var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(
                 request
@@ -287,8 +294,12 @@ class UniquenessCheckerImplTests {
                     { assertStandardSuccessResponse(responses[requests[4]]!!, testClock) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
-                    { assertIterableEquals(
-                        responses.keys.map { it.txId }, responses.values.map { it.txId }) },
+                    {
+                        assertIterableEquals(
+                            responses.keys.map { it.transactionId },
+                            responses.values.map { it.transactionId }
+                        )
+                    },
                     { assertUniqueCommitTimestamps(responses.values) }
                 )
             }
@@ -302,14 +313,14 @@ class UniquenessCheckerImplTests {
                     .build()
             }
 
-            val allResponses = LinkedList<UniquenessCheckResponseAvro>()
+            val allResponses = LinkedList<UniquenessCheckResponse>()
 
             repeat(5) { count ->
                 processRequests(requests[count]).also { responses ->
                     assertAll(
                         { assertThat(responses).hasSize(1) },
                         { assertStandardSuccessResponse(responses[0], testClock) },
-                        { assertEquals(requests[count].txId, responses[0].txId) },
+                        { assertEquals(requests[count].transactionId, responses[0].transactionId) },
                     )
                 }.also { responses ->
                     allResponses.add(responses[0])
@@ -341,8 +352,12 @@ class UniquenessCheckerImplTests {
                     { assertStandardSuccessResponse(responses[requests[2]]!!, testClock) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
-                    { assertIterableEquals(
-                        responses.keys.map { it.txId }, responses.values.map { it.txId }) },
+                    {
+                        assertIterableEquals(
+                            responses.keys.map { it.transactionId },
+                            responses.values.map { it.transactionId }
+                        )
+                    },
                     { assertUniqueCommitTimestamps(responses.values) }
                 )
             }
@@ -362,14 +377,14 @@ class UniquenessCheckerImplTests {
                     .build()
             )
 
-            val allResponses = LinkedList<UniquenessCheckResponseAvro>()
+            val allResponses = LinkedList<UniquenessCheckResponse>()
 
             repeat(3) { count ->
                 processRequests(requests[count]).also { responses ->
                     assertAll(
                         { assertThat(responses).hasSize(1) },
                         { assertStandardSuccessResponse(responses[0], testClock) },
-                        { assertEquals(requests[count].txId, responses[0].txId) },
+                        { assertEquals(requests[count].transactionId, responses[0].transactionId) },
                     )
                 }.also { responses ->
                     allResponses.add(responses[0])
@@ -381,7 +396,6 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Multiple txs spending single duplicate input state in same batch fails for second tx`() {
-
             val sharedState = generateUnspentStates(1)
 
             processRequests(
@@ -538,7 +552,7 @@ class UniquenessCheckerImplTests {
     inner class ReferenceStates {
         @Test
         fun `Attempting to spend an unknown reference state fails`() {
-            val referenceStateRef = "${randomSecureHash()}:0"
+            val referenceStateRef = "${createUniquenessSecureHash()}:0"
 
             processRequests(
                 newRequestBuilder()
@@ -592,7 +606,7 @@ class UniquenessCheckerImplTests {
                 .setReferenceStates(generateUnspentStates(1))
                 .build()
 
-            var initialResponse: UniquenessCheckResponseAvro? = null
+            var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(request).let { responses ->
                 assertAll(
@@ -638,7 +652,7 @@ class UniquenessCheckerImplTests {
         fun `Multiple txs, no input states, single shared ref state in different batch is successful`() {
             val sharedState = generateUnspentStates(1)
 
-            val allResponses = LinkedList<UniquenessCheckResponseAvro>()
+            val allResponses = LinkedList<UniquenessCheckResponse>()
 
             processRequests(
                 newRequestBuilder()
@@ -694,7 +708,7 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Multiple txs, no input states, multiple distinct ref states in different batch is successful`() {
-            val allResponses = LinkedList<UniquenessCheckResponseAvro>()
+            val allResponses = LinkedList<UniquenessCheckResponse>()
 
             processRequests(
                 newRequestBuilder()
@@ -764,9 +778,12 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertMalformedRequestResponse(
-                        responses[0],
-                        "Duplicate input states detected: ${listOf(state)}") }
+                    {
+                        assertMalformedRequestResponse(
+                            responses[0],
+                            "Duplicate input states detected: ${listOf(state)}"
+                        )
+                    }
                 )
             }
         }
@@ -782,9 +799,12 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertMalformedRequestResponse(
-                        responses[0],
-                        "Duplicate reference states detected: ${listOf(state)}") }
+                    {
+                        assertMalformedRequestResponse(
+                            responses[0],
+                            "Duplicate reference states detected: ${listOf(state)}"
+                        )
+                    }
                 )
             }
         }
@@ -801,10 +821,13 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertMalformedRequestResponse(
-                        responses[0],
-                        "A state cannot be both an input and a reference input in the same " +
-                                "request. Offending states: $state") }
+                    {
+                        assertMalformedRequestResponse(
+                            responses[0],
+                            "A state cannot be both an input and a reference input in the same " +
+                                "request. Offending states: $state"
+                        )
+                    }
                 )
             }
         }
@@ -844,7 +867,7 @@ class UniquenessCheckerImplTests {
                 .setReferenceStates(state1)
                 .build()
 
-            var initialResponse: UniquenessCheckResponseAvro? = null
+            var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(replayableRequest).let { responses ->
                 assertAll(
@@ -931,7 +954,7 @@ class UniquenessCheckerImplTests {
     inner class OutputStates {
         @Test
         fun `Replaying an issuance transaction in same batch is successful`() {
-            val issueTxId = randomSecureHash()
+            val issueTxId = createUniquenessSecureHash()
 
             processRequests(
                 newRequestBuilder(issueTxId)
@@ -953,8 +976,8 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Replaying an issuance transaction in different batch is successful`() {
-            val issueTxId = randomSecureHash()
-            lateinit var initialResponse: UniquenessCheckResponseAvro
+            val issueTxId = createUniquenessSecureHash()
+            lateinit var initialResponse: UniquenessCheckResponse
 
             processRequests(
                 newRequestBuilder(issueTxId)
@@ -986,7 +1009,7 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Generation and subsequent spend of large number of states is successful`() {
-            val issueTxId = randomSecureHash()
+            val issueTxId = createUniquenessSecureHash()
             val numStates = Short.MAX_VALUE
 
             processRequests(
@@ -1013,7 +1036,8 @@ class UniquenessCheckerImplTests {
                     { assertStandardSuccessResponse(responses[0], testClock) },
                     {
                         assertUnknownInputStateResponse(
-                            responses[1], listOf("$issueTxId:${Short.MAX_VALUE}")
+                            responses[1],
+                            listOf("$issueTxId:${Short.MAX_VALUE}")
                         )
                     }
                 )
@@ -1045,7 +1069,7 @@ class UniquenessCheckerImplTests {
                 .setTimeWindowUpperBound(currentTime().plusSeconds(10))
                 .build()
 
-            var initialResponse: UniquenessCheckResponseAvro? = null
+            var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(request).let { responses ->
                 assertAll(
@@ -1096,7 +1120,7 @@ class UniquenessCheckerImplTests {
             val request = newRequestBuilder()
                 .setTimeWindowLowerBound(lowerBound)
                 .build()
-            var initialResponse: UniquenessCheckResponseAvro? = null
+            var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(request).let { responses ->
                 assertAll(
@@ -1145,7 +1169,8 @@ class UniquenessCheckerImplTests {
                     { assertThat(responses).hasSize(1) },
                     {
                         assertTimeWindowOutOfBoundsResponse(
-                            responses[0], expectedUpperBound = upperBound
+                            responses[0],
+                            expectedUpperBound = upperBound
                         )
                     }
                 )
@@ -1156,34 +1181,39 @@ class UniquenessCheckerImplTests {
     @Nested
     inner class MultiTenancy {
         private val bobHoldingIdentity = createTestHoldingIdentity(
-            "C=GB, L=London, O=Bob", groupId)
+            "C=GB, L=London, O=Bob",
+            groupId
+        )
         private val charlieHoldingIdentity = createTestHoldingIdentity(
-            "C=GB, L=London, O=Charlie", groupId)
+            "C=GB, L=London, O=Charlie",
+            groupId
+        )
         private val davidHoldingIdentity = createTestHoldingIdentity(
-            "C=GB, L=London, O=David", groupId)
+            "C=GB, L=London, O=David",
+            groupId
+        )
 
         @Test
         fun `Requests for different holding identities are processed independently`() {
-
             processRequests(
                 newRequestBuilder()
-                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setHoldingIdentity(bobHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setHoldingIdentity(charlieHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(davidHoldingIdentity.toAvro())
+                    .setHoldingIdentity(davidHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(davidHoldingIdentity.toAvro())
+                    .setHoldingIdentity(davidHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setHoldingIdentity(bobHoldingIdentity)
                     .setNumOutputStates(1)
                     .build()
             ).let { responses ->
@@ -1217,20 +1247,20 @@ class UniquenessCheckerImplTests {
                 uniquenessChecker.processRequests(
                     listOf(
                         newRequestBuilder()
-                            .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                            .setHoldingIdentity(bobHoldingIdentity)
                             .setNumOutputStates(1)
                             .build(),
                         newRequestBuilder()
-                            .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                            .setHoldingIdentity(charlieHoldingIdentity)
                             .setNumOutputStates(1)
                             .build(),
                         newRequestBuilder()
-                            .setHoldingIdentity(davidHoldingIdentity.toAvro())
+                            .setHoldingIdentity(davidHoldingIdentity)
                             .setNumOutputStates(1)
                             .build()
                     )
                 ).entries.sortedBy {
-                    (it.value.result as UniquenessCheckResultSuccessAvro).commitTimestamp
+                    (it.value.uniquenessCheckResult as UniquenessCheckResultSuccess).resultTimestamp
                 }.map {
                     it.key.holdingIdentity
                 }
@@ -1244,15 +1274,15 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Spending the same state across different holding identities is accepted`() {
-            val issueTxId = randomSecureHash()
+            val issueTxId = createUniquenessSecureHash()
 
             processRequests(
                 newRequestBuilder(issueTxId)
-                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setHoldingIdentity(bobHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder(issueTxId)
-                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setHoldingIdentity(charlieHoldingIdentity)
                     .setNumOutputStates(1)
                     .build()
             ).let { responses ->
@@ -1263,15 +1293,15 @@ class UniquenessCheckerImplTests {
                 )
             }
 
-            val unspentStateRef = "${issueTxId}:0"
+            val unspentStateRef = "$issueTxId:0"
 
             processRequests(
                 newRequestBuilder()
-                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setHoldingIdentity(bobHoldingIdentity)
                     .setInputStates(listOf(unspentStateRef))
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setHoldingIdentity(charlieHoldingIdentity)
                     .setInputStates(listOf(unspentStateRef))
                     .build()
             ).let { responses ->
@@ -1290,7 +1320,7 @@ class UniquenessCheckerImplTests {
 
             processRequests(
                 newRequestBuilder()
-                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setHoldingIdentity(bobHoldingIdentity)
                     .setInputStates(unspentStateRefs)
                     .build()
             ).let { responses ->
@@ -1315,9 +1345,9 @@ class UniquenessCheckerImplTests {
         @Test
         fun `The same hash code produced by different algorithms are distinct states`() {
             val randomBytes = randomBytes()
-            val hash1 = SecureHashImpl("SHA-256", randomBytes)
-            val hash2 = SecureHashImpl("SHA-512", randomBytes)
-            val hash3 = SecureHashImpl("SHAKE256", randomBytes)
+            val hash1 = createUniquenessSecureHash("SHA-256", randomBytes)
+            val hash2 = createUniquenessSecureHash("SHA-512", randomBytes)
+            val hash3 = createUniquenessSecureHash("SHAKE256", randomBytes)
 
             processRequests(
                 newRequestBuilder(hash1)
@@ -1358,7 +1388,7 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Issue and subsequent spend of same state in a batch is successful`() {
-            val issueTxId = randomSecureHash()
+            val issueTxId = createUniquenessSecureHash()
 
             processRequests(
                 newRequestBuilder(issueTxId)
@@ -1379,7 +1409,7 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Spend and subsequent issue of same state in a batch fails spend, succeeds issue`() {
-            val issueTxId = randomSecureHash()
+            val issueTxId = createUniquenessSecureHash()
 
             processRequests(
                 newRequestBuilder()
@@ -1466,6 +1496,8 @@ class UniquenessCheckerImplTests {
 
             val exceptionThrowingUniquenessChecker = BatchedUniquenessCheckerImpl(
                 exceptionThrowingBackingStore,
+                uniquenessCheckerMetricsFactory,
+                uniquenessTestSecureHashFactory,
                 testClock
             )
 
@@ -1478,9 +1510,12 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertUnhandledExceptionResponse(
-                        responses.values.single(),
-                        UnsupportedOperationException::class.java.typeName) }
+                    {
+                        assertUnhandledExceptionResponse(
+                            responses.values.single(),
+                            UnsupportedOperationException::class.java.typeName
+                        )
+                    }
                 )
             }
         }
@@ -1498,9 +1533,12 @@ class UniquenessCheckerImplTests {
                 assertAll(
                     { assertThat(responses).hasSize(2) },
                     { assertStandardSuccessResponse(responses[0], testClock) },
-                    { assertMalformedRequestResponse(
-                        responses[1],
-                        "Number of output states cannot be less than 0.") }
+                    {
+                        assertMalformedRequestResponse(
+                            responses[1],
+                            "Number of output states cannot be less than 0."
+                        )
+                    }
                 )
             }
         }
@@ -1539,8 +1577,8 @@ class UniquenessCheckerImplTests {
                 )
                 .build()
 
-            var initialRetryableSuccessfulRequestResponse: UniquenessCheckResponseAvro? = null
-            var initialRetryableFailedRequestResponse: UniquenessCheckResponseAvro? = null
+            var initialRetryableSuccessfulRequestResponse: UniquenessCheckResponse? = null
+            var initialRetryableFailedRequestResponse: UniquenessCheckResponse? = null
 
             processRequests(retryableSuccessfulRequest, retryableFailedRequest).let { responses ->
                 assertAll(
@@ -1548,7 +1586,8 @@ class UniquenessCheckerImplTests {
                     { assertStandardSuccessResponse(responses[0], testClock) },
                     {
                         assertReferenceStateConflictResponse(
-                            responses[1], listOf(priorSpentStates[0])
+                            responses[1],
+                            listOf(priorSpentStates[0])
                         )
                     }
                 )
@@ -1633,7 +1672,8 @@ class UniquenessCheckerImplTests {
                     { assertEquals(initialRetryableSuccessfulRequestResponse, responses[5]) },
                     {
                         assertTimeWindowOutOfBoundsResponse(
-                            responses[6], expectedUpperBound = timeWindowUpperBound
+                            responses[6],
+                            expectedUpperBound = timeWindowUpperBound
                         )
                     },
                     { assertStandardSuccessResponse(responses[7], testClock) },
@@ -1642,7 +1682,7 @@ class UniquenessCheckerImplTests {
                     {
                         assertUniqueCommitTimestamps(
                             responses.filter {
-                                it.result is UniquenessCheckResultSuccessAvro
+                                it.uniquenessCheckResult is UniquenessCheckResultSuccess
                             }
                         )
                     }

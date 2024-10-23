@@ -1,15 +1,12 @@
-package net.corda.uniqueness.backingstore.impl
+package net.corda.ledger.libs.uniqueness.backingstore.impl
 
-import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.bytes
-import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.schema.CordaDb
-import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
-import net.corda.metrics.CordaMetrics
-import net.corda.orm.JpaEntitiesRegistry
+import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
+import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
+import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.orm.PersistenceExceptionCategorizer
 import net.corda.orm.PersistenceExceptionType
-import net.corda.uniqueness.backingstore.BackingStore
+import net.corda.orm.impl.PersistenceExceptionCategorizerImpl
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.HIBERNATE_JDBC_BATCH_SIZE
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_REJECTED_REPRESENTATION
@@ -26,32 +23,23 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.hibernate.Session
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import javax.persistence.EntityExistsException
 import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 
 @Suppress("ForbiddenComment")
 /**
  * JPA backing store implementation, which uses a JPA compliant database to persist data.
  */
-@Component(service = [BackingStore::class])
-open class JPABackingStoreImpl @Activate constructor(
-    @Reference(service = JpaEntitiesRegistry::class)
-    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
-    @Reference(service = DbConnectionManager::class)
-    private val dbConnectionManager: DbConnectionManager,
-    @Reference(service = PersistenceExceptionCategorizer::class)
-    private val persistenceExceptionCategorizer: PersistenceExceptionCategorizer,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+open class JPABackingStoreImpl(
+    private val getEntityManagerFactory: (holdingIdentity: UniquenessHoldingIdentity) -> EntityManagerFactory,
+    private val backingStoreMetricsFactory: BackingStoreMetricsFactory,
+    private val uniquenessSecureHashFactory: UniquenessSecureHashFactory,
+    private val persistenceExceptionCategorizer: PersistenceExceptionCategorizer = PersistenceExceptionCategorizerImpl()
 ) : BackingStore {
 
     private companion object {
@@ -61,32 +49,13 @@ open class JPABackingStoreImpl @Activate constructor(
         const val MAX_ATTEMPTS = 10
     }
 
-    init {
-        jpaEntitiesRegistry.register(
-            CordaDb.Uniqueness.persistenceUnitName,
-            JPABackingStoreEntities.classes
-        )
-    }
-
-    override fun session(holdingIdentity: HoldingIdentity, block: (BackingStore.Session) -> Unit) {
-
+    override fun session(
+        holdingIdentity: UniquenessHoldingIdentity,
+        block: (BackingStore.Session) -> Unit
+    ) {
         val sessionStartTime = System.nanoTime()
 
-        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentity.shortHash) ?:
-            throw VirtualNodeNotFoundException("Virtual node ${holdingIdentity.shortHash} not found")
-        val uniquenessDmlConnectionId = virtualNodeInfo.uniquenessDmlConnectionId
-        requireNotNull(uniquenessDmlConnectionId) {"uniquenessDmlConnectionId is null"}
-
-        val entityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
-            uniquenessDmlConnectionId,
-            entitiesSet = jpaEntitiesRegistry.get(CordaDb.Uniqueness.persistenceUnitName)
-                ?: throw IllegalStateException(
-                    "persistenceUnitName " +
-                            "${CordaDb.Uniqueness.persistenceUnitName} is not registered."
-                )
-        )
-
-        val entityManager = entityManagerFactory.createEntityManager()
+        val entityManager = getEntityManagerFactory(holdingIdentity).createEntityManager()
         // Enable Hibernate JDBC batch and set the batch size on a per-session basis.
         entityManager.unwrap(Session::class.java).jdbcBatchSize = HIBERNATE_JDBC_BATCH_SIZE
 
@@ -100,16 +69,15 @@ open class JPABackingStoreImpl @Activate constructor(
             entityManager.close()
             throw e
         } finally {
-            CordaMetrics.Metric.UniquenessBackingStoreSessionExecutionTime
-                .builder()
-                .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
-                .build()
-                .record(Duration.ofNanos(System.nanoTime() - sessionStartTime))
+            backingStoreMetricsFactory.recordSessionExecutionTime(
+                Duration.ofNanos(System.nanoTime() - sessionStartTime),
+                holdingIdentity
+            )
         }
     }
 
     protected open inner class SessionImpl(
-        private val holdingIdentity: HoldingIdentity,
+        private val holdingIdentity: UniquenessHoldingIdentity,
         private val entityManager: EntityManager
     ) : BackingStore.Session {
 
@@ -129,12 +97,10 @@ open class JPABackingStoreImpl @Activate constructor(
                         block(this, transactionOps)
                         entityManager.transaction.commit()
 
-                        CordaMetrics.Metric.UniquenessBackingStoreTransactionAttempts
-                            .builder()
-                            .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
-                            .build()
-                            .record(attemptNumber.toDouble())
-
+                        backingStoreMetricsFactory.recordTransactionAttempts(
+                            attemptNumber,
+                            holdingIdentity
+                        )
                         return
                     } catch (e: Exception) {
                         when (persistenceExceptionCategorizer.categorize(e)) {
@@ -153,24 +119,18 @@ open class JPABackingStoreImpl @Activate constructor(
                                     entityManager.transaction.rollback()
                                     log.warn("Rolled back transaction")
                                 }
-
-                                CordaMetrics.Metric.UniquenessBackingStoreTransactionErrorCount
-                                    .builder()
-                                    .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
-                                    .withTag(CordaMetrics.Tag.ErrorType, e.javaClass.simpleName)
-                                    .build()
-                                    .increment()
+                                backingStoreMetricsFactory.incrementTransactionErrorCount(e, holdingIdentity)
 
                                 if (attemptNumber < MAX_ATTEMPTS) {
                                     log.warn(
                                         "Retrying DB operation. The request might have been " +
-                                                "handled by a different notary worker or a DB error " +
-                                                "occurred when attempting to commit. Message: ${e.message}."
+                                            "handled by a different notary worker or a DB error " +
+                                            "occurred when attempting to commit. Message: ${e.message}."
                                     )
                                 } else {
                                     throw IllegalStateException(
                                         "Failed to execute transaction after the maximum number of " +
-                                                "attempts ($MAX_ATTEMPTS). Message: ${e.message}."
+                                            "attempts ($MAX_ATTEMPTS). Message: ${e.message}."
                                     )
                                 }
                             }
@@ -183,12 +143,7 @@ open class JPABackingStoreImpl @Activate constructor(
                                     entityManager.transaction.rollback()
                                     log.warn("Rolled back transaction")
                                 }
-
-                                CordaMetrics.Metric.UniquenessBackingStoreTransactionErrorCount
-                                    .builder()
-                                    .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
-                                    .build()
-                                    .increment()
+                                backingStoreMetricsFactory.incrementTransactionErrorCount(e, holdingIdentity)
 
                                 throw e
                             }
@@ -196,25 +151,25 @@ open class JPABackingStoreImpl @Activate constructor(
                     }
                 }
             } finally {
-                CordaMetrics.Metric.UniquenessBackingStoreTransactionExecutionTime
-                    .builder()
-                    .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
-                    .build()
-                    .record(Duration.ofNanos(System.nanoTime() - transactionStartTime))
+                backingStoreMetricsFactory.recordTransactionExecutionTime(
+                    Duration.ofNanos(System.nanoTime() - transactionStartTime),
+                    holdingIdentity
+                )
             }
         }
 
         override fun getStateDetails(
             states: Collection<UniquenessCheckStateRef>
         ): Map<UniquenessCheckStateRef, UniquenessCheckStateDetails> {
-
             val queryStartTime = System.nanoTime()
 
             val results = HashMap<
-                    UniquenessCheckStateRef, UniquenessCheckStateDetails>()
+                UniquenessCheckStateRef,
+                UniquenessCheckStateDetails
+                >()
 
-            val statePks = states.map{
-                UniquenessTxAlgoStateRefKey(it.txHash.algorithm, it.txHash.bytes, it.stateIndex)
+            val statePks = states.map {
+                UniquenessTxAlgoStateRefKey(it.txHash.algorithm, uniquenessSecureHashFactory.getBytes(it.txHash), it.stateIndex)
             }
 
             // Use Hibernate Session to fetch multiple state entities by their primary keys.
@@ -228,32 +183,31 @@ open class JPABackingStoreImpl @Activate constructor(
             existing.forEach { stateEntity ->
                 val consumingTxId =
                     if (stateEntity.consumingTxId != null) {
-                        SecureHashImpl(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
-                    } else null
+                        uniquenessSecureHashFactory.createSecureHash(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
+                    } else {
+                        null
+                    }
                 val returnedState = UniquenessCheckStateRefImpl(
-                    SecureHashImpl(stateEntity.issueTxIdAlgo, stateEntity.issueTxId),
-                    stateEntity.issueTxOutputIndex)
+                    uniquenessSecureHashFactory.createSecureHash(stateEntity.issueTxIdAlgo, stateEntity.issueTxId),
+                    stateEntity.issueTxOutputIndex
+                )
                 results[returnedState] = UniquenessCheckStateDetailsImpl(returnedState, consumingTxId)
             }
 
-            CordaMetrics.Metric.UniquenessBackingStoreDbReadTime
-                .builder()
-                .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
-                .withTag(CordaMetrics.Tag.OperationName, "getStateDetails")
-                .build()
-                .record(Duration.ofNanos(System.nanoTime() - queryStartTime))
-
+            backingStoreMetricsFactory.recordDatabaseReadTime(
+                Duration.ofNanos(System.nanoTime() - queryStartTime),
+                holdingIdentity
+            )
             return results
         }
 
         override fun getTransactionDetails(
             txIds: Collection<SecureHash>
         ): Map<out SecureHash, UniquenessCheckTransactionDetailsInternal> {
-
             val queryStartTime = System.nanoTime()
 
             val txPks = txIds.map {
-                UniquenessTxAlgoIdKey(it.algorithm, it.bytes)
+                UniquenessTxAlgoIdKey(it.algorithm, uniquenessSecureHashFactory.getBytes(it))
             }
 
             // Use Hibernate Session to fetch multiple transaction entities by their primary keys.
@@ -276,33 +230,29 @@ open class JPABackingStoreImpl @Activate constructor(
                             txEntity.commitTimestamp,
                             getTransactionError(txEntity) ?: throw IllegalStateException(
                                 "Transaction with id ${txEntity.txId} was rejected but no records were " +
-                                        "found in the rejected transactions table"
+                                    "found in the rejected transactions table"
                             )
                         )
                     }
                     else -> throw IllegalStateException(
                         "Transaction result can only be " +
-                                "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'"
+                            "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'"
                     )
                 }
-                val txHash = SecureHashImpl(txEntity.txIdAlgo, txEntity.txId)
+                val txHash = uniquenessSecureHashFactory.createSecureHash(txEntity.txIdAlgo, txEntity.txId)
                 txHash to UniquenessCheckTransactionDetailsInternal(txHash, result)
             }.toMap()
 
-            CordaMetrics.Metric.UniquenessBackingStoreDbReadTime
-                .builder()
-                .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
-                .withTag(CordaMetrics.Tag.OperationName, "getTransactionDetails")
-                .build()
-                .record(Duration.ofNanos(System.nanoTime() - queryStartTime))
-
+            backingStoreMetricsFactory.recordDatabaseReadTime(
+                Duration.ofNanos(System.nanoTime() - queryStartTime),
+                holdingIdentity
+            )
             return results
         }
 
         private fun getTransactionError(
             txEntity: UniquenessTransactionDetailEntity
         ): UniquenessCheckError? {
-
             val queryStartTime = System.nanoTime()
 
             val existing = entityManager.createNamedQuery(
@@ -314,16 +264,15 @@ open class JPABackingStoreImpl @Activate constructor(
                 .resultList as List<UniquenessRejectedTransactionEntity>
 
             return existing.firstOrNull()?.let { rejectedTxEntity ->
-                jpaBackingStoreObjectMapper().readValue(
-                    rejectedTxEntity.errorDetails, UniquenessCheckError::class.java
+                jpaBackingStoreObjectMapper(uniquenessSecureHashFactory).readValue(
+                    rejectedTxEntity.errorDetails,
+                    UniquenessCheckError::class.java
                 )
             }.also {
-                CordaMetrics.Metric.UniquenessBackingStoreDbReadTime
-                    .builder()
-                    .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
-                    .withTag(CordaMetrics.Tag.OperationName, "getTransactionError")
-                    .build()
-                    .record(Duration.ofNanos(System.nanoTime() - queryStartTime))
+                backingStoreMetricsFactory.recordDatabaseReadTime(
+                    Duration.ofNanos(System.nanoTime() - queryStartTime),
+                    holdingIdentity
+                )
             }
         }
 
@@ -336,7 +285,7 @@ open class JPABackingStoreImpl @Activate constructor(
                     entityManager.persist(
                         UniquenessStateDetailEntity(
                             stateRef.txHash.algorithm,
-                            stateRef.txHash.bytes,
+                            uniquenessSecureHashFactory.getBytes(stateRef.txHash),
                             stateRef.stateIndex,
                             null, // Unconsumed
                             null // Unconsumed
@@ -354,9 +303,9 @@ open class JPABackingStoreImpl @Activate constructor(
                         "UniquenessStateDetailEntity.consumeWithProtection"
                     )
                         .setParameter("consumingTxAlgo", consumingTxId.algorithm)
-                        .setParameter("consumingTxId", consumingTxId.bytes)
+                        .setParameter("consumingTxId", uniquenessSecureHashFactory.getBytes(consumingTxId))
                         .setParameter("issueTxAlgo", stateRef.txHash.algorithm)
-                        .setParameter("issueTxId", stateRef.txHash.bytes)
+                        .setParameter("issueTxId", uniquenessSecureHashFactory.getBytes(stateRef.txHash))
                         .setParameter("stateIndex", stateRef.stateIndex)
 
                     val updatedRowCount = safeUpdate.executeUpdate()
@@ -371,8 +320,12 @@ open class JPABackingStoreImpl @Activate constructor(
             }
 
             override fun commitTransactions(
-                transactionDetails: Collection<Pair<
-                        UniquenessCheckRequestInternal, UniquenessCheckResult>>
+                transactionDetails: Collection<
+                    Pair<
+                        UniquenessCheckRequestInternal,
+                        UniquenessCheckResult
+                        >
+                    >
             ) {
                 val commitStartTime = System.nanoTime()
 
@@ -380,7 +333,7 @@ open class JPABackingStoreImpl @Activate constructor(
                     entityManager.persist(
                         UniquenessTransactionDetailEntity(
                             request.txId.algorithm,
-                            request.txId.bytes,
+                            uniquenessSecureHashFactory.getBytes(request.txId),
                             request.originatorX500Name,
                             request.timeWindowUpperBound,
                             result.resultTimestamp,
@@ -392,18 +345,16 @@ open class JPABackingStoreImpl @Activate constructor(
                         entityManager.persist(
                             UniquenessRejectedTransactionEntity(
                                 request.txId.algorithm,
-                                request.txId.bytes,
-                                jpaBackingStoreObjectMapper().writeValueAsBytes(result.error)
+                                uniquenessSecureHashFactory.getBytes(request.txId),
+                                jpaBackingStoreObjectMapper(uniquenessSecureHashFactory).writeValueAsBytes(result.error)
                             )
                         )
                     }
                 }
-
-                CordaMetrics.Metric.UniquenessBackingStoreDbCommitTime
-                    .builder()
-                    .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
-                    .build()
-                    .record(Duration.ofNanos(System.nanoTime() - commitStartTime))
+                backingStoreMetricsFactory.recordDatabaseCommitTime(
+                    Duration.ofNanos(System.nanoTime() - commitStartTime),
+                    holdingIdentity
+                )
             }
         }
     }
