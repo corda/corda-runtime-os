@@ -76,7 +76,6 @@ class UtxoPersistenceServiceImplTest {
     }
 
     private val connectionMock = mock<Connection> {
-
     }
 
     private val mockSession = mock<SessionImpl> {
