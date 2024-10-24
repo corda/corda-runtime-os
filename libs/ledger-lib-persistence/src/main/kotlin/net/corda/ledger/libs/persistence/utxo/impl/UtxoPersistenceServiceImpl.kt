@@ -34,7 +34,6 @@ import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.data.transaction.toMerkleProof
 import net.corda.libs.json.validator.JsonValidator
-import net.corda.orm.utils.use
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
@@ -52,19 +51,15 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
-import org.hibernate.Session
-import org.hibernate.internal.SessionImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.MessageDigest
 import java.sql.Connection
 import java.time.Instant
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 class UtxoPersistenceServiceImpl(
-    private val entityManagerFactory: EntityManagerFactory,
+    private val connectionFactory: () -> Connection,
     private val repository: UtxoRepository,
     private val serializationService: SerializationService,
     private val sandboxDigestService: DigestService,
@@ -76,7 +71,7 @@ class UtxoPersistenceServiceImpl(
     private val merkleTreeProvider: MerkleTreeProvider,
     private val filteredTransactionFactory: FilteredTransactionFactory,
     private val digestService: DigestService,
-    private val utcClock: Clock
+    private val utcClock: Clock,
 ) : UtxoPersistenceService {
 
     private companion object {
@@ -87,10 +82,10 @@ class UtxoPersistenceServiceImpl(
 
     override fun findSignedTransaction(
         id: String,
-        transactionStatus: TransactionStatus
+        transactionStatus: TransactionStatus,
     ): Pair<SignedTransactionContainer?, String?> {
-        return entityManagerFactory.createEntityManager().use { em ->
-            findSignedTransaction(id, transactionStatus, getConnection(em))
+        return connectionFactory().use { conn ->
+            findSignedTransaction(id, transactionStatus, conn)
         }
     }
 
@@ -116,14 +111,15 @@ class UtxoPersistenceServiceImpl(
 
         // create payload map and make values null by default, if the value of certain filtered tx is null at the end,
         // it means it's not found. The error will be handled in flow side.
-        val txIdToFilteredTxAndSignature: MutableMap<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>> = stateRefs
-            .groupBy { it.transactionId }
-            .mapValues { (_, _) -> null to emptyList<DigitalSignatureAndMetadata>() }.toMutableMap()
+        val txIdToFilteredTxAndSignature: MutableMap<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>> =
+            stateRefs
+                .groupBy { it.transactionId }
+                .mapValues { (_, _) -> null to emptyList<DigitalSignatureAndMetadata>() }.toMutableMap()
 
-        return entityManagerFactory.createEntityManager().use { em ->
-            val conn = getConnection(em)
+        return connectionFactory().use { conn ->
             txIdToIndexesMap.keys.forEach { transactionId ->
-                val signedTransactionContainer = findSignedTransaction(transactionId.toString(), TransactionStatus.VERIFIED, conn).first
+                val signedTransactionContainer =
+                    findSignedTransaction(transactionId.toString(), TransactionStatus.VERIFIED, conn).first
                 val wireTransaction = signedTransactionContainer?.wireTransaction
                 val signatures = signedTransactionContainer?.signatures ?: emptyList()
                 val indexesOfTxId = txIdToIndexesMap[transactionId]!!
@@ -179,19 +175,18 @@ class UtxoPersistenceServiceImpl(
     }
 
     override fun findSignedTransactionIdsAndStatuses(
-        transactionIds: List<String>
+        transactionIds: List<String>,
     ): Map<SecureHash, String> {
-        entityManagerFactory.createEntityManager().use { em ->
-            return repository.findSignedTransactionIdsAndStatuses(getConnection(em), transactionIds)
+        connectionFactory().use { conn ->
+            return repository.findSignedTransactionIdsAndStatuses(conn, transactionIds)
         }
     }
 
     override fun findSignedLedgerTransaction(
         id: String,
-        transactionStatus: TransactionStatus
+        transactionStatus: TransactionStatus,
     ): Pair<SignedLedgerTransactionContainer?, String?> {
-        return entityManagerFactory.createEntityManager().use { em ->
-            val conn = getConnection(em)
+        return connectionFactory().use { conn ->
             val status = repository.findSignedTransactionStatus(conn, id) ?: return null to null
             if (status == transactionStatus.value) {
                 val (transaction, signatures) = repository.findTransaction(conn, id)
@@ -214,7 +209,12 @@ class UtxoPersistenceServiceImpl(
                         ?: throw CordaRuntimeException("Could not find reference StateRef $it when finding transaction $id")
                 }
 
-                SignedLedgerTransactionContainer(transaction.wireTransaction, inputStateAndRefs, referenceStateAndRefs, signatures)
+                SignedLedgerTransactionContainer(
+                    transaction.wireTransaction,
+                    inputStateAndRefs,
+                    referenceStateAndRefs,
+                    signatures
+                )
             } else {
                 null
             } to status
@@ -222,8 +222,8 @@ class UtxoPersistenceServiceImpl(
     }
 
     override fun <T : ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoVisibleTransactionOutputDto> {
-        return entityManagerFactory.createEntityManager().use { em ->
-            repository.findUnconsumedVisibleStatesByType(getConnection(em))
+        return connectionFactory().use { conn ->
+            repository.findUnconsumedVisibleStatesByType(conn)
         }.filter {
             val contractState = serializationService.deserialize<ContractState>(it.data)
             stateClass.isInstance(contractState)
@@ -231,44 +231,39 @@ class UtxoPersistenceServiceImpl(
     }
 
     override fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoVisibleTransactionOutputDto> {
-        return entityManagerFactory.createEntityManager().use { em ->
-            repository.resolveStateRefs(getConnection(em), stateRefs)
+        return connectionFactory().use { conn ->
+            repository.resolveStateRefs(conn, stateRefs)
         }
     }
 
     private fun hash(data: ByteArray) = sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
 
-    override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): Instant {
+    override fun persistTransaction(
+        transaction: UtxoTransactionReader,
+        utxoTokenMap: Map<StateRef, UtxoToken>,
+    ): Instant {
         return persistTransaction(transaction, utxoTokenMap) { block ->
-            entityManagerFactory.createEntityManager().use { em ->
-                getConnection(em).transaction { conn ->
-                    block(conn)
-                }
+            connectionFactory().transaction { conn ->
+                block(conn)
             }
         }
     }
 
     override fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): String {
-        entityManagerFactory.createEntityManager().use { em ->
-            getConnection(em).transaction { conn ->
-                val transactionIdString = transaction.id.toString()
-                val status = repository.findSignedTransactionStatus(conn, transactionIdString) ?: run {
-                    persistTransaction(transaction, emptyMap()) { block -> block(conn) }
-                    return ""
-                }
-                return status
+        connectionFactory().transaction { conn ->
+            val transactionIdString = transaction.id.toString()
+            val status = repository.findSignedTransactionStatus(conn, transactionIdString) ?: run {
+                persistTransaction(transaction, emptyMap()) { block -> block(conn) }
+                return ""
             }
+            return status
         }
-    }
-
-    private fun getConnection(em: EntityManager): Connection {
-        return (em.unwrap(Session::class.java) as SessionImpl).connection()
     }
 
     private inline fun persistTransaction(
         transaction: UtxoTransactionReader,
         utxoTokenMap: Map<StateRef, UtxoToken>,
-        optionalTransactionBlock: ((Connection) -> Unit) -> Unit
+        optionalTransactionBlock: ((Connection) -> Unit) -> Unit,
     ): Instant {
         val nowUtc = utcClock.instant()
         val transactionIdString = transaction.id.toString()
@@ -345,14 +340,28 @@ class UtxoPersistenceServiceImpl(
             )
 
             val consumedTransactionSources = transaction.getConsumedStateRefs().mapIndexed { index, input ->
-                UtxoRepository.TransactionSource(UtxoComponentGroup.INPUTS, index, input.transactionId.toString(), input.index)
+                UtxoRepository.TransactionSource(
+                    UtxoComponentGroup.INPUTS,
+                    index,
+                    input.transactionId.toString(),
+                    input.index
+                )
             }
 
             val referenceTransactionSources = transaction.getReferenceStateRefs().mapIndexed { index, input ->
-                UtxoRepository.TransactionSource(UtxoComponentGroup.REFERENCES, index, input.transactionId.toString(), input.index)
+                UtxoRepository.TransactionSource(
+                    UtxoComponentGroup.REFERENCES,
+                    index,
+                    input.transactionId.toString(),
+                    input.index
+                )
             }
 
-            repository.persistTransactionSources(conn, transactionIdString, consumedTransactionSources + referenceTransactionSources)
+            repository.persistTransactionSources(
+                conn,
+                transactionIdString,
+                consumedTransactionSources + referenceTransactionSources
+            )
 
             // rectify data from U -> V
             if (inserted != null && !inserted) {
@@ -420,16 +429,14 @@ class UtxoPersistenceServiceImpl(
             )
         }
 
-        entityManagerFactory.createEntityManager().use { em ->
-            repository.persistTransactionSignatures(getConnection(em), transactionSignatures, utcClock.instant())
+        connectionFactory().use { conn ->
+            repository.persistTransactionSignatures(conn, transactionSignatures, utcClock.instant())
         }
     }
 
     override fun updateStatus(id: String, transactionStatus: TransactionStatus) {
-        entityManagerFactory.createEntityManager().use { em ->
-            getConnection(em).transaction { conn ->
-                repository.updateTransactionStatus(conn, id, transactionStatus, utcClock.instant())
-            }
+        connectionFactory().transaction { conn ->
+            repository.updateTransactionStatus(conn, id, transactionStatus, utcClock.instant())
         }
     }
 
@@ -452,7 +459,7 @@ class UtxoPersistenceServiceImpl(
             } catch (e: Exception) {
                 log.warn(
                     "Error while processing factory for class: ${it.stateType.name}. " +
-                        "JSON that could not be processed: $jsonToParse. Defaulting to empty JSON.",
+                            "JSON that could not be processed: $jsonToParse. Defaulting to empty JSON.",
                     e
                 )
                 jsonMarshallingService.parse("{}", Any::class.java)
@@ -465,7 +472,10 @@ class UtxoPersistenceServiceImpl(
                 Any::class.java
             )
         } catch (e: Exception) {
-            log.warn("Error while processing factory for class: ${ContractState::class.java.name}. Defaulting to empty JSON.", e)
+            log.warn(
+                "Error while processing factory for class: ${ContractState::class.java.name}. Defaulting to empty JSON.",
+                e
+            )
             jsonMarshallingService.parse("{}", Any::class.java)
         }
 
@@ -479,23 +489,21 @@ class UtxoPersistenceServiceImpl(
     }
 
     override fun findSignedGroupParameters(hash: String): SignedGroupParameters? {
-        return entityManagerFactory.createEntityManager().use { em ->
-            repository.findSignedGroupParameters(getConnection(em), hash)
+        return connectionFactory().use { conn ->
+            repository.findSignedGroupParameters(conn, hash)
         }
     }
 
     override fun persistSignedGroupParametersIfDoNotExist(signedGroupParameters: SignedGroupParameters) {
         val hash = signedGroupParameters.groupParameters.hash(DigestAlgorithmName.SHA2_256).toString()
         if (findSignedGroupParameters(hash) == null) {
-            entityManagerFactory.createEntityManager().use { em ->
-                getConnection(em).transaction { conn ->
-                    repository.persistSignedGroupParameters(
-                        conn,
-                        hash,
-                        signedGroupParameters,
-                        utcClock.instant()
-                    )
-                }
+            connectionFactory().transaction { conn ->
+                repository.persistSignedGroupParameters(
+                    conn,
+                    hash,
+                    signedGroupParameters,
+                    utcClock.instant()
+                )
             }
         }
     }
@@ -505,72 +513,71 @@ class UtxoPersistenceServiceImpl(
         filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
         inputStateRefs: List<StateRef>,
         referenceStateRefs: List<StateRef>,
-        account: String
+        account: String,
     ) {
-        entityManagerFactory.createEntityManager().use { em ->
-            getConnection(em).transaction { conn ->
-                val seenMetadata = mutableSetOf<SecureHash>()
-                val transactionsToSkip =
-                    findFilteredTransactionsToSkipPersisting(conn, inputStateRefs, referenceStateRefs)
+        connectionFactory().transaction { conn ->
+            val seenMetadata = mutableSetOf<SecureHash>()
+            val transactionsToSkip =
+                findFilteredTransactionsToSkipPersisting(conn, inputStateRefs, referenceStateRefs)
 
-                val filteredTransactionsToPersist = filteredTransactionsAndSignatures
-                    .filterNot { (filteredTransaction, _) -> filteredTransaction.id in transactionsToSkip }
-                    .map { (filteredTransaction, signatures) ->
-                        val metadataHash =
-                            persistTransactionMetadataIfNotAlreadySeen(conn, filteredTransaction, seenMetadata)
-                        createFilteredTransactionToPersist(filteredTransaction, signatures, account, metadataHash)
-                    }
+            val filteredTransactionsToPersist = filteredTransactionsAndSignatures
+                .filterNot { (filteredTransaction, _) -> filteredTransaction.id in transactionsToSkip }
+                .map { (filteredTransaction, signatures) ->
+                    val metadataHash =
+                        persistTransactionMetadataIfNotAlreadySeen(conn, filteredTransaction, seenMetadata)
+                    createFilteredTransactionToPersist(filteredTransaction, signatures, account, metadataHash)
+                }
 
-                val nowUtc = utcClock.instant()
+            val nowUtc = utcClock.instant()
 
-                // If the same id of UNVERIFIED or DRAFT stx exists, leaving the status as it is.
-                repository.persistFilteredTransactions(
-                    conn,
-                    filteredTransactionsToPersist.map { it.filteredTransaction },
-                    nowUtc
-                )
+            // If the same id of UNVERIFIED or DRAFT stx exists, leaving the status as it is.
+            repository.persistFilteredTransactions(
+                conn,
+                filteredTransactionsToPersist.map { it.filteredTransaction },
+                nowUtc
+            )
 
-                repository.persistTransactionSignatures(
-                    conn,
-                    filteredTransactionsToPersist.flatMap { it.signatures },
-                    nowUtc
-                )
+            repository.persistTransactionSignatures(
+                conn,
+                filteredTransactionsToPersist.flatMap { it.signatures },
+                nowUtc
+            )
 
-                // No need to persist the leaf data for the top level merkle proof as we can reconstruct that
-                val topLevelProofs = filteredTransactionsToPersist.map(FilteredTransactionToPersist::topLevelProof)
-                val componentGroupProofs = filteredTransactionsToPersist
+            // No need to persist the leaf data for the top level merkle proof as we can reconstruct that
+            val topLevelProofs = filteredTransactionsToPersist.map(FilteredTransactionToPersist::topLevelProof)
+            val componentGroupProofs = filteredTransactionsToPersist
+                .flatMap(FilteredTransactionToPersist::componentGroupProofs)
+                .map(TransactionMerkleProofToPersist::proof)
+
+            repository.persistMerkleProofs(conn, topLevelProofs + componentGroupProofs)
+
+            repository.persistMerkleProofLeaves(
+                conn,
+                filteredTransactionsToPersist
                     .flatMap(FilteredTransactionToPersist::componentGroupProofs)
-                    .map(TransactionMerkleProofToPersist::proof)
+                    .flatMap(TransactionMerkleProofToPersist::leaves)
+            )
 
-                repository.persistMerkleProofs(conn, topLevelProofs + componentGroupProofs)
-
-                repository.persistMerkleProofLeaves(
-                    conn,
-                    filteredTransactionsToPersist
-                        .flatMap(FilteredTransactionToPersist::componentGroupProofs)
-                        .flatMap(TransactionMerkleProofToPersist::leaves)
-                )
-
-                repository.persistTransactionComponents(
-                    conn,
-                    filteredTransactionsToPersist
-                        .flatMap(FilteredTransactionToPersist::componentGroupProofs)
-                        .flatMap(TransactionMerkleProofToPersist::components),
-                    this::hash
-                )
-            }
+            repository.persistTransactionComponents(
+                conn,
+                filteredTransactionsToPersist
+                    .flatMap(FilteredTransactionToPersist::componentGroupProofs)
+                    .flatMap(TransactionMerkleProofToPersist::components),
+                this::hash
+            )
         }
     }
 
     private fun findFilteredTransactionsToSkipPersisting(
         connection: Connection,
         inputStateRefs: List<StateRef>,
-        referenceStateRefs: List<StateRef>
+        referenceStateRefs: List<StateRef>,
     ): Set<SecureHash> {
         return if (referenceStateRefs.isNotEmpty()) {
-            val existingReferenceStates = repository.stateRefsExist(connection, referenceStateRefs).map { (transactionId, index) ->
-                StateRef(digestService.parseSecureHash(transactionId), index)
-            }
+            val existingReferenceStates =
+                repository.stateRefsExist(connection, referenceStateRefs).map { (transactionId, index) ->
+                    StateRef(digestService.parseSecureHash(transactionId), index)
+                }
             val missingReferenceStates = referenceStateRefs - existingReferenceStates.toSet()
             val missingReferenceStateTransactions = missingReferenceStates.distinctTransactionIds()
             val existingReferenceStateTransactions = existingReferenceStates.distinctTransactionIds()
@@ -585,7 +592,7 @@ class UtxoPersistenceServiceImpl(
     private fun persistTransactionMetadataIfNotAlreadySeen(
         connection: Connection,
         filteredTransaction: FilteredTransaction,
-        seenMetadata: MutableSet<SecureHash>
+        seenMetadata: MutableSet<SecureHash>,
     ): SecureHash {
         // 1. Get the metadata bytes from the 0th component group merkle proof and create the hash
         val metadataBytes = filteredTransaction.filteredComponentGroups[0]
@@ -621,7 +628,7 @@ class UtxoPersistenceServiceImpl(
         filteredTransaction: FilteredTransaction,
         signatures: List<DigitalSignatureAndMetadata>,
         account: String,
-        metadataHash: SecureHash
+        metadataHash: SecureHash,
     ): FilteredTransactionToPersist {
         val filteredTransactionId = filteredTransaction.id.toString()
         val transactionSignatures = signatures.map { signature ->
@@ -640,30 +647,31 @@ class UtxoPersistenceServiceImpl(
             filteredTransaction.topLevelMerkleProof.hashes.map { it.toString() }
         )
 
-        val componentGroupTransactionMerkleProofs = filteredTransaction.filteredComponentGroups.map { (groupIndex, groupData) ->
-            val proof = createTransactionMerkleProof(
-                filteredTransactionId,
-                groupIndex,
-                groupData.merkleProof.treeSize,
-                groupData.merkleProof.leaves.map { it.index },
-                groupData.merkleProof.hashes.map { it.toString() }
-            )
-            val leaves = groupData.merkleProof.leaves.map { leaf ->
-                UtxoRepository.TransactionMerkleProofLeaf(
-                    proof.merkleProofId,
-                    leaf.index
-                )
-            }
-            val components = groupData.merkleProof.leaves.map { leaf ->
-                UtxoRepository.TransactionComponent(
+        val componentGroupTransactionMerkleProofs =
+            filteredTransaction.filteredComponentGroups.map { (groupIndex, groupData) ->
+                val proof = createTransactionMerkleProof(
                     filteredTransactionId,
                     groupIndex,
-                    leaf.index,
-                    leaf.leafData
+                    groupData.merkleProof.treeSize,
+                    groupData.merkleProof.leaves.map { it.index },
+                    groupData.merkleProof.hashes.map { it.toString() }
                 )
+                val leaves = groupData.merkleProof.leaves.map { leaf ->
+                    UtxoRepository.TransactionMerkleProofLeaf(
+                        proof.merkleProofId,
+                        leaf.index
+                    )
+                }
+                val components = groupData.merkleProof.leaves.map { leaf ->
+                    UtxoRepository.TransactionComponent(
+                        filteredTransactionId,
+                        groupIndex,
+                        leaf.index,
+                        leaf.leafData
+                    )
+                }
+                TransactionMerkleProofToPersist(proof, leaves, components)
             }
-            TransactionMerkleProofToPersist(proof, leaves, components)
-        }
 
         return FilteredTransactionToPersist(
             UtxoRepository.FilteredTransaction(
@@ -680,9 +688,9 @@ class UtxoPersistenceServiceImpl(
 
     @VisibleForTesting
     fun findFilteredTransactions(
-        transactionIds: List<String>
+        transactionIds: List<String>,
     ): Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>> {
-        return entityManagerFactory.createEntityManager().use { em -> findFilteredTransactions(transactionIds, getConnection(em)) }
+        return connectionFactory().use { conn -> findFilteredTransactions(transactionIds, conn) }
     }
 
     private fun findFilteredTransactions(
@@ -695,18 +703,18 @@ class UtxoPersistenceServiceImpl(
 
                 val nullOrEmptyField = ftxDto.takeIf {
                     it.topLevelMerkleProofs.isEmpty() || it.componentMerkleProofMap.isEmpty() || it.privacySalt == null ||
-                        it.metadataBytes == null || it.signatures.isEmpty()
+                            it.metadataBytes == null || it.signatures.isEmpty()
                 }
 
                 // If any of the fields in dto are empty or null, skip to next iteration since we can't create filtered transaction.
                 if (nullOrEmptyField != null) {
                     log.warn(
                         "The filtered transaction $transactionId is missing data for any of " +
-                            "topLevelMerkleProofs = ${ftxDto.topLevelMerkleProofs}, " +
-                            "componentMerkleProofMap = ${ftxDto.componentMerkleProofMap}, " +
-                            "privacySalt = ${ftxDto.privacySalt}, " +
-                            "metadataBytes = ${ftxDto.metadataBytes}, " +
-                            "signatures = ${ftxDto.signatures}."
+                                "topLevelMerkleProofs = ${ftxDto.topLevelMerkleProofs}, " +
+                                "componentMerkleProofMap = ${ftxDto.componentMerkleProofMap}, " +
+                                "privacySalt = ${ftxDto.privacySalt}, " +
+                                "metadataBytes = ${ftxDto.metadataBytes}, " +
+                                "signatures = ${ftxDto.signatures}."
                     )
                     return@map null
                 }
@@ -723,35 +731,37 @@ class UtxoPersistenceServiceImpl(
                 // 2. Merge the Merkle proofs for each component group
                 val componentDigestProviders = mutableMapOf<Int, MerkleTreeHashDigestProvider>()
 
-                val mergedMerkleProofs = ftxDto.componentMerkleProofMap.mapValues { (componentGroupIndex, merkleProofDtoList) ->
-                    val componentGroupHashDigestProvider = filteredTransactionMetadata.getComponentGroupMerkleTreeDigestProvider(
-                        ftxDto.privacySalt!!,
-                        componentGroupIndex,
-                        merkleTreeProvider,
-                        digestService
-                    )
-                    componentDigestProviders[componentGroupIndex] = componentGroupHashDigestProvider
-                    merkleProofDtoList.map { merkleProofDto ->
-                        // Transform the MerkleProofDto objects to MerkleProof objects
-                        // If the merkle proof is metadata, we need to add the bytes because it's not part of the component table
-                        val merkleProofDtoOverride = if (merkleProofDto.groupIndex == 0) {
-                            merkleProofDto.copy(leavesWithData = mapOf(0 to ftxDto.metadataBytes!!))
-                        } else {
-                            merkleProofDto
-                        }
+                val mergedMerkleProofs =
+                    ftxDto.componentMerkleProofMap.mapValues { (componentGroupIndex, merkleProofDtoList) ->
+                        val componentGroupHashDigestProvider =
+                            filteredTransactionMetadata.getComponentGroupMerkleTreeDigestProvider(
+                                ftxDto.privacySalt!!,
+                                componentGroupIndex,
+                                merkleTreeProvider,
+                                digestService
+                            )
+                        componentDigestProviders[componentGroupIndex] = componentGroupHashDigestProvider
+                        merkleProofDtoList.map { merkleProofDto ->
+                            // Transform the MerkleProofDto objects to MerkleProof objects
+                            // If the merkle proof is metadata, we need to add the bytes because it's not part of the component table
+                            val merkleProofDtoOverride = if (merkleProofDto.groupIndex == 0) {
+                                merkleProofDto.copy(leavesWithData = mapOf(0 to ftxDto.metadataBytes!!))
+                            } else {
+                                merkleProofDto
+                            }
 
-                        merkleProofDtoOverride.toMerkleProof(
-                            merkleProofFactory,
-                            componentGroupHashDigestProvider
-                        )
-                    }.reduce { accumulator, merkleProof ->
-                        // Then  keep merging the elements into each other
-                        (accumulator as MerkleProofInternal).merge(
-                            merkleProof,
-                            componentGroupHashDigestProvider
-                        )
+                            merkleProofDtoOverride.toMerkleProof(
+                                merkleProofFactory,
+                                componentGroupHashDigestProvider
+                            )
+                        }.reduce { accumulator, merkleProof ->
+                            // Then  keep merging the elements into each other
+                            (accumulator as MerkleProofInternal).merge(
+                                merkleProof,
+                                componentGroupHashDigestProvider
+                            )
+                        }
                     }
-                }
 
                 // 3. Calculate the root hash of each component group merkle proof
                 val calculatedComponentGroupRootsHashes = mergedMerkleProofs.map { (componentGroupIndex, merkleProof) ->
@@ -775,7 +785,8 @@ class UtxoPersistenceServiceImpl(
                         it.visibleLeaves.associateWith { componentGroupIndex ->
 
                             // Use the already calculated component group root
-                            val componentGroupRootBytes = calculatedComponentGroupRootsHashes[componentGroupIndex]?.bytes
+                            val componentGroupRootBytes =
+                                calculatedComponentGroupRootsHashes[componentGroupIndex]?.bytes
 
                             // At this point we should have this available
                             requireNotNull(componentGroupRootBytes) {
@@ -816,17 +827,15 @@ class UtxoPersistenceServiceImpl(
         until: Instant,
         limit: Int,
     ): List<SecureHash> {
-        return entityManagerFactory.createEntityManager().use { em ->
-            repository.findTransactionsWithStatusCreatedBetweenTime(getConnection(em), status, from, until, limit)
+        return connectionFactory().use { conn ->
+            repository.findTransactionsWithStatusCreatedBetweenTime(conn, status, from, until, limit)
                 .map { id -> digestService.parseSecureHash(id) }
         }
     }
 
     override fun incrementTransactionRepairAttemptCount(id: String) {
-        entityManagerFactory.createEntityManager().use { em ->
-            getConnection(em).transaction { conn ->
-                repository.incrementTransactionRepairAttemptCount(conn, id)
-            }
+        connectionFactory().transaction { conn ->
+            repository.incrementTransactionRepairAttemptCount(conn, id)
         }
     }
 
@@ -835,7 +844,7 @@ class UtxoPersistenceServiceImpl(
         groupIndex: Int,
         treeSize: Int,
         leafIndexes: List<Int>,
-        leafHashes: List<String>
+        leafHashes: List<String>,
     ): UtxoRepository.TransactionMerkleProof {
         return UtxoRepository.TransactionMerkleProof(
             digestService.hash(
@@ -858,13 +867,13 @@ class UtxoPersistenceServiceImpl(
         val filteredTransaction: UtxoRepository.FilteredTransaction,
         val topLevelProof: UtxoRepository.TransactionMerkleProof,
         val componentGroupProofs: List<TransactionMerkleProofToPersist>,
-        val signatures: List<UtxoRepository.TransactionSignature>
+        val signatures: List<UtxoRepository.TransactionSignature>,
     )
 
     private data class TransactionMerkleProofToPersist(
         val proof: UtxoRepository.TransactionMerkleProof,
         val leaves: List<UtxoRepository.TransactionMerkleProofLeaf>,
-        val components: List<UtxoRepository.TransactionComponent>
+        val components: List<UtxoRepository.TransactionComponent>,
     )
 
     /**

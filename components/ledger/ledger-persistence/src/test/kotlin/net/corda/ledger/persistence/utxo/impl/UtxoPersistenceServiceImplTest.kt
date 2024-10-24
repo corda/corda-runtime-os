@@ -88,7 +88,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     private val persistenceService = UtxoPersistenceServiceImpl(
-        mockEmFactory,
+        mock(),
         mockRepository,
         mock(),
         mockDigestService,
@@ -146,7 +146,7 @@ class UtxoPersistenceServiceImplTest {
         whenever(emptyDefaultContractStateVaultJsonFactory.create(any(), any())).thenReturn("")
 
         val singlePersistenceService = UtxoPersistenceServiceImpl(
-            mockEmFactory,
+            mock(),
             mockRepository,
             mock(),
             mockDigestService,
@@ -242,7 +242,7 @@ class UtxoPersistenceServiceImplTest {
     @Test
     fun `Persisting a transaction while zero JSON factories are registered will result still store the default state json`() {
         val emptyPersistenceService = UtxoPersistenceServiceImpl(
-            mockEmFactory,
+            mock(),
             mockRepository,
             mock(),
             mockDigestService,
@@ -287,7 +287,7 @@ class UtxoPersistenceServiceImplTest {
         }
 
         val persistenceService = UtxoPersistenceServiceImpl(
-            mockEmFactory,
+            mock(),
             mockRepository,
             mock(),
             mockDigestService,

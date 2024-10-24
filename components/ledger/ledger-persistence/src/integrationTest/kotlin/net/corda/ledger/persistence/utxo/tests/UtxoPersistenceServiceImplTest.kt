@@ -184,7 +184,7 @@ class UtxoPersistenceServiceImplTest {
             filteredTransactionFactory = ctx.getSandboxSingletonService()
 
             persistenceService = UtxoPersistenceServiceImpl(
-                entityManagerFactory,
+                { getConnection(entityManagerFactory.createEntityManager()) },
                 repository,
                 serializationService,
                 digestService,
