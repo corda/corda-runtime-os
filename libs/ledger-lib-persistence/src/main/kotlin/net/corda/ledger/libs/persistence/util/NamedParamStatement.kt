@@ -27,7 +27,7 @@ class NamedParamStatement(
     }
 
     fun executeQuery(): ResultSet {
-        if(log.isDebugEnabled) log.debug("Execute Query: $statement")
+        if (log.isDebugEnabled) log.debug("Execute Query: $statement")
         return statement.executeQuery()
     }
 
@@ -57,7 +57,7 @@ class NamedParamStatement(
     }
 
     fun executeUpdate(): Int {
-        if(log.isDebugEnabled) log.debug("Execute Update: $statement")
+        if (log.isDebugEnabled) log.debug("Execute Update: $statement")
 
         return statement.executeUpdate()
     }

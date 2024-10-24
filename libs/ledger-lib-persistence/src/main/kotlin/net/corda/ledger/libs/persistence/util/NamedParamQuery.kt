@@ -1,9 +1,5 @@
 package net.corda.ledger.libs.persistence.util
 
-import net.corda.ledger.libs.persistence.utxo.impl.UtxoPersistenceServiceImpl
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
 interface NamedParamQuery {
     companion object {
         fun from(sql: String): NamedParamQuery {
