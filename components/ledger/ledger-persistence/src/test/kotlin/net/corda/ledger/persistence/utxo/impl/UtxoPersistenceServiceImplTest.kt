@@ -28,6 +28,8 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.assertj.core.api.Assertions.assertThat
+import org.hibernate.Session
+import org.hibernate.internal.SessionImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -37,8 +39,8 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.lang.IllegalArgumentException
 import java.security.PublicKey
+import java.sql.Connection
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -73,8 +75,16 @@ class UtxoPersistenceServiceImplTest {
         registerJsonFactory(InvalidStateJsonFactory() as ContractStateVaultJsonFactory<ContractState>)
     }
 
+    private val connectionMock = mock<Connection> {
+    }
+
+    private val mockSession = mock<SessionImpl> {
+        on { connection() } doReturn mock()
+    }
+
     private val mockEm = mock<EntityManager> {
         on { transaction } doReturn mock()
+        on { unwrap(Session::class.java) } doReturn mockSession
     }
 
     private val mockEmFactory = mock<EntityManagerFactory> {
@@ -82,7 +92,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     private val persistenceService = UtxoPersistenceServiceImpl(
-        mockEmFactory,
+        { connectionMock },
         mockRepository,
         mock(),
         mockDigestService,
@@ -140,7 +150,7 @@ class UtxoPersistenceServiceImplTest {
         whenever(emptyDefaultContractStateVaultJsonFactory.create(any(), any())).thenReturn("")
 
         val singlePersistenceService = UtxoPersistenceServiceImpl(
-            mockEmFactory,
+            { connectionMock },
             mockRepository,
             mock(),
             mockDigestService,
@@ -236,7 +246,7 @@ class UtxoPersistenceServiceImplTest {
     @Test
     fun `Persisting a transaction while zero JSON factories are registered will result still store the default state json`() {
         val emptyPersistenceService = UtxoPersistenceServiceImpl(
-            mockEmFactory,
+            { connectionMock },
             mockRepository,
             mock(),
             mockDigestService,
@@ -281,7 +291,7 @@ class UtxoPersistenceServiceImplTest {
         }
 
         val persistenceService = UtxoPersistenceServiceImpl(
-            mockEmFactory,
+            { connectionMock },
             mockRepository,
             mock(),
             mockDigestService,

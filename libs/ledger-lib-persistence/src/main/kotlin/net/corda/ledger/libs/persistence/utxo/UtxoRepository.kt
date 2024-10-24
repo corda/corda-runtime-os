@@ -10,56 +10,56 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
+import java.sql.Connection
 import java.time.Instant
-import javax.persistence.EntityManager
 
 @Suppress("TooManyFunctions")
 interface UtxoRepository {
 
     /** Retrieves transaction IDs and their statuses if its ID is included in the [transactionIds] list. */
     fun findSignedTransactionIdsAndStatuses(
-        entityManager: EntityManager,
+        connection: Connection,
         transactionIds: List<String>
     ): Map<SecureHash, String>
 
     /** Retrieves transaction by [id] */
     fun findTransaction(
-        entityManager: EntityManager,
+        connection: Connection,
         id: String
     ): SignedTransactionContainer?
 
     /** Retrieves transaction component leafs except metadata which is stored separately */
     fun findTransactionComponentLeafs(
-        entityManager: EntityManager,
+        connection: Connection,
         transactionId: String
     ): Map<Int, List<ByteArray>>
 
     /** Retrieves transaction component leaves related to visible unspent states and subclass states.*/
     fun findUnconsumedVisibleStatesByType(
-        entityManager: EntityManager
+        connection: Connection
     ): List<UtxoVisibleTransactionOutputDto>
 
     /** Retrieves transaction component leafs related to specific StateRefs */
     fun resolveStateRefs(
-        entityManager: EntityManager,
+        connection: Connection,
         stateRefs: List<StateRef>
     ): List<UtxoVisibleTransactionOutputDto>
 
     /** Retrieves transaction signatures */
     fun findTransactionSignatures(
-        entityManager: EntityManager,
+        connection: Connection,
         transactionId: String
     ): List<DigitalSignatureAndMetadata>
 
     /** Retrieves a transaction's status */
     fun findSignedTransactionStatus(
-        entityManager: EntityManager,
+        connection: Connection,
         id: String,
     ): String?
 
     /** Marks visible states of transactions consumed */
     fun markTransactionVisibleStatesConsumed(
-        entityManager: EntityManager,
+        connection: Connection,
         stateRefs: List<StateRef>,
         timestamp: Instant
     )
@@ -67,7 +67,7 @@ interface UtxoRepository {
     /** Persists transaction (operation is idempotent) */
     @Suppress("LongParameterList")
     fun persistTransaction(
-        entityManager: EntityManager,
+        connection: Connection,
         id: String,
         privacySalt: ByteArray,
         account: String,
@@ -79,7 +79,7 @@ interface UtxoRepository {
     /** Persists unverified transaction (operation is idempotent) */
     @Suppress("LongParameterList")
     fun persistUnverifiedTransaction(
-        entityManager: EntityManager,
+        connection: Connection,
         id: String,
         privacySalt: ByteArray,
         account: String,
@@ -90,17 +90,21 @@ interface UtxoRepository {
     /** Persists unverified transaction (operation is idempotent) */
     @Suppress("LongParameterList")
     fun persistFilteredTransactions(
-        entityManager: EntityManager,
+        connection: Connection,
         filteredTransactions: List<FilteredTransaction>,
         timestamp: Instant,
     )
 
     /** Updates an existing verified transaction */
-    fun updateTransactionToVerified(entityManager: EntityManager, id: String, timestamp: Instant)
+    fun updateTransactionToVerified(
+        connection: Connection,
+        id: String,
+        timestamp: Instant
+    )
 
     /** Persists transaction metadata (operation is idempotent) */
     fun persistTransactionMetadata(
-        entityManager: EntityManager,
+        connection: Connection,
         hash: String,
         metadataBytes: ByteArray,
         groupParametersHash: String,
@@ -110,7 +114,7 @@ interface UtxoRepository {
     /** Persists transaction source (operation is idempotent) */
     @Suppress("LongParameterList")
     fun persistTransactionSources(
-        entityManager: EntityManager,
+        connection: Connection,
         transactionId: String,
         transactionSources: List<TransactionSource>
     )
@@ -123,21 +127,21 @@ interface UtxoRepository {
     )
 
     fun persistTransactionComponents(
-        entityManager: EntityManager,
+        connection: Connection,
         transactionId: String,
         components: List<List<ByteArray>>,
         hash: (ByteArray) -> String
     )
 
     fun persistTransactionComponents(
-        entityManager: EntityManager,
+        connection: Connection,
         components: List<TransactionComponent>,
         hash: (ByteArray) -> String
     )
 
     /** Persists transaction output (operation is idempotent) */
     fun persistVisibleTransactionOutputs(
-        entityManager: EntityManager,
+        connection: Connection,
         transactionId: String,
         timestamp: Instant,
         visibleTransactionOutputs: List<VisibleTransactionOutput>
@@ -145,7 +149,7 @@ interface UtxoRepository {
 
     /** Persists transaction [signature] (operation is idempotent) */
     fun persistTransactionSignatures(
-        entityManager: EntityManager,
+        connection: Connection,
         signatures: List<TransactionSignature>,
         timestamp: Instant
     )
@@ -158,7 +162,7 @@ interface UtxoRepository {
      * - INVALID -> INVALID
      */
     fun updateTransactionStatus(
-        entityManager: EntityManager,
+        connection: Connection,
         transactionId: String,
         transactionStatus: TransactionStatus,
         timestamp: Instant
@@ -166,52 +170,56 @@ interface UtxoRepository {
 
     /** Retrieves signed group parameters */
     fun findSignedGroupParameters(
-        entityManager: EntityManager,
+        connection: Connection,
         hash: String
     ): SignedGroupParameters?
 
     /** Persists signed group parameters */
     fun persistSignedGroupParameters(
-        entityManager: EntityManager,
+        connection: Connection,
         hash: String,
         signedGroupParameters: SignedGroupParameters,
         timestamp: Instant
     )
 
     /** Persists a merkle proof and returns its ID */
-    fun persistMerkleProofs(entityManager: EntityManager, merkleProofs: List<TransactionMerkleProof>)
+    fun persistMerkleProofs(connection: Connection, merkleProofs: List<TransactionMerkleProof>)
 
     /** Persist a leaf index that belongs to a given merkle proof with ID [merkleProofId] */
     fun persistMerkleProofLeaves(
-        entityManager: EntityManager,
+        connection: Connection,
         leaves: List<TransactionMerkleProofLeaf>
     )
 
     /** Find all the merkle proofs for a given list of transaction IDs */
     fun findMerkleProofs(
-        entityManager: EntityManager,
+        connection: Connection,
         transactionIds: List<String>
     ): Map<String, List<MerkleProofDto>>
 
     /** Find filtered transactions with the given [ids] */
     fun findFilteredTransactions(
-        entityManager: EntityManager,
+        connection: Connection,
         ids: List<String>
     ): Map<String, UtxoFilteredTransactionDto>
 
-    fun findConsumedTransactionSourcesForTransaction(entityManager: EntityManager, transactionId: String, indexes: List<Int>): List<Int>
+    fun findConsumedTransactionSourcesForTransaction(
+        connection: Connection,
+        transactionId: String,
+        indexes: List<Int>
+    ): List<Int>
 
     fun findTransactionsWithStatusCreatedBetweenTime(
-        entityManager: EntityManager,
+        connection: Connection,
         status: TransactionStatus,
         from: Instant,
         until: Instant,
         limit: Int,
     ): List<String>
 
-    fun incrementTransactionRepairAttemptCount(entityManager: EntityManager, id: String)
+    fun incrementTransactionRepairAttemptCount(connection: Connection, id: String)
 
-    fun stateRefsExist(entityManager: EntityManager, stateRefs: List<StateRef>): List<Pair<String, Int>>
+    fun stateRefsExist(connection: Connection, stateRefs: List<StateRef>): List<Pair<String, Int>>
 
     data class TransactionComponent(val transactionId: String, val groupIndex: Int, val leafIndex: Int, val leafData: ByteArray)
 
