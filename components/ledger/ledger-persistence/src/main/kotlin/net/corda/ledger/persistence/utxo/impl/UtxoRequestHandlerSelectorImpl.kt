@@ -67,7 +67,8 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
         val persistenceService = UtxoPersistenceServiceImpl(
             connectionFactory = {
                 val emf = sandbox.getEntityManagerFactory()
-                (emf.createEntityManager().unwrap(Session::class.java) as SessionImpl).connection() },
+                (emf.createEntityManager().unwrap(Session::class.java) as SessionImpl).connection()
+            },
             repository = sandbox.getSandboxSingletonService(),
             serializationService = sandbox.getSerializationService(),
             sandboxDigestService = sandbox.getSandboxSingletonService(),
