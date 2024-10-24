@@ -6,9 +6,6 @@ plugins {
 description 'Common crypto implementation'
 
 dependencies {
-//    compileOnly "org.osgi:org.osgi.service.component.annotations"
-//    compileOnly "org.osgi:osgi.annotation"
-//
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-crypto"
@@ -16,21 +13,10 @@ dependencies {
 
     implementation project(':libs:layered-property-map')
     implementation project(":libs:metrics")
-//    implementation project(":libs:utilities")
 
-//    implementation 'net.corda:corda-application'
     implementation "net.corda:corda-avro-schema"
-//    implementation "net.corda:corda-config-schema"
-//    implementation "net.corda:corda-serialization"
-//    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-//    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
 
     testImplementation project(':libs:utilities')
-//    testRuntimeOnly libs.slf4j.simple
-//
-//    testImplementation project(":testing:layered-property-map-testkit")
-//    testImplementation "javax.persistence:javax.persistence-api"
-//    testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
 }
 
 tasks.named('jar', Jar) {

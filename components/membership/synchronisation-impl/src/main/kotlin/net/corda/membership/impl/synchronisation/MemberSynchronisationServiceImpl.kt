@@ -6,7 +6,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.avro.toAvro
+import net.corda.crypto.core.avro.toCorda
 import net.corda.crypto.core.bytes
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
@@ -56,7 +57,6 @@ import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -66,11 +66,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 import java.util.Random
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 @Component(service = [SynchronisationService::class])
 class MemberSynchronisationServiceImpl internal constructor(
@@ -171,12 +169,6 @@ class MemberSynchronisationServiceImpl internal constructor(
         private val random by lazy {
             Random()
         }
-
-        private fun SecureHash.toAvro(): AvroSecureHash =
-            AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
-
-        private fun AvroSecureHash.toCorda(): SecureHash =
-            SecureHashImpl(this.algorithm, this.bytes.array())
     }
 
     // for watching the config changes

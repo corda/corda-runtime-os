@@ -1,6 +1,5 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import java.nio.ByteBuffer
 import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.chunking.Chunk
@@ -14,10 +13,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
-import net.corda.crypto.core.bytes
-import net.corda.v5.crypto.SecureHash
-import net.corda.data.crypto.SecureHash as AvroSecureHash
-
+import net.corda.crypto.core.avro.toAvro
 
 class KafkaCpkChunksPublisherTest {
     private lateinit var kafkaCpkChunksPublisher: CpkChunksPublisher
@@ -29,9 +25,6 @@ class KafkaCpkChunksPublisherTest {
             val messageDigest = MessageDigest.getInstance(algorithm)
             return SecureHashImpl(algorithm, messageDigest.digest(bytes)).toAvro()
         }
-
-        fun SecureHash.toAvro(): AvroSecureHash =
-            AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
     }
 
     @BeforeEach

@@ -49,10 +49,8 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
-import java.nio.ByteBuffer
 import java.time.Duration
-import net.corda.crypto.core.bytes
-import net.corda.data.crypto.SecureHash as AvroSecureHash
+import net.corda.crypto.core.avro.toAvro
 
 // TODO at some later point consider deleting CPKs blobs in the database by nulling their blob values and pass the null value to Kafka
 @Suppress("TooManyFunctions")
@@ -292,6 +290,3 @@ class CpkWriteServiceImpl @Activate constructor(
 // Must not call SecureHash.toString() because it contains delimiter : that fails on Path creation.
 // Therefore the file name will be the <hex string>.cpk.
 private fun SecureHash.toFileName() = "${this.toHexString()}.cpk"
-
-fun SecureHash.toAvro(): AvroSecureHash =
-    AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))

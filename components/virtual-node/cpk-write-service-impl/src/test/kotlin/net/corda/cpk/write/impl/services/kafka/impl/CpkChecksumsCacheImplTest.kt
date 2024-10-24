@@ -14,8 +14,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.security.MessageDigest
-import net.corda.crypto.core.bytes
-import net.corda.data.crypto.SecureHash as AvroSecureHash
+import net.corda.crypto.core.avro.toAvro
 
 class CpkChecksumsCacheImplTest {
     private lateinit var cpkChecksumCache: CpkChecksumsCacheImpl
@@ -46,9 +45,6 @@ class CpkChecksumsCacheImplTest {
                     null
                 )
             )
-
-        fun SecureHash.toAvro(): AvroSecureHash =
-            AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
     }
 
     @BeforeEach

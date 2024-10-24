@@ -22,7 +22,6 @@ import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope
 import java.io.InputStream
 
-// I think the merkle tree code only has a dep on other crypto modules for this and secure hash impl
 @Component(
     service = [DigestService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class],
     scope = ServiceScope.PROTOTYPE
