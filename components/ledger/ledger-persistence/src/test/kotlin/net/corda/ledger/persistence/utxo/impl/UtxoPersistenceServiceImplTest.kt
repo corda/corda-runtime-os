@@ -40,6 +40,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
+import java.sql.Connection
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -74,6 +75,10 @@ class UtxoPersistenceServiceImplTest {
         registerJsonFactory(InvalidStateJsonFactory() as ContractStateVaultJsonFactory<ContractState>)
     }
 
+    private val connectionMock = mock<Connection> {
+
+    }
+
     private val mockSession = mock<SessionImpl> {
         on { connection() } doReturn mock()
     }
@@ -88,7 +93,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     private val persistenceService = UtxoPersistenceServiceImpl(
-        mock(),
+        { connectionMock },
         mockRepository,
         mock(),
         mockDigestService,
@@ -146,7 +151,7 @@ class UtxoPersistenceServiceImplTest {
         whenever(emptyDefaultContractStateVaultJsonFactory.create(any(), any())).thenReturn("")
 
         val singlePersistenceService = UtxoPersistenceServiceImpl(
-            mock(),
+            { connectionMock },
             mockRepository,
             mock(),
             mockDigestService,
@@ -242,7 +247,7 @@ class UtxoPersistenceServiceImplTest {
     @Test
     fun `Persisting a transaction while zero JSON factories are registered will result still store the default state json`() {
         val emptyPersistenceService = UtxoPersistenceServiceImpl(
-            mock(),
+            { connectionMock },
             mockRepository,
             mock(),
             mockDigestService,
@@ -287,7 +292,7 @@ class UtxoPersistenceServiceImplTest {
         }
 
         val persistenceService = UtxoPersistenceServiceImpl(
-            mock(),
+            { connectionMock },
             mockRepository,
             mock(),
             mockDigestService,
