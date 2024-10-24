@@ -1,11 +1,11 @@
 package net.corda.flow.application.persistence.external.events
 
-import net.corda.data.KeyValuePairList
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.EntityRequest
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -19,7 +19,7 @@ class RemoveExternalEventFactoryTest {
     @Test
     fun `creates a record containing an EntityRequest with a DeleteEntities payload`() {
         val checkpoint = mock<FlowCheckpoint>()
-        val externalEventContext = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
+        val externalEventContext = ExternalEventContext("request id", "flow id", emptyMap())
 
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
 
@@ -33,7 +33,7 @@ class RemoveExternalEventFactoryTest {
             EntityRequest(
                 ALICE_X500_HOLDING_IDENTITY,
                 DeleteEntities(listOf(ByteBuffer.wrap(byteArrayOf(1)))),
-                externalEventContext
+                externalEventContext.toAvro()
             ),
             externalEventRecord.payload
         )

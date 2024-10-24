@@ -3,10 +3,11 @@ package net.corda.flow.application.crypto.external.events
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
-import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
@@ -33,7 +34,7 @@ class CreateSignatureExternalEventFactory @Activate constructor(
             signatureSpec = parameters.signatureSpec,
             data = parameters.bytes,
             context = emptyMap(),
-            flowExternalEventContext = flowExternalEventContext
+            flowExternalEventContext = flowExternalEventContext.toAvro()
         )
         return ExternalEventRecord(payload = flowOpsRequest)
     }

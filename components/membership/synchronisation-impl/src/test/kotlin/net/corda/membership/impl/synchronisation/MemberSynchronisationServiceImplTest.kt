@@ -3,8 +3,7 @@ package net.corda.membership.impl.synchronisation
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.core.toCorda
-import net.corda.data.crypto.SecureHash
+import net.corda.crypto.core.avro.toCorda
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
@@ -96,6 +95,7 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 class MemberSynchronisationServiceImplTest {
@@ -195,7 +195,7 @@ class MemberSynchronisationServiceImplTest {
         on { memberContext } doReturn signedMemberContext
         on { mgmContext } doReturn signedMgmContext
     }
-    private val hash = SecureHash("algo", ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
+    private val hash = AvroSecureHash("algo", ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
     private val signedMemberships: SignedMemberships = mock {
         on { memberships } doReturn listOf(signedMemberInfo)
         on { hashCheck } doReturn hash
@@ -538,7 +538,7 @@ class MemberSynchronisationServiceImplTest {
     fun `processMembershipUpdates asks for synchronization when hashes are misaligned`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        whenever(signedMemberships.hashCheck) doReturn SecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
+        whenever(signedMemberships.hashCheck) doReturn AvroSecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
 
         val published = synchronisationService.processMembershipUpdates(updates)
 
@@ -556,7 +556,7 @@ class MemberSynchronisationServiceImplTest {
     fun `processMembershipUpdates create the correct sync request when hashes are misaligned`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        whenever(signedMemberships.hashCheck) doReturn SecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
+        whenever(signedMemberships.hashCheck) doReturn AvroSecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
 
         synchronisationService.processMembershipUpdates(updates)
 

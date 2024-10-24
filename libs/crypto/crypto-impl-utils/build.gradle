@@ -1,0 +1,40 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Common crypto implementation'
+
+dependencies {
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-crypto"
+    implementation project(':libs:crypto:cipher-suite')
+
+    implementation project(':libs:layered-property-map')
+    implementation project(":libs:metrics")
+
+    implementation "net.corda:corda-avro-schema"
+
+    testImplementation project(':libs:utilities')
+}
+
+tasks.named('jar', Jar) {
+    bundle {
+        bnd """\
+Import-Package:\
+    org.bouncycastle.jcajce.provider.config,\
+    org.bouncycastle.jcajce.provider.digest,\
+    org.bouncycastle.jcajce.provider.drbg,\
+    org.bouncycastle.jcajce.provider.keystore,\
+    org.bouncycastle.jcajce.provider.keystore.bc,\
+    org.bouncycastle.jcajce.provider.keystore.bcfks,\
+    org.bouncycastle.jcajce.provider.keystore.pkcs12,\
+    org.bouncycastle.jcajce.provider.keystore.util,\
+    org.bouncycastle.jcajce.provider.symmetric,\
+    org.bouncycastle.jcajce.provider.symmetric.util,\
+    org.bouncycastle.jcajce.provider.util,\
+    *
+"""
+    }
+}

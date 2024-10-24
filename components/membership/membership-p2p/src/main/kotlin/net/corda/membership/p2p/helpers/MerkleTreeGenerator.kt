@@ -4,7 +4,7 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.data.KeyValuePairList
-import net.corda.layeredpropertymap.toAvro
+import net.corda.layeredpropertymap.avro.toAvro
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION

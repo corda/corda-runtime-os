@@ -40,6 +40,8 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(':libs:platform-info')
     testImplementation project(':libs:web:web-impl')
+    testImplementation project(":libs:crypto:crypto-core-avro")
+
 
     testImplementation libs.javalin
     constraints {

@@ -1,9 +1,6 @@
 package net.corda.crypto.core
 
-import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.v5.crypto.SecureHash
-import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 
@@ -74,18 +71,4 @@ data class SigningKeyInfo(
         result = 31 * result + status.hashCode()
         return result
     }
-
-    fun toCryptoSigningKey(keyEncodingService: KeyEncodingService): CryptoSigningKey = CryptoSigningKey(
-        this.id.value,
-        this.tenantId,
-        this.category,
-        this.alias,
-        this.hsmAlias,
-        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(this.publicKey)),
-        this.schemeCodeName,
-        this.wrappingKeyAlias,
-        this.encodingVersion,
-        this.externalId,
-        this.timestamp
-    )
 }

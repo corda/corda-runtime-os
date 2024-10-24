@@ -1,10 +1,10 @@
 package net.corda.cpk.read.impl
 
-import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
+import net.corda.crypto.core.avro.toAvro
 
 object Helpers {
 

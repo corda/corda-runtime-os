@@ -18,7 +18,7 @@ import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
-import net.corda.layeredpropertymap.toAvro
+import net.corda.layeredpropertymap.avro.toAvro
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus

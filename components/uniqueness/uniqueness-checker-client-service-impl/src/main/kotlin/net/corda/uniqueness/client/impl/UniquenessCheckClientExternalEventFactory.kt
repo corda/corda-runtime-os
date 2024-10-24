@@ -1,6 +1,5 @@
 package net.corda.uniqueness.client.impl
 
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflictAvro
@@ -13,9 +12,11 @@ import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
 import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowBeforeLowerBoundAvro
 import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBoundsAvro
 import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.uniqueness.datamodel.common.toStateRef
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
@@ -62,7 +63,7 @@ class UniquenessCheckExternalEventFactory :
         checkpoint: FlowCheckpoint
     ) = UniquenessCheckRequestAvro.newBuilder()
         .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
-        .setFlowExternalEventContext(context)
+        .setFlowExternalEventContext(context.toAvro())
         .setTxId(params.txId)
         .setOriginatorX500Name(params.originatorX500Name)
         .setInputStates(params.inputStates)

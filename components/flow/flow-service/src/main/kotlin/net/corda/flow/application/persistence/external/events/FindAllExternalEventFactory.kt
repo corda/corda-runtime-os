@@ -1,13 +1,14 @@
 package net.corda.flow.application.persistence.external.events
 
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindAll
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.persistence.query.OffsetResultSetExecutor
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.utilities.toByteArrays
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.virtualnode.toAvro
@@ -27,7 +28,7 @@ class FindAllExternalEventFactory: ExternalEventFactory<FindAllParameters, Entit
             payload = EntityRequest.newBuilder()
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
                 .setRequest(FindAll(parameters.entityClass.canonicalName, parameters.offset, parameters.limit))
-                .setFlowExternalEventContext(flowExternalEventContext)
+                .setFlowExternalEventContext(flowExternalEventContext.toAvro())
                 .build()
         )
     }

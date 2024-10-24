@@ -30,6 +30,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     testImplementation project(":libs:crypto:crypto-impl")
+    testImplementation project(":libs:crypto:crypto-impl-utils")
     testImplementation project(":libs:membership:membership-impl")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")

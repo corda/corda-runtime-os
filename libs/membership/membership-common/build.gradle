@@ -14,9 +14,6 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation "net.corda:corda-base"
-    implementation 'net.corda:corda-config-schema'
-    implementation 'net.corda:corda-topic-schema'
-    api "net.corda:corda-avro-schema"
     api "net.corda:corda-membership"
     api project(":libs:membership:membership-datamodel")
     api project(":libs:metrics")
@@ -29,4 +26,5 @@ dependencies {
     implementation project(':libs:serialization:serialization-avro')
 
     testImplementation project(":testing:test-utilities")
+    testImplementation('net.corda:corda-topic-schema')
 }

@@ -19,6 +19,7 @@ dependencies {
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:crypto:crypto-core-avro')
     implementation project(':libs:utilities')
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"

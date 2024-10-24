@@ -19,7 +19,6 @@ dependencies {
 
     implementation libs.jackson.annotations
 
-    api project(':libs:base-internal')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:sandbox-types')
     implementation project(':libs:serialization:json-validator-lib')

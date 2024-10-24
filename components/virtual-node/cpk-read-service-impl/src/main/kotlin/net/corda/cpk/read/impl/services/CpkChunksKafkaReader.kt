@@ -1,6 +1,5 @@
 package net.corda.cpk.read.impl.services
 
-import net.corda.crypto.core.toCorda
 import net.corda.cpk.read.impl.services.cache.CpkChunkIdsCache
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManager
 import net.corda.data.chunking.Chunk
@@ -15,6 +14,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.SortedSet
+import net.corda.crypto.core.avro.toCorda
 
 // TODO should be enough for now to keep it simple and not replace/ delete CPK chunks?
 class CpkChunksKafkaReader(

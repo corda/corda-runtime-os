@@ -2,7 +2,6 @@ package net.corda.cpk.write.impl
 
 import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
-import net.corda.crypto.core.toAvro
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.write.CpkWriteService
@@ -51,6 +50,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.time.Duration
+import net.corda.crypto.core.avro.toAvro
 
 // TODO at some later point consider deleting CPKs blobs in the database by nulling their blob values and pass the null value to Kafka
 @Suppress("TooManyFunctions")

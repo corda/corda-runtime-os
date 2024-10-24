@@ -22,6 +22,7 @@ dependencies {
     implementation project(':libs:sandbox-types')
     implementation project(":libs:serialization:serialization-avro")
     implementation project(':libs:serialization:serialization-internal')
+    implementation project(':libs:layered-property-map-avro')
 
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"

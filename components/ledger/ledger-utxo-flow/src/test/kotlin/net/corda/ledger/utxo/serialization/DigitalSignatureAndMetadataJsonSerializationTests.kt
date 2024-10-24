@@ -22,8 +22,8 @@ import net.corda.crypto.merkle.impl.MerkleProofProviderImpl
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getUtxoStateExample

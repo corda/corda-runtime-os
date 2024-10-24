@@ -18,6 +18,7 @@ import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransac
 import net.corda.ledger.common.data.transaction.getComponentGroupMerkleTreeDigestProvider
 import net.corda.ledger.common.data.transaction.getRootMerkleTreeDigestProvider
 import net.corda.ledger.libs.persistence.common.InconsistentLedgerStateException
+import net.corda.ledger.libs.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.libs.persistence.json.DefaultContractStateVaultJsonFactory
 import net.corda.ledger.libs.persistence.utxo.CustomRepresentation
 import net.corda.ledger.libs.persistence.utxo.SignedGroupParameters
@@ -64,7 +65,7 @@ class UtxoPersistenceServiceImpl(
     private val repository: UtxoRepository,
     private val serializationService: SerializationService,
     private val sandboxDigestService: DigestService,
-    private val factoryStorage: net.corda.ledger.libs.persistence.json.ContractStateVaultJsonFactoryRegistry,
+    private val factoryStorage: ContractStateVaultJsonFactoryRegistry,
     private val defaultContractStateVaultJsonFactory: DefaultContractStateVaultJsonFactory,
     private val jsonMarshallingService: JsonMarshallingService,
     private val jsonValidator: JsonValidator,

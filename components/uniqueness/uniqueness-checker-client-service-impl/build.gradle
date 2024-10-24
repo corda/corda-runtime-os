@@ -19,9 +19,10 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation project(':components:crypto:crypto-client')
-    implementation project(':components:ledger:ledger-common-flow-api')
+    implementation project(':libs:ledger:ledger-lib-common-flow-api')
     implementation project(':libs:crypto:merkle-impl')
     implementation project(':libs:flows:flow-api')
+    implementation project(':libs:flows:flow-utils')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:metrics')
     implementation project(':libs:sandbox-types')

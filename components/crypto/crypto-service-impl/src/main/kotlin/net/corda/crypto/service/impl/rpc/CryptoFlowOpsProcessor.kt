@@ -7,8 +7,8 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
-import net.corda.crypto.impl.toMap
-import net.corda.crypto.impl.toSignatureSpec
+import net.corda.crypto.impl.utils.toMap
+import net.corda.crypto.impl.utils.toSignatureSpec
 import net.corda.crypto.service.CryptoExceptionCategorizer
 import net.corda.crypto.service.CryptoExceptionType
 import net.corda.data.KeyValuePairList
@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
+import net.corda.crypto.service.impl.toCryptoSigningKey
 
 @Suppress("LongParameterList")
 class CryptoFlowOpsProcessor(

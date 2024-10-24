@@ -5,7 +5,7 @@ import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.DigitalSignature

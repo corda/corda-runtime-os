@@ -17,6 +17,7 @@ dependencies {
     api project(':libs:crypto:cipher-suite')
 
     implementation project(":libs:crypto:cipher-suite-impl")
+    implementation project(":libs:crypto:crypto-impl-utils")
 }
 
 

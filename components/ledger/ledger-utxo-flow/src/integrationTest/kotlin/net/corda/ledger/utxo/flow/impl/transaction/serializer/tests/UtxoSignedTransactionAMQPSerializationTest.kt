@@ -17,9 +17,6 @@ class UtxoSignedTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest() {
         val deserialized =
             serializationService.deserialize(serialised)
 
-        assertThat(deserialized.javaClass.name)
-            .isEqualTo("net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl")
-
         assertThat(deserialized)
             .isInstanceOf(UtxoSignedTransaction::class.java)
             .isEqualTo(utxoSignedTransaction)

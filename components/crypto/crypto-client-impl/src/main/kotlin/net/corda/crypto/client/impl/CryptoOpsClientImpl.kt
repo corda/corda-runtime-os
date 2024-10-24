@@ -13,8 +13,8 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.impl.createWireRequestContext
-import net.corda.crypto.impl.toWire
+import net.corda.crypto.impl.utils.createWireRequestContext
+import net.corda.crypto.impl.utils.toWire
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.ShortHashes
@@ -49,6 +49,7 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Duration
 import java.util.UUID
+import net.corda.crypto.core.avro.toAvro
 
 @Suppress("TooManyFunctions")
 class CryptoOpsClientImpl(
@@ -64,9 +65,6 @@ class CryptoOpsClientImpl(
             this.hashes.map {
                 SecureHashImpl(it.algorithm, it.bytes.array())
             }
-
-        private fun SecureHash.toAvro(): net.corda.data.crypto.SecureHash =
-            net.corda.data.crypto.SecureHash(this.algorithm, ByteBuffer.wrap(bytes))
     }
 
     fun getSupportedSchemes(tenantId: String, category: String): List<String> {

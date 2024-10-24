@@ -10,8 +10,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedData
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.avro.toAvro
 import net.corda.layeredpropertymap.create
-import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.retrieveSignatureSpec

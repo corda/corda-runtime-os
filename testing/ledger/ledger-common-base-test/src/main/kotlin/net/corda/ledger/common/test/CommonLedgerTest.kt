@@ -15,14 +15,14 @@ import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
-import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureServiceImpl
-import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureVerificationServiceImpl
-import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
-import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
+import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureServiceOsgiImpl
+import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryOsgiImpl
 import net.corda.ledger.common.flow.transaction.PrivacySaltProviderService
 import net.corda.ledger.common.testkit.FakePlatformInfoProvider
 import net.corda.ledger.common.testkit.fakePlatformInfoProvider
 import net.corda.ledger.common.testkit.getWireTransactionExample
+import net.corda.ledger.libs.common.flow.impl.transaction.TransactionSignatureVerificationServiceImpl
+import net.corda.ledger.libs.common.flow.impl.transaction.kryo.WireTransactionKryoSerializer
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.utilities.toByteArray
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
@@ -61,7 +61,7 @@ abstract class CommonLedgerTest {
     val flowEngine = FlowEngineImpl(flowFiberService)
 
     val serializationServiceNullCfg = TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
-    val transactionMetadataFactory = TransactionMetadataFactoryImpl(
+    val transactionMetadataFactory = TransactionMetadataFactoryOsgiImpl(
         currentSandboxGroupContext,
         fakePlatformInfoProvider(),
         mockFlowEngine()
@@ -84,7 +84,7 @@ abstract class CommonLedgerTest {
         digestService,
         cipherSchemeMetadata
     )
-    val transactionSignatureService = TransactionSignatureServiceImpl(
+    val transactionSignatureService = TransactionSignatureServiceOsgiImpl(
         serializationServiceWithWireTx,
         mockSigningService(),
         signatureSpecService,

@@ -3,7 +3,7 @@ package net.corda.membership.impl.synchronisation
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.core.toCorda
+import net.corda.crypto.core.avro.toCorda
 import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey

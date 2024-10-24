@@ -4,7 +4,7 @@ import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.cpi.upload.endpoints.common.CpiUploadRestResourceHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.crypto.core.toCorda
+import net.corda.crypto.core.avro.toCorda
 import net.corda.data.chunking.UploadStatus
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.cpiupload.DuplicateCpiUploadException

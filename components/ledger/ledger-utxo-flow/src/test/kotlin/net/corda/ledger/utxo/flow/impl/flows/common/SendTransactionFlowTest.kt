@@ -3,11 +3,11 @@ package net.corda.ledger.utxo.flow.impl.flows.common
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.SendTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.UtxoTransactionPayload
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.FlowEngine

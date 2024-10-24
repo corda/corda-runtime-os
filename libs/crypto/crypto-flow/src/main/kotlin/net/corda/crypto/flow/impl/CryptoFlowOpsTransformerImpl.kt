@@ -2,15 +2,15 @@ package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.core.bytes
 import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.bytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_ERROR_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
-import net.corda.crypto.impl.createWireRequestContext
-import net.corda.crypto.impl.toWire
+import net.corda.crypto.impl.utils.createWireRequestContext
+import net.corda.crypto.impl.utils.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHashes

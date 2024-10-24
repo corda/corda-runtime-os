@@ -1,8 +1,8 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.UtxoFinalityFlowV1
 import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryDetails
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.libs.platform.PlatformVersion.CORDA_5_1
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow

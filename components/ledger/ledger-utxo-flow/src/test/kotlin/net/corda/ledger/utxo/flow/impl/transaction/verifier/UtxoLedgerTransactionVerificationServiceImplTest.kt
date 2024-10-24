@@ -11,7 +11,6 @@ import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext

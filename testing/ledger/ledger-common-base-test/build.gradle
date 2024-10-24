@@ -10,7 +10,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
 
     api project(':testing:ledger:ledger-common-testkit')
-    api project(':components:ledger:ledger-common-flow')
+    api project(':libs:ledger:ledger-common-flow')
     api project(':libs:ledger:ledger-common-data')
 
     api project(':libs:crypto:cipher-suite-impl')
@@ -23,6 +23,7 @@ dependencies {
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(":libs:utilities")
+    implementation project(":libs:ledger:ledger-lib-common-flow")
 
     implementation libs.mockito.kotlin
 }

@@ -2,7 +2,7 @@ package net.corda.applications.workers.smoketest.services
 
 import net.corda.applications.workers.smoketest.utils.PLATFORM_VERSION
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.toAvro
+import net.corda.crypto.core.avro.toAvro
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHashes

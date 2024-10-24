@@ -4,8 +4,8 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.avro.toAvro
 import net.corda.crypto.core.parseSecureHash
-import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException

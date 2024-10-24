@@ -1,6 +1,5 @@
 package net.corda.cpk.read.impl.services.persistence
 
-import net.corda.crypto.core.toCorda
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.libs.packaging.setReadOnly
@@ -22,6 +21,7 @@ import java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
 import java.util.SortedSet
 import java.util.function.Consumer
+import net.corda.crypto.core.avro.toCorda
 
 /**
  * Creates resources on disk, that something needs to remove on shutdown.

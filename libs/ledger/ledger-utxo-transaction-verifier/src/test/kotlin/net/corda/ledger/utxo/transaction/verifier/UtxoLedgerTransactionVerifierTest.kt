@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.transaction.verifier
 
+import io.micrometer.core.instrument.Timer
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.publicKeyExample
@@ -19,14 +20,18 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
+import java.util.concurrent.Callable
 
 class UtxoLedgerTransactionVerifierTest {
 
@@ -38,9 +43,17 @@ class UtxoLedgerTransactionVerifierTest {
     private val inputTransactionState = mock<TransactionState<ContractState>>()
     private val referenceTransactionState = mock<TransactionState<ContractState>>()
     private val metadata = mock<TransactionMetadata>()
-    private val holdingIdentity = HoldingIdentity(MemberX500Name("ALICE", "LDN", "GB"), "group")
     private val injectionService = mock<(Contract) -> Unit>()
-    private val verifier = UtxoLedgerTransactionVerifier({ transaction }, transaction, holdingIdentity, injectionService)
+    private val callable = argumentCaptor<Callable<Any>>()
+    private val timer = mock<Timer> {
+        on { recordCallable(callable.capture()) } doAnswer { callable.lastValue.call() }
+    }
+    private val metricFactory = mock<ContractVerificationMetricFactory> {
+        on { getContractVerificationTimeMetric() } doReturn timer
+        on { getContractVerificationContractCountMetric() } doReturn mock()
+        on { getContractVerificationContractTime(any()) } doReturn timer
+    }
+    private val verifier = UtxoLedgerTransactionVerifier({ transaction }, transaction, injectionService, metricFactory)
 
     @BeforeEach
     fun beforeEach() {

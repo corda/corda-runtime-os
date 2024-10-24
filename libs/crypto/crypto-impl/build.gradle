@@ -19,7 +19,6 @@ dependencies {
     implementation project(":libs:utilities")
 
     implementation 'net.corda:corda-application'
-    implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-serialization"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'

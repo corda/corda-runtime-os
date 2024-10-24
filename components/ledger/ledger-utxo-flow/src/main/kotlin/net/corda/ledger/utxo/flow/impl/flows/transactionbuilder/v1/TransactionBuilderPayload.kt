@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v1
 
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
 import net.corda.v5.base.annotations.ConstructorForDeserialization
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures

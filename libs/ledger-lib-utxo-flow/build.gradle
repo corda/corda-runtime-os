@@ -1,0 +1,34 @@
+    plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda Ledger UXTO Flow library'
+
+ext.cordaEnableFormatting = true
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:ledger:ledger-lib-common-flow-api')
+    implementation project(':libs:ledger:ledger-lib-common-flow')
+    implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
+    implementation project(':libs:serialization:json-validator')
+    implementation project(':libs:serialization:json-validator-lib')
+
+    implementation 'net.corda:corda-ledger-utxo'
+    implementation 'net.corda:corda-base'
+
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib'
+
+    testImplementation project(':components:ledger:ledger-utxo-flow')
+    testImplementation project(':testing:test-serialization')
+    testImplementation project(':testing:kryo-serialization-testkit')
+    testImplementation project(':libs:serialization:serialization-internal')
+    testImplementation project(':libs:serialization:serialization-amqp')
+    testImplementation project(':libs:serialization:serialization-kryo')
+    testImplementation project(':testing:ledger:ledger-utxo-base-test')
+
+}

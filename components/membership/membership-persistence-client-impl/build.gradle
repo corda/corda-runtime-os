@@ -22,6 +22,7 @@ dependencies {
 
     implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:layered-property-map')
+    implementation project(':libs:layered-property-map-avro')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:messaging:messaging')

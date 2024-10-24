@@ -11,8 +11,9 @@ import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
-import net.corda.crypto.impl.toMap
-import net.corda.crypto.impl.toSignatureSpec
+import net.corda.crypto.impl.utils.toMap
+import net.corda.crypto.impl.utils.toSignatureSpec
+import net.corda.crypto.service.impl.toCryptoSigningKey
 import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret

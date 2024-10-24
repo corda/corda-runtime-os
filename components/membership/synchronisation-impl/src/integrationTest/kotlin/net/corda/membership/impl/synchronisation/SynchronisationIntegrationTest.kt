@@ -11,14 +11,13 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.avro.toAvro
 import net.corda.crypto.core.bytes
-import net.corda.crypto.core.toAvro
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
-import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
@@ -37,7 +36,7 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.sync.BloomFilter
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.layeredpropertymap.toAvro
+import net.corda.layeredpropertymap.avro.toAvro
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -119,6 +118,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class SynchronisationIntegrationTest {
@@ -427,7 +427,7 @@ class SynchronisationIntegrationTest {
         )
         val requesterHash = merkleTreeGenerator.generateTreeUsingMembers(listOf(requesterInfo)).root
         val byteBuffer = ByteBuffer.wrap("123".toByteArray())
-        val secureHash = SecureHash("algorithm", byteBuffer)
+        val secureHash = AvroSecureHash("algorithm", byteBuffer)
 
         val syncRequest = MembershipSyncRequest(
             DistributionMetaData(

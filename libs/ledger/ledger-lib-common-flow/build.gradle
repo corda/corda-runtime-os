@@ -1,0 +1,50 @@
+import aQute.bnd.gradle.Bundle
+
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda ledger common - flow implementation'
+
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
+ext.cordaEnableFormatting = true
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+
+    implementation project(':libs:ledger:ledger-lib-common-flow-api')
+
+    implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:serialization:serialization-amqp-api')
+    implementation project(':libs:sandbox-types')
+    implementation project(':libs:platform-info')
+
+    testImplementation project(':libs:membership:membership-common')
+    testImplementation project(':libs:serialization:serialization-kryo')
+    testImplementation project(':testing:kryo-serialization-testkit')
+    testImplementation project(':testing:layered-property-map-testkit')
+    testImplementation project(':testing:ledger:ledger-common-base-test')
+    testImplementation project(':testing:test-serialization')
+
+    integrationTestImplementation project(':testing:ledger:ledger-common-base-integration-test')
+    integrationTestImplementation project(':testing:group-policy-test-common')
+
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
+    integrationTestRuntimeOnly project(':libs:state-manager:state-manager-db-impl')
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
+
+    cpis project(path: ':testing:ledger:ledger-common-empty-app', configuration: 'cordaCPB')
+}

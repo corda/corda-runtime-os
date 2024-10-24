@@ -32,6 +32,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:crypto:cipher-suite-impl')
     implementation project(':libs:crypto:crypto-config-impl')
+    implementation project(":libs:crypto:crypto-impl-utils")
     implementation project(':libs:crypto:crypto-flow')
     implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:messaging:messaging")

@@ -20,7 +20,9 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
 
     implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:crypto:crypto-core-avro')
     implementation project(':libs:layered-property-map')
+    implementation project(':libs:layered-property-map-avro')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:p2p-messaging')

@@ -1,7 +1,6 @@
 package net.corda.libs.cpiupload.impl
 
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
 import net.corda.messaging.api.publisher.Publisher
@@ -16,7 +15,11 @@ import org.mockito.Mockito.`when`
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import java.io.ByteArrayInputStream
+import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
+import net.corda.crypto.core.bytes
+import net.corda.v5.crypto.SecureHash
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 class CpiUploadManagerImplTest {
     private lateinit var cpiUploadManagerImpl: CpiUploadManagerImpl
@@ -24,6 +27,10 @@ class CpiUploadManagerImplTest {
     private val publisher = mock(Publisher::class.java)
     private val subscription: Subscription<UploadStatusKey, UploadStatus> = mock()
     private val maxAllowedMessageSize = 97280
+    private companion object {
+        fun SecureHash.toAvro(): AvroSecureHash =
+            AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
+    }
 
     @BeforeEach
     @Suppress("UNCHECKED_CAST")

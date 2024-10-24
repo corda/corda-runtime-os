@@ -6,7 +6,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.core.toCorda
+import net.corda.crypto.core.avro.toCorda
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage

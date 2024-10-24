@@ -2,7 +2,6 @@ package net.corda.cpk.write.impl.services.kafka.impl
 
 import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.messaging.api.publisher.Publisher
@@ -14,6 +13,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
+import net.corda.crypto.core.avro.toAvro
 
 class KafkaCpkChunksPublisherTest {
     private lateinit var kafkaCpkChunksPublisher: CpkChunksPublisher
