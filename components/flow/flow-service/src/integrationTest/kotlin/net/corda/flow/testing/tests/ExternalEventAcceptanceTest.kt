@@ -6,6 +6,7 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindEntities
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.fiber.FlowIORequest
@@ -14,6 +15,7 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.testing.context.ALICE_FLOW_KEY_MAPPER
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.flowResumedWithError
+import net.corda.flow.utils.toAvro
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
@@ -28,8 +30,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.util.stream.Stream
-import net.corda.flow.external.events.ExternalEventContext
-import net.corda.flow.utils.toAvro
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)

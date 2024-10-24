@@ -12,9 +12,11 @@ import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
 import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowBeforeLowerBoundAvro
 import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBoundsAvro
 import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.uniqueness.datamodel.common.toStateRef
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
@@ -33,8 +35,6 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
-import net.corda.flow.external.events.ExternalEventContext
-import net.corda.flow.utils.toAvro
 import net.corda.data.uniqueness.UniquenessCheckType as UniquenessCheckTypeAvro
 
 @Component(service = [ExternalEventFactory::class])

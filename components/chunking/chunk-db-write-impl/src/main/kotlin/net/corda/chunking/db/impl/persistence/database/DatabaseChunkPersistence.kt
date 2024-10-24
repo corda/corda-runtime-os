@@ -6,6 +6,8 @@ import net.corda.chunking.datamodel.ChunkEntity
 import net.corda.chunking.datamodel.ChunkPropertyEntity
 import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
+import net.corda.crypto.core.avro.toAvro
+import net.corda.crypto.core.avro.toCorda
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.KeyValuePair
@@ -18,8 +20,6 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import net.corda.crypto.core.avro.toAvro
-import net.corda.crypto.core.avro.toCorda
 
 /**
  * This class provides some simple APIs to interact with the database for manipulating chunks and their associated metadata.

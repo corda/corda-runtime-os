@@ -4,6 +4,7 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.avro.toAvro
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.records.Record
@@ -15,7 +16,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.nio.ByteBuffer
 import java.util.UUID
-import net.corda.crypto.core.avro.toAvro
 
 class ChunkWriteToDbProcessorSimpleTest {
     companion object {

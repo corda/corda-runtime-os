@@ -2,6 +2,7 @@ package net.corda.applications.workers.smoketest.services
 
 import net.corda.applications.workers.smoketest.utils.PLATFORM_VERSION
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.avro.toAvro
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHashes
@@ -38,7 +39,6 @@ import java.net.http.HttpResponse
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
-import net.corda.crypto.core.avro.toAvro
 
 /**
  * Tests for the Crypto REST service
