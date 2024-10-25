@@ -17,4 +17,10 @@ object CheckpointMetadataKeys {
      * Checkpoints will be deleted by a cleanup processor based on a configurable time/
      */
     const val STATE_META_CHECKPOINT_TERMINATED_KEY = "checkpoint.terminated"
+
+    /**
+     * Records how long to retry external events that suffered transient errors in the message pattern.
+     * These retry events originate from the message pattern and are not related to external event responses with error of type TRANSIENT
+     */
+    const val RETRY_EXPIRY = "retry.expiry"
 }

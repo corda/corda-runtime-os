@@ -174,6 +174,14 @@ class ExternalEventManagerImpl(
         return externalEventState to record
     }
 
+    override fun getRetryEvent(
+        externalEventState: ExternalEventState,
+    ): Record<*, *> {
+        //Don't update ExternalEventState with new timestamp as this will result in State change being detected and potentially
+        // additional checkpoints saved for cases where multiple sequential RPC calls have transient retry errors
+        return generateRecord(externalEventState, null)
+    }
+
     private fun checkRetry(externalEventState: ExternalEventState, instant: Instant, retryWindow: Duration) {
         when {
             (externalEventState.sendTimestamp + retryWindow) >= instant -> {
@@ -194,9 +202,11 @@ class ExternalEventManagerImpl(
         }
     }
 
-    private fun generateRecord(externalEventState: ExternalEventState, instant: Instant) : Record<*, *> {
+    private fun generateRecord(externalEventState: ExternalEventState, instant: Instant?) : Record<*, *> {
         val eventToSend = externalEventState.eventToSend
-        eventToSend.timestamp = instant
+        if (instant != null) {
+            eventToSend.timestamp = instant
+        }
         val topic = eventToSend.topic
         log.trace { "Dispatching external event with id '${externalEventState.requestId}' to '$topic'" }
         return Record(topic, eventToSend.key.array(), eventToSend.payload.array())

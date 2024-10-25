@@ -31,6 +31,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
 ) {
 
     private val metrics = EventMediatorMetrics(config.name)
+    private val retryConfig = config.retryConfig
 
     /**
      * Process a group of events.
@@ -141,9 +142,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             }
             newAsyncOutputs.addAll(asyncEvents)
             try {
-                queue.addAll(processSyncEvents(key, syncEvents))
-            } catch (e: CordaMessageAPIIntermittentException) {
-                throw EventProcessorSyncEventsIntermittentException(processorStateUpdated, e)
+                val (newQueueEvents, updateProcessorState) = processSyncEvents(key, syncEvents, newAsyncOutputs, processorStateUpdated)
+                processorStateUpdated = updateProcessorState
+                queue.addAll(newQueueEvents)
             } catch (e: Exception) {
                 throw EventProcessorSyncEventsFatalException(processorStateUpdated, e)
             }
@@ -164,6 +165,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         processed: State?
     ) = when {
         state == null && processed != null -> StateChangeAndOperation.Create(processed)
+        state != null && processed == state -> StateChangeAndOperation.Noop
         state != null && processed != null -> StateChangeAndOperation.Update(processed)
         state != null && processed == null -> StateChangeAndOperation.Delete(state)
         else -> StateChangeAndOperation.Noop
@@ -177,32 +179,47 @@ class EventProcessor<K : Any, S : Any, E : Any>(
 
     /**
      * Send any synchronous events immediately and feed results back onto the queue.
-     */
+     * If a sync request returns from the RPC client with a transient error  and retry is enabled
+     * then push a retry event onto the retry topic
+     **/
     private fun processSyncEvents(
         key: K,
-        syncEvents: List<MediatorMessage<Any>>
-    ): List<Record<K, E>> {
-        return syncEvents.mapNotNull { message ->
+        syncEvents: List<MediatorMessage<Any>>,
+        newAsyncOutputs: MutableList<MediatorMessage<Any>>,
+        processorStateUpdated: StateAndEventProcessor.State<S>?
+    ): Pair<List<Record<K, E>>, StateAndEventProcessor.State<S>?>  {
+        var latestProcessorStateUpdated = processorStateUpdated
+        val outputEvents = syncEvents.mapNotNull { message ->
             val destination = messageRouter.getDestination(message)
 
-            @Suppress("UNCHECKED_CAST")
-            val reply = with(destination) {
-                message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                client.send(message) as MediatorMessage<E>?
-            }
-            reply?.let {
-                addTraceContextToRecord(
-                    Record(
-                        "",
-                        key,
-                        reply.payload,
-                        0,
-                        listOf(Pair(SYNC_RESPONSE_HEADER, "true"))
-                    ),
-                    message.properties
-                )
+            try {
+                @Suppress("UNCHECKED_CAST")
+                val reply = with(destination) {
+                    message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                    client.send(message) as MediatorMessage<E>?
+                }
+                reply?.let {
+                    addTraceContextToRecord(
+                        Record(
+                            "",
+                            key,
+                            reply.payload,
+                            0,
+                            listOf(Pair(SYNC_RESPONSE_HEADER, "true"))
+                        ),
+                        message.properties
+                    )
+                }
+            } catch (e: CordaMessageAPIIntermittentException) {
+                if (retryConfig != null) {
+                    retryConfig.buildRetryRequest?.let { it(key, message) }?.let {
+                        newAsyncOutputs.add(it)
+                    }
+                }
+                null
             }
         }
+        return Pair(outputEvents, latestProcessorStateUpdated)
     }
 
     private fun convertToMessage(record: Record<*, *>): MediatorMessage<Any> {

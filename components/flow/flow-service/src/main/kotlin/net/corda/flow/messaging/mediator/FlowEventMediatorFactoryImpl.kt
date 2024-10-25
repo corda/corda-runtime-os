@@ -1,8 +1,10 @@
 package net.corda.flow.messaging.mediator
 
+import com.typesafe.config.ConfigValueFactory
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.external.ExternalEventRetryRequest
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
@@ -47,6 +49,7 @@ import net.corda.schema.configuration.BootConfig.TOKEN_SELECTION_WORKER_REST_END
 import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_CONSUMER_MAX_POLL_RECORDS
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE
 import org.osgi.service.component.annotations.Activate
@@ -77,6 +80,9 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         private const val CONSUMER_GROUP = "FlowEventConsumer"
         private const val MESSAGE_BUS_CLIENT = "MessageBusClient"
         private const val RPC_CLIENT = "RpcClient"
+        private const val RETRY_TOPIC_POLL_LIMIT = 5
+        private const val RETRY_TOPIC = FLOW_EVENT_TOPIC
+        private const val REQUEST_ID_HEADER = "request_id"
 
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -123,12 +129,28 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .threadName("flow-event-mediator")
         .stateManager(stateManager)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
+        .retryConfig(EventMediatorConfigBuilder.RetryConfig(RETRY_TOPIC, ::buildRetryRequest))
         .build()
 
+    private fun buildRetryRequest(key: String, syncRpcRequest: MediatorMessage<Any>) : MediatorMessage<Any> {
+        //TODO - is this ok. this header comes from tracing.
+        val requestId = syncRpcRequest.getProperty(REQUEST_ID_HEADER).toString()
+        val externalEventRetryRequest = ExternalEventRetryRequest.newBuilder()
+            .setRequestId(requestId)
+            .build()
+        val flowEvent = FlowEvent.newBuilder()
+            .setFlowId(key)
+            .setPayload(externalEventRetryRequest)
+            .build()
+        return MediatorMessage(flowEvent, syncRpcRequest.properties)
+    }
+
     private fun createMediatorConsumerFactories(messagingConfig: SmartConfig, bootConfig: SmartConfig): List<MediatorConsumerFactory> {
+
+        val retryTopicMessagingConfig = getRetryTopicConfig(messagingConfig)
         val mediatorConsumerFactory: MutableList<MediatorConsumerFactory> = mutableListOf(
             mediatorConsumerFactory(FLOW_START, messagingConfig),
-            mediatorConsumerFactory(FLOW_EVENT_TOPIC, messagingConfig)
+            mediatorConsumerFactory(FLOW_EVENT_TOPIC, retryTopicMessagingConfig)
         )
 
         val mediatorReplicas = bootConfig.getIntOrDefault(WORKER_MEDIATOR_REPLICAS_FLOW_SESSION, 1)
@@ -138,6 +160,11 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         }
 
         return mediatorConsumerFactory
+    }
+
+    private fun getRetryTopicConfig(messagingConfig: SmartConfig): SmartConfig {
+        // TODO - perhaps we should configure consumer to poll less frequently than primary topic consumers
+        return messagingConfig.withValue(KAFKA_CONSUMER_MAX_POLL_RECORDS, ConfigValueFactory.fromAnyRef(RETRY_TOPIC_POLL_LIMIT))
     }
 
     private fun mediatorConsumerFactory(
@@ -178,8 +205,9 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
                     rpcEndpoint(VERIFICATION_WORKER_REST_ENDPOINT, VERIFICATION_PATH), SYNCHRONOUS)
                 is UniquenessCheckRequestAvro -> routeTo(rpcClient,
                     rpcEndpoint(UNIQUENESS_WORKER_REST_ENDPOINT, UNIQUENESS_PATH), SYNCHRONOUS)
+                //RETRIES will appear as FlowEvents
                 is FlowEvent -> routeTo(messageBusClient,
-                    FLOW_EVENT_TOPIC, ASYNCHRONOUS)
+                    RETRY_TOPIC, ASYNCHRONOUS)
                 is String -> routeTo(messageBusClient, // Handling external messaging
                     message.properties[MSG_PROP_TOPIC] as String, ASYNCHRONOUS)
                 else -> {

@@ -28,6 +28,8 @@ import java.time.Duration
  * @property stateManager State manager.
  * @property minGroupSize Minimum size for group of records passed to task manager for processing in a single thread. Does not block if
  * group size is not met by polled record count.
+ * @property retryConfig Topic to push retry events to as well as the function to build retry events. Set to null to not retry transient
+ * errors originating from the message pattern and fail early instead.
  */
 data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val name: String,
@@ -40,6 +42,7 @@ data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val threadName: String,
     val stateManager: StateManager,
     val minGroupSize: Int,
+    val retryConfig: EventMediatorConfigBuilder.RetryConfig<K>? = null
 ) {
     /**
      * Timeout for polling consumers.

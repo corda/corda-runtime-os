@@ -1,7 +1,9 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.flow.event.external.ExternalEventRetryRequest
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.external.events.impl.ExternalEventManager
@@ -51,11 +53,11 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         postProcessPendingPlatformError(context)
 
         val outputRecords = getSessionEvents(context, now) +
-            getFlowMapperSessionCleanupEvents(context, now) +
-            getExternalEvent(context, now)
+                getFlowMapperSessionCleanupEvents(context, now) +
+                getExternalEvent(context, now)
 
         context.flowMetrics.flowEventCompleted(context.inputEvent.payload::class.java.name)
-        val metadata = getStateMetadata(context)
+        val metadata = updateFlowSessionMetadata(context)
 
         return context.copy(
             outputRecords = context.outputRecords + outputRecords,
@@ -111,7 +113,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         if (!counterpartyExists) {
             val msg =
                 "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
-                    "[${counterparty}] as the recipient doesn't exist in the network."
+                        "[${counterparty}] as the recipient doesn't exist in the network."
             sessionManager.errorSession(sessionState)
             if (doesCheckpointExist) {
                 log.debug { "$msg. Throwing FlowFatalException" }
@@ -157,24 +159,26 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
      * Check to see if any external events needs to be sent or resent.
      */
     private fun getExternalEvent(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
-        val externalEventState = context.checkpoint.externalEventState
-        return if (externalEventState == null) {
-            listOf()
-        } else {
-            val retryWindow = context.flowConfig.getLong(EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)
-            externalEventManager.getEventToSend(externalEventState, now, Duration.ofMillis(retryWindow))
-                .let { (updatedExternalEventState, record) ->
-                    context.checkpoint.externalEventState = updatedExternalEventState
-                    if (record != null) {
-                        listOf(record)
-                    } else {
-                        listOf()
-                    }
+        val externalEventState = context.checkpoint.externalEventState ?: return emptyList()
+
+        return when (context.inputEvent.payload) {
+            is ExternalEventRetryRequest -> getTransientRetryRequest(externalEventState)
+            else -> {
+                val retryWindow = Duration.ofMillis(context.flowConfig.getLong(EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW))
+                externalEventManager.getEventToSend(externalEventState, now, retryWindow).let { (updatedState, record) ->
+                    context.checkpoint.externalEventState = updatedState
+                    listOfNotNull(record)
                 }
+            }
         }
     }
 
-    private fun getStateMetadata(context: FlowEventContext<Any>): Metadata? {
+    private fun getTransientRetryRequest(externalEventState: ExternalEventState):
+            List<Record<*, *>> {
+        return listOf(externalEventManager.getRetryEvent(externalEventState))
+    }
+
+    private fun updateFlowSessionMetadata(context: FlowEventContext<Any>): Metadata? {
         val checkpoint = context.checkpoint
         // Find the earliest expiry time for any open sessions.
         val lastReceivedMessageTime = checkpoint.sessions.filter {
