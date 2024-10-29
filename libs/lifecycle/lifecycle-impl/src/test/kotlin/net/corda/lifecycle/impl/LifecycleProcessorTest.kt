@@ -1,8 +1,5 @@
 package net.corda.lifecycle.impl
 
-import java.util.concurrent.Delayed
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -31,6 +28,9 @@ import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import java.util.concurrent.Delayed
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 
 class LifecycleProcessorTest {
 
@@ -403,6 +403,33 @@ class LifecycleProcessorTest {
     }
 
     @Test
+    fun `stop event when coordinator is in ERROR state does not update coordinator status`() {
+        val state = LifecycleStateManager(5)
+        state.isRunning = true
+        state.status = LifecycleStatus.ERROR
+        var processedStopEvents = 0
+        var processedOtherEvents = 0
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val processor = LifecycleProcessor(NAME, state, registry, mock()) { event, _ ->
+            when (event) {
+                is StopEvent -> {
+                    processedStopEvents++
+                }
+                else -> {
+                    processedOtherEvents++
+                }
+            }
+        }
+        val registration1 = mock<Registration>()
+        val registration2 = mock<Registration>()
+        val coordinator = setupCoordinatorMock()
+        listOf(registration1, registration2).forEach { state.registrations.add(it) }
+        state.postEvent(StopEvent())
+        process(processor, coordinator = coordinator)
+        assertEquals(LifecycleStatus.ERROR, state.status)
+    }
+
+    @Test
     fun `start event causes a request to notify about all current tracked registrations`() {
         val state = LifecycleStateManager(5)
         var processedStartEvents = 0
@@ -492,7 +519,7 @@ class LifecycleProcessorTest {
     }
 
     @Test
-    fun `starting from an errored state causes the status to be set back to down`() {
+    fun `starting from an errored state leaves the status in ERROR`() {
         val state = LifecycleStateManager(5)
         var processedStartEvents = 0
         val registry = mock<LifecycleRegistryCoordinatorAccess>()
@@ -509,9 +536,7 @@ class LifecycleProcessorTest {
         state.registrations.add(registration)
         state.postEvent(StartEvent())
         process(processor, coordinator = coordinator)
-        assertEquals(LifecycleStatus.DOWN, state.status)
-        verify(registration).updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN)
-        verify(registry).updateStatus(NAME, LifecycleStatus.DOWN, STARTED_REASON)
+        assertEquals(LifecycleStatus.ERROR, state.status)
     }
 
     @Test
