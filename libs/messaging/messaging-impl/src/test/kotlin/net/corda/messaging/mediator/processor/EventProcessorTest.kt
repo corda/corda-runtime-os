@@ -10,6 +10,7 @@ import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
+import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
@@ -34,6 +35,7 @@ import java.util.UUID
 @Execution(ExecutionMode.SAME_THREAD)
 class EventProcessorTest {
     private lateinit var eventMediatorConfig: EventMediatorConfig<String, String, String>
+    private lateinit var eventMediatorRetryConfig: EventMediatorConfig<String, String, String>
     private lateinit var stateManagerHelper: StateManagerHelper<String>
     private lateinit var client: MessagingClient
     private lateinit var messageRouter: MessageRouter
@@ -65,6 +67,8 @@ class EventProcessorTest {
             } else RoutingDestination(client, "endpoint", RoutingDestination.Type.ASYNCHRONOUS)
         }
         eventMediatorConfig = buildTestConfig()
+        val retryConfig = EventMediatorConfigBuilder.RetryConfig("retry.topic", buildRetryRequest)
+        eventMediatorRetryConfig = buildTestConfig(retryConfig)
 
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
             Response(
@@ -181,7 +185,7 @@ class EventProcessorTest {
     }
 
     @Test
-    fun `when sync processing fails with a transient error, a transient state change signal is sent`() {
+    fun `when sync processing fails with a transient error, retry is OFF, a NOOP state change signal is set and no retry event is sent`() {
         val mockedState = mock<State>()
         val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), null))
 
@@ -201,10 +205,34 @@ class EventProcessorTest {
         val output = outputMap["key"]
         assertEquals(emptyList<MediatorMessage<Any>>(), output?.asyncOutputs)
         assertThat(output?.stateChangeAndOperation?.outputState).isEqualTo(null)
-        assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Transient::class.java)
+        assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Noop::class.java)
     }
 
-    private fun buildTestConfig() = EventMediatorConfig(
+    @Test
+    fun `when sync processing fails with a transient error, retry is ON, a NOOP state change signal is set and a retry event is sent`() {
+        val mockedState = mock<State>()
+        val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), null))
+
+        whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
+        whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
+            Response<State>(
+                null,
+                listOf(
+                    Record("", "key", syncMessage)
+                )
+            )
+        }
+        whenever(stateManagerHelper.failStateProcessing(any(), eq(null), any())).thenReturn(mockedState)
+        eventProcessor = EventProcessor(eventMediatorRetryConfig, stateManagerHelper, messageRouter, mediatorInputService)
+        val outputMap = eventProcessor.processEvents(input)
+
+        val output = outputMap["key"]
+        assertEquals(1, output?.asyncOutputs?.size)
+        assertThat(output?.stateChangeAndOperation?.outputState).isEqualTo(null)
+        assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Noop::class.java)
+    }
+
+    private fun buildTestConfig(retryConfig: EventMediatorConfigBuilder.RetryConfig<String>? = null) = EventMediatorConfig(
         "",
         SmartConfigImpl.empty(),
         emptyList(),
@@ -214,6 +242,11 @@ class EventProcessorTest {
         1,
         "",
         mock(),
-        20
+        20,
+        retryConfig
     )
+
+    private val buildRetryRequest: ((String, MediatorMessage<Any>) -> MediatorMessage<Any>) = { _, message ->
+        message
+    }
 }
