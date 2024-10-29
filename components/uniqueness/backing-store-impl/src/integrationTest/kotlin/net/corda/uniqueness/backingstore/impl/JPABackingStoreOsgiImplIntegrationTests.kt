@@ -14,7 +14,6 @@ import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
-import net.corda.orm.impl.PersistenceExceptionCategorizerImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiImpl
@@ -161,7 +160,7 @@ class JPABackingStoreOsgiImplIntegrationTests {
         return JPABackingStoreOsgiImpl(
             JpaEntitiesRegistryImpl(),
             dbConnectionManager,
-            PersistenceExceptionCategorizerImpl(),
+//            PersistenceExceptionCategorizerImpl(),
             virtualNodeInfoReadService,
             JPABackingStoreOsgiMetricsFactory(),
             secureHashFactory

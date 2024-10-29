@@ -75,7 +75,7 @@ class JPABackingStoreOsgiImplTest {
     private val backingStore = JPABackingStoreOsgiImpl(
         jpaEntitiesRegistry,
         dbConnectionManager,
-        persistenceExceptionCategorizer,
+//        persistenceExceptionCategorizer,
         virtualNodeInfoReadService,
         metricsFactory,
         secureHashFactory

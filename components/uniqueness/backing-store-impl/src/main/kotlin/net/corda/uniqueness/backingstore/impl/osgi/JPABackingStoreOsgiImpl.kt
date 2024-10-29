@@ -6,12 +6,13 @@ import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
 import net.corda.ledger.libs.uniqueness.backingstore.impl.JPABackingStoreEntities
-import net.corda.ledger.libs.uniqueness.backingstore.impl.JPABackingStoreImpl
+import net.corda.ledger.libs.uniqueness.backingstore.impl.SqlBackingStoreImpl
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.orm.PersistenceExceptionCategorizer
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.hibernate.Session
+import org.hibernate.internal.SessionImpl
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -26,8 +27,8 @@ class JPABackingStoreOsgiImpl(delegate: BackingStore, jpaEntitiesRegistry: JpaEn
         jpaEntitiesRegistry: JpaEntitiesRegistry,
         @Reference(service = DbConnectionManager::class)
         dbConnectionManager: DbConnectionManager,
-        @Reference(service = PersistenceExceptionCategorizer::class)
-        persistenceExceptionCategorizer: PersistenceExceptionCategorizer,
+//        @Reference(service = PersistenceExceptionCategorizer::class)
+//        persistenceExceptionCategorizer: PersistenceExceptionCategorizer,
         @Reference(service = VirtualNodeInfoReadService::class)
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
         @Reference(service = BackingStoreMetricsFactory::class)
@@ -35,10 +36,18 @@ class JPABackingStoreOsgiImpl(delegate: BackingStore, jpaEntitiesRegistry: JpaEn
         @Reference(service = UniquenessSecureHashFactory::class)
         uniquenessSecureHashFactory: UniquenessSecureHashFactory
     ) : this(
-        JPABackingStoreImpl(
-            getEntityManagerFactory = { getEntityManagerFactory(virtualNodeInfoReadService, dbConnectionManager, jpaEntitiesRegistry, it) },
+//        JPABackingStoreImpl(
+//            getEntityManagerFactory = { getEntityManagerFactory(virtualNodeInfoReadService, dbConnectionManager, jpaEntitiesRegistry, it) },
+//            backingStoreMetricsFactory = backingStoreMetricsFactory,
+//            persistenceExceptionCategorizer = persistenceExceptionCategorizer,
+//            uniquenessSecureHashFactory = uniquenessSecureHashFactory
+//        ),
+        SqlBackingStoreImpl(
+            connectionFactory = {
+                val emf = getEntityManagerFactory(virtualNodeInfoReadService, dbConnectionManager, jpaEntitiesRegistry, it)
+                (emf.createEntityManager().unwrap(Session::class.java) as SessionImpl).connection()
+            },
             backingStoreMetricsFactory = backingStoreMetricsFactory,
-            persistenceExceptionCategorizer = persistenceExceptionCategorizer,
             uniquenessSecureHashFactory = uniquenessSecureHashFactory
         ),
         jpaEntitiesRegistry
