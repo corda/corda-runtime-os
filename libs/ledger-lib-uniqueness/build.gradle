@@ -34,6 +34,15 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:uniqueness:backing-store-fake")
     testImplementation project(":testing:uniqueness:uniqueness-utilities")
+
+    integrationTestImplementation 'net.corda:corda-db-schema'
+    integrationTestImplementation project(':libs:db:db-core')
+    integrationTestImplementation project(':libs:db:db-admin')
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':testing:db-testkit')
+
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 }
 
 tasks.named('jar', Jar) {

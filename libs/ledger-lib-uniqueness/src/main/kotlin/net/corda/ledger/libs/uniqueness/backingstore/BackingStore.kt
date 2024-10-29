@@ -127,3 +127,5 @@ interface BackingStore {
         }
     }
 }
+
+class ConsumeStateFailedException(message: String) : IllegalStateException(message)

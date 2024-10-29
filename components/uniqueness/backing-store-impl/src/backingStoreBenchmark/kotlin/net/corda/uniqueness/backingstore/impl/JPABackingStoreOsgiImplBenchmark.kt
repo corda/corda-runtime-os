@@ -155,7 +155,7 @@ class JPABackingStoreOsgiImplBenchmark {
             mock(),
             jpaEntitiesRegistry,
             dbConnectionManager,
-            JPABackingStoreOsgiImpl(jpaEntitiesRegistry, dbConnectionManager, mock(), virtualNodeInfoReadService, metrics, secureHashFactory)
+            JPABackingStoreOsgiImpl(jpaEntitiesRegistry, dbConnectionManager, virtualNodeInfoReadService, metrics, secureHashFactory)
         ).apply {
             eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
         }
