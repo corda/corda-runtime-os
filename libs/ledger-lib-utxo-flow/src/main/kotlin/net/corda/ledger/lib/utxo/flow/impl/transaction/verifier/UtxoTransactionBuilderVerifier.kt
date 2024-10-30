@@ -1,7 +1,12 @@
 package net.corda.ledger.lib.utxo.flow.impl.transaction.verifier
 
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
-import net.corda.ledger.utxo.transaction.verifier.UtxoTransactionVerifier
+import net.corda.ledger.libs.verification.UtxoTransactionVerifier
+import net.corda.ledger.libs.verification.impl.VerificationUtils.verifyCommands
+import net.corda.ledger.libs.verification.impl.VerificationUtils.verifyInputsAndOutputs
+import net.corda.ledger.libs.verification.impl.VerificationUtils.verifyNoDuplicateInputsOrReferences
+import net.corda.ledger.libs.verification.impl.VerificationUtils.verifyNoInputAndReferenceOverlap
+import net.corda.ledger.libs.verification.impl.VerificationUtils.verifySignatories
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 
 /**
@@ -11,11 +16,13 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
  */
 class UtxoTransactionBuilderVerifier(
     private val transactionBuilder: UtxoTransactionBuilderInternal
-) :
-    UtxoTransactionVerifier() {
-    override val subjectClass: String = UtxoTransactionBuilder::class.simpleName!!
+) : UtxoTransactionVerifier {
 
-    fun verify() {
+    private companion object {
+        val subjectClass: String = UtxoTransactionBuilder::class.simpleName!!
+    }
+
+    override fun verify() {
         /**
          * These checks are unique to [UtxoTransactionBuilder].
          * The related fields are not nullable or do not exist in [UtxoLedgerTransaction].

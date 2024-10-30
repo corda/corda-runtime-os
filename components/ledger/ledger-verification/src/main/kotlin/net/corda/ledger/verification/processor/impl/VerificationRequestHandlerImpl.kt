@@ -1,12 +1,14 @@
 package net.corda.ledger.verification.processor.impl
 
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.libs.verification.impl.UtxoLedgerUtxoTransactionVerifierImpl
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationResult
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
-import net.corda.ledger.utxo.transaction.verifier.UtxoLedgerTransactionVerifier
+import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
+import net.corda.ledger.utxo.transaction.verifier.verifyContracts
 import net.corda.ledger.verification.metrics.VerificationMetricsFactory
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.impl.getSerializationService
@@ -40,12 +42,18 @@ class VerificationRequestHandlerImpl(private val responseFactory: ExternalEventR
         }
 
         return try {
-            UtxoLedgerTransactionVerifier(
+            UtxoLedgerUtxoTransactionVerifierImpl(
                 transactionFactory,
-                transaction,
-                injectorService,
-                VerificationMetricsFactory(sandbox.virtualNodeContext.holdingIdentity),
-            ).verify()
+                transaction
+            ) { utxoLedgerTransaction ->
+                verifyMetadata(utxoLedgerTransaction.metadata)
+                verifyContracts(
+                    transactionFactory,
+                    utxoLedgerTransaction,
+                    injectorService,
+                    VerificationMetricsFactory(sandbox.virtualNodeContext.holdingIdentity)
+                )
+            }.verify()
 
             responseFactory.success(
                 request.flowExternalEventContext,
