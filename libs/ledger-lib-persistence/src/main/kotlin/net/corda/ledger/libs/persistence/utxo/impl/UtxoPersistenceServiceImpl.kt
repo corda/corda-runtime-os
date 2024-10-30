@@ -378,7 +378,9 @@ class UtxoPersistenceServiceImpl(
                 )
             }
 
-            println("*********** persistTransactionSources $transactionIdString - ${consumedTransactionSources + referenceTransactionSources}")
+            println(
+                "*********** persistTransactionSources $transactionIdString - ${consumedTransactionSources + referenceTransactionSources}"
+            )
             repository.persistTransactionSources(
                 conn,
                 transactionIdString,

@@ -58,7 +58,7 @@ class NamedParamStatement(
     }
 
     fun executeUpdate(): Int {
-        log.debug {"Execute Update: $statement" }
+        log.debug { "Execute Update: $statement" }
 
         return statement.executeUpdate()
     }
