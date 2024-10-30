@@ -2,6 +2,7 @@ package net.corda.ledger.libs.persistence.util
 
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.ledger.libs.persistence.utxo.impl.UtxoPersistenceServiceImpl
+import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Connection
@@ -27,7 +28,7 @@ class NamedParamStatement(
     }
 
     fun executeQuery(): ResultSet {
-        if (log.isDebugEnabled) log.debug("Execute Query: $statement")
+        log.debug { "Execute Query: $statement" }
         return statement.executeQuery()
     }
 
@@ -57,7 +58,7 @@ class NamedParamStatement(
     }
 
     fun executeUpdate(): Int {
-        if (log.isDebugEnabled) log.debug("Execute Update: $statement")
+        log.debug {"Execute Update: $statement" }
 
         return statement.executeUpdate()
     }

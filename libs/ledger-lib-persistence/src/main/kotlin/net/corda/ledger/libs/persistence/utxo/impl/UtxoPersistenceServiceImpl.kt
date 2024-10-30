@@ -8,6 +8,7 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.db.core.utils.transaction
+import net.corda.db.core.utils.transactionWithLogging
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.parseMetadata
@@ -243,20 +244,30 @@ class UtxoPersistenceServiceImpl(
         utxoTokenMap: Map<StateRef, UtxoToken>,
     ): Instant {
         return persistTransaction(transaction, utxoTokenMap) { block ->
-            connectionFactory().transaction { conn ->
+            connectionFactory().transactionWithLogging("persistTransaction") { conn ->
                 block(conn)
             }
         }
     }
 
     override fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): String {
-        connectionFactory().transaction { conn ->
+        return connectionFactory().transactionWithLogging("persistTransactionIfDoesNotExist") { conn ->
             val transactionIdString = transaction.id.toString()
-            val status = repository.findSignedTransactionStatus(conn, transactionIdString) ?: run {
-                persistTransaction(transaction, emptyMap()) { block -> block(conn) }
-                return ""
+            val status = repository.findSignedTransactionStatus(conn, transactionIdString) ?: let {
+                println("[persistTransactionIfDoesNotExist] *********** persistTransaction $transactionIdString as not found")
+                val rs = conn.prepareStatement("select current_schema").executeQuery()
+                if (rs.next()) {
+                    println("[persistTransactionIfDoesNotExist] *********** CURRENT SCHEMA: ${rs.getString(1)}")
+                }
+                persistTransaction(transaction, emptyMap()) { block ->
+                    println("**************** BEFORE BLOCK")
+                    block(conn)
+                    println("**************** AFTER BLOCK")
+                }
+                ""
             }
-            return status
+            println("************ persistTransactionIfDoesNotExist tx block complete")
+            status
         }
     }
 
@@ -293,7 +304,12 @@ class UtxoPersistenceServiceImpl(
         }
 
         optionalTransactionBlock { conn ->
-
+            println("[persistTransaction] ************* ${conn.metaData}/${conn.clientInfo}")
+            val rs = conn.prepareStatement("select current_schema").executeQuery()
+            if (rs.next()) {
+                println("[persistTransaction] *********** CURRENT SCHEMA: ${rs.getString(1)}")
+            }
+            println("*********** persist metadata $metadataHash for tx $transactionIdString")
             repository.persistTransactionMetadata(
                 conn,
                 metadataHash,
@@ -304,6 +320,7 @@ class UtxoPersistenceServiceImpl(
 
             val inserted =
                 if (transaction.status != TransactionStatus.UNVERIFIED) {
+                    println("*********** persistTransaction $transactionIdString")
                     /**
                      * Insert the Transaction
                      * The record will only be inserted when:
@@ -321,6 +338,7 @@ class UtxoPersistenceServiceImpl(
                         metadataHash,
                     )
                 } else {
+                    println("*********** persistUnverifiedTransaction $transactionIdString")
                     // ignore if the incoming transaction is an unverified stx
                     repository.persistUnverifiedTransaction(
                         conn,
@@ -332,7 +350,9 @@ class UtxoPersistenceServiceImpl(
                     )
                     null
                 }
+            println("*********** tx persisted $transactionIdString (inserted=$inserted)")
 
+            println("*********** persistTransactionComponents $transactionIdString")
             repository.persistTransactionComponents(
                 conn,
                 transactionIdString,
@@ -358,6 +378,7 @@ class UtxoPersistenceServiceImpl(
                 )
             }
 
+            println("*********** persistTransactionSources $transactionIdString - ${consumedTransactionSources + referenceTransactionSources}")
             repository.persistTransactionSources(
                 conn,
                 transactionIdString,
@@ -375,6 +396,7 @@ class UtxoPersistenceServiceImpl(
                     visibleTransactionOutputs.map { output -> output.stateIndex }
                 )
 
+                println("*********** persistVisibleTransactionOutputs $transactionIdString")
                 // insert outputs to be able to mark spent outputs as consumed
                 repository.persistVisibleTransactionOutputs(
                     conn,
@@ -384,14 +406,17 @@ class UtxoPersistenceServiceImpl(
                 )
 
                 if (indexes.isNotEmpty()) {
+                    println("*********** markTransactionVisibleStatesConsumed $transactionIdString")
                     repository.markTransactionVisibleStatesConsumed(
                         conn,
                         indexes.map { index -> StateRef(transaction.id, index) },
                         nowUtc
                     )
                 }
+                println("*********** updateTransactionToVerified $transactionIdString")
                 repository.updateTransactionToVerified(conn, transactionIdString, nowUtc)
             } else {
+                println("*********** persistVisibleTransactionOutputs $transactionIdString")
                 // outputs of stx UNVERIFIED would be empty
                 repository.persistVisibleTransactionOutputs(
                     conn,
@@ -405,6 +430,7 @@ class UtxoPersistenceServiceImpl(
             if (transaction.status == TransactionStatus.VERIFIED) {
                 val inputStateRefs = transaction.getConsumedStateRefs()
                 if (inputStateRefs.isNotEmpty()) {
+                    println("*********** markTransactionVisibleStatesConsumed $transactionIdString")
                     repository.markTransactionVisibleStatesConsumed(
                         conn,
                         inputStateRefs,
@@ -413,9 +439,12 @@ class UtxoPersistenceServiceImpl(
                 }
             }
 
+            println("*********** persistTransactionSignatures $transactionIdString")
             // Insert the Transactions signatures
             repository.persistTransactionSignatures(conn, transactionSignatures, nowUtc)
         }
+
+        println("*********** persistTransaction COMPLETE $transactionIdString")
 
         return nowUtc
     }
@@ -610,6 +639,12 @@ class UtxoPersistenceServiceImpl(
         val metadataHash = sandboxDigestService.hash(metadataBytes, DigestAlgorithmName.SHA2_256)
 
         if (seenMetadata.add(metadataHash)) {
+            println("[persistTransactionMetadataIfNotAlreadySeen] ************* ${connection.metaData}")
+            val rs = connection.prepareStatement("select current_schema").executeQuery()
+            if (rs.next()) {
+                println("[persistTransactionMetadataIfNotAlreadySeen] *********** CURRENT SCHEMA: ${rs.getString(1)}")
+            }
+            println("*********** persist metadata $metadataHash")
             repository.persistTransactionMetadata(
                 connection,
                 metadataHash.toString(),

@@ -25,3 +25,21 @@ inline fun <R> Connection.transaction(block: (Connection) -> R): R {
         close()
     }
 }
+
+inline fun <R> Connection.transactionWithLogging(name: String, block: (Connection) -> R): R {
+    println("********** STARTING TX $name")
+    autoCommit = false
+    return try {
+        block(this).also {
+            println("********** COMMITING TX $name")
+            commit()
+            println("********** TX $name COMMITTED")
+        }
+    } catch (e: Exception) {
+        rollback()
+        println("********** TX $name ROLLED BACK: $e")
+        throw e
+    } finally {
+        close()
+    }
+}
