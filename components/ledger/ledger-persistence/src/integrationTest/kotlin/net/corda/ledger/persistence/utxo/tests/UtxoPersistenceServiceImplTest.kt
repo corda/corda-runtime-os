@@ -77,6 +77,8 @@ import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.hibernate.Session
+import org.hibernate.internal.SessionImpl
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeAll
@@ -98,12 +100,14 @@ import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.PublicKey
 import java.security.spec.ECGenParameterSpec
+import java.sql.Connection
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Random
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
@@ -180,7 +184,7 @@ class UtxoPersistenceServiceImplTest {
             filteredTransactionFactory = ctx.getSandboxSingletonService()
 
             persistenceService = UtxoPersistenceServiceImpl(
-                entityManagerFactory,
+                { getConnection(entityManagerFactory.createEntityManager()) },
                 repository,
                 serializationService,
                 digestService,
@@ -293,13 +297,17 @@ class UtxoPersistenceServiceImplTest {
         assertThat(retval).isEqualTo(expectedRetval)
     }
 
+    private fun getConnection(em: EntityManager): Connection {
+        return (em.unwrap(Session::class.java) as SessionImpl).connection()
+    }
+
     @Test
     fun `find unconsumed visible transaction states`() {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction1 = createSignedTransaction()
         val transaction2 = createSignedTransaction()
-        entityManagerFactory.transaction { em ->
-
+        entityManagerFactory.createEntityManager().transaction { em ->
+            val conn = getConnection(em)
             em.createNativeQuery("DELETE FROM {h-schema}utxo_visible_transaction_output").executeUpdate()
 
             createTransactionEntity(entityFactory, transaction1, status = VERIFIED).also { em.persist(it) }
@@ -334,9 +342,9 @@ class UtxoPersistenceServiceImplTest {
                 )
             )
 
-            repository.persistVisibleTransactionOutputs(em, transaction1.id.toString(), Instant.now(), outputs)
-            repository.persistVisibleTransactionOutputs(em, transaction2.id.toString(), Instant.now(), outputs2)
-            repository.markTransactionVisibleStatesConsumed(em, listOf(StateRef(transaction2.id, 1)), Instant.now())
+            repository.persistVisibleTransactionOutputs(conn, transaction1.id.toString(), Instant.now(), outputs)
+            repository.persistVisibleTransactionOutputs(conn, transaction2.id.toString(), Instant.now(), outputs2)
+            repository.markTransactionVisibleStatesConsumed(conn, listOf(StateRef(transaction2.id, 1)), Instant.now())
         }
 
         val stateClass = TestContractState2::class.java
@@ -1302,7 +1310,11 @@ class UtxoPersistenceServiceImplTest {
 
             val visibleOutputIndexes = listOf(0)
             // prove that the output of filtered tx with index 0 is used as an input
-            val indexes = repository.findConsumedTransactionSourcesForTransaction(em, transactionIdString, visibleOutputIndexes)
+            val indexes = repository.findConsumedTransactionSourcesForTransaction(
+                getConnection(em),
+                transactionIdString,
+                visibleOutputIndexes
+            )
             assertThat(indexes).contains(0)
         }
 
@@ -1404,7 +1416,7 @@ class UtxoPersistenceServiceImplTest {
 
             val visibleOutputIndexes = listOf(0, 1)
             // prove that the output of unverified tx is not consumed in other tx
-            val indexes = repository.findConsumedTransactionSourcesForTransaction(em, txAId, visibleOutputIndexes)
+            val indexes = repository.findConsumedTransactionSourcesForTransaction(getConnection(em), txAId, visibleOutputIndexes)
             assertThat(indexes).isEmpty()
         }
 
@@ -1435,7 +1447,11 @@ class UtxoPersistenceServiceImplTest {
 
             val visibleOutputIndexes = listOf(0)
             // prove that the output of filtered tx with index 0 is used as an input
-            val indexes = repository.findConsumedTransactionSourcesForTransaction(em, transactionIdString, visibleOutputIndexes)
+            val indexes = repository.findConsumedTransactionSourcesForTransaction(
+                getConnection(em),
+                transactionIdString,
+                visibleOutputIndexes
+            )
             assertThat(indexes).contains(0)
         }
 

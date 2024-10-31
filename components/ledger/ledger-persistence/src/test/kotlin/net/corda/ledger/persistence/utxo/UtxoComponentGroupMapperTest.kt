@@ -19,6 +19,7 @@ class UtxoComponentGroupMapperTest {
     private fun mockTuple(values: List<Any>) =
         mock<Tuple>().apply {
             whenever(this.get(anyInt())).thenAnswer { invocation -> values[invocation.arguments[0] as Int] }
+            whenever(this.toArray()).thenAnswer { values.toTypedArray() }
         }
 
     @Test
