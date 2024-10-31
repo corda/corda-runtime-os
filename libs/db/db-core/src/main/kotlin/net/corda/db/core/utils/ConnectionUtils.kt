@@ -1,11 +1,14 @@
 package net.corda.db.core.utils
 
+import org.slf4j.LoggerFactory
 import java.sql.Connection
+
+private val log = LoggerFactory.getLogger("ConnectionUtils")
 
 /**
  * Executes [block] in a transaction using the [Connection].
  *
- * Commits transaction if no exceptions were thrown by [block]. Otherwise rolls back the transaction.
+ * Commits transaction if no exceptions were thrown by [block]. Otherwise, rolls back the transaction.
  *
  * Finally closes the connection after committing or rolling back the changes.
  *
@@ -14,30 +17,21 @@ import java.sql.Connection
  *
  * @return The result of executing [block].
  */
-inline fun <R> Connection.transaction(block: (Connection) -> R): R {
-    autoCommit = false
-    return try {
-        block(this).also { commit() }
-    } catch (e: Exception) {
-        rollback()
-        throw e
-    } finally {
-        close()
-    }
+fun <R> Connection.transaction(block: (Connection) -> R): R {
+    return transactionWithLogging(null, block)
 }
 
-inline fun <R> Connection.transactionWithLogging(name: String, block: (Connection) -> R): R {
-    println("********** STARTING TX $name")
+fun <R> Connection.transactionWithLogging(name: String?, block: (Connection) -> R): R {
+    if(null != name && log.isTraceEnabled) log.trace("Start transaction $name")
     autoCommit = false
     return try {
         block(this).also {
-            println("********** COMMITING TX $name")
             commit()
-            println("********** TX $name COMMITTED")
+            if(null != name && log.isTraceEnabled) log.trace("Transaction $name committed")
         }
     } catch (e: Exception) {
         rollback()
-        println("********** TX $name ROLLED BACK: $e")
+        if(null != name && log.isWarnEnabled) log.error("Transaction $name rolled back")
         throw e
     } finally {
         close()
