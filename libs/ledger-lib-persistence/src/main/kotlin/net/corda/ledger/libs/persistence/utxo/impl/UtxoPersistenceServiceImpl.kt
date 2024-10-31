@@ -254,11 +254,11 @@ class UtxoPersistenceServiceImpl(
         return connectionFactory().transactionWithLogging("persistTransactionIfDoesNotExist") { conn ->
             val transactionIdString = transaction.id.toString()
             val status = repository.findSignedTransactionStatus(conn, transactionIdString) ?: let {
-                println("[persistTransactionIfDoesNotExist] *********** persistTransaction $transactionIdString as not found")
-                val rs = conn.prepareStatement("select current_schema").executeQuery()
-                if (rs.next()) {
-                    println("[persistTransactionIfDoesNotExist] *********** CURRENT SCHEMA: ${rs.getString(1)}")
-                }
+//                println("[persistTransactionIfDoesNotExist] *********** persistTransaction $transactionIdString as not found")
+//                val rs = conn.prepareStatement("select current_schema").executeQuery()
+//                if (rs.next()) {
+//                    println("[persistTransactionIfDoesNotExist] *********** CURRENT SCHEMA: ${rs.getString(1)}")
+//                }
                 persistTransaction(transaction, emptyMap()) { block ->
                     println("**************** BEFORE BLOCK")
                     block(conn)
@@ -305,10 +305,10 @@ class UtxoPersistenceServiceImpl(
 
         optionalTransactionBlock { conn ->
             println("[persistTransaction] ************* ${conn.metaData}/${conn.clientInfo}")
-            val rs = conn.prepareStatement("select current_schema").executeQuery()
-            if (rs.next()) {
-                println("[persistTransaction] *********** CURRENT SCHEMA: ${rs.getString(1)}")
-            }
+//            val rs = conn.prepareStatement("select current_schema").executeQuery()
+//            if (rs.next()) {
+//                println("[persistTransaction] *********** CURRENT SCHEMA: ${rs.getString(1)}")
+//            }
             println("*********** persist metadata $metadataHash for tx $transactionIdString")
             repository.persistTransactionMetadata(
                 conn,
@@ -642,10 +642,10 @@ class UtxoPersistenceServiceImpl(
 
         if (seenMetadata.add(metadataHash)) {
             println("[persistTransactionMetadataIfNotAlreadySeen] ************* ${connection.metaData}")
-            val rs = connection.prepareStatement("select current_schema").executeQuery()
-            if (rs.next()) {
-                println("[persistTransactionMetadataIfNotAlreadySeen] *********** CURRENT SCHEMA: ${rs.getString(1)}")
-            }
+//            val rs = connection.prepareStatement("select current_schema").executeQuery()
+//            if (rs.next()) {
+//                println("[persistTransactionMetadataIfNotAlreadySeen] *********** CURRENT SCHEMA: ${rs.getString(1)}")
+//            }
             println("*********** persist metadata $metadataHash")
             repository.persistTransactionMetadata(
                 connection,
