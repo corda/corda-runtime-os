@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.transaction.verifier
 import io.micrometer.core.instrument.Timer
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.libs.verification.impl.UtxoLedgerUtxoTransactionVerifierImpl
+import net.corda.ledger.libs.verification.impl.UtxoLedgerTransactionVerifierImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.testkit.notaryX500Name
@@ -51,7 +51,7 @@ class UtxoLedgerTransactionContractVerificationTest {
         on { getContractVerificationContractCountMetric() } doReturn mock()
         on { getContractVerificationContractTime(any()) } doReturn timer
     }
-    private val verifier = UtxoLedgerUtxoTransactionVerifierImpl({ transaction }, transaction) {
+    private val verifier = UtxoLedgerTransactionVerifierImpl({ transaction }, transaction) {
         verifyContracts({ transaction }, transaction, injectionService, metricFactory)
     }
 

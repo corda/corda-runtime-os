@@ -8,7 +8,7 @@ import net.corda.ledger.libs.verification.impl.VerificationUtils.verifyNoInputAn
 import net.corda.ledger.libs.verification.impl.VerificationUtils.verifySignatories
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
-class UtxoLedgerUtxoTransactionVerifierImpl(
+class UtxoLedgerTransactionVerifierImpl(
     private val transactionFactory: () -> UtxoLedgerTransaction,
     private val transaction: UtxoLedgerTransaction = transactionFactory.invoke(),
     private val verify: (UtxoLedgerTransaction) -> Unit,

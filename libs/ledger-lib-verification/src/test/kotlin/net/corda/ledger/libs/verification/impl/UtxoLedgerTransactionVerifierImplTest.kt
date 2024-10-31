@@ -19,7 +19,7 @@ import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.spec.ECGenParameterSpec
 
-class UtxoLedgerUtxoTransactionVerifierImplTest {
+class UtxoLedgerTransactionVerifierImplTest {
 
     private val transaction = mock<UtxoLedgerTransaction>()
     private val signatory = mock<PublicKey>()
@@ -30,7 +30,7 @@ class UtxoLedgerUtxoTransactionVerifierImplTest {
     private val referenceTransactionState = mock<TransactionState<ContractState>>()
     private val metadata = mock<TransactionMetadata>()
 
-    private val verifier = UtxoLedgerUtxoTransactionVerifierImpl({ transaction }, transaction) {
+    private val verifier = UtxoLedgerTransactionVerifierImpl({ transaction }, transaction) {
         // NO-OP contract verification
     }
 
