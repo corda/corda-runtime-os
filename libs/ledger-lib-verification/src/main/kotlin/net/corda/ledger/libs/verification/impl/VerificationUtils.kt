@@ -9,7 +9,7 @@ object VerificationUtils {
     fun verifySignatories(signatories: List<PublicKey>) {
         check(signatories.isNotEmpty()) {
             "At least one signatory signing key must be applied to the current transaction" +
-                    " in order to create a signed transaction."
+                " in order to create a signed transaction."
         }
     }
 
@@ -36,7 +36,7 @@ object VerificationUtils {
         val intersection = inputStateRefs intersect referenceStateRefs.toSet()
         check(intersection.isEmpty()) {
             "A state cannot be both an input and a reference input in the same transaction. Offending " +
-                    "states: $intersection"
+                "states: $intersection"
         }
     }
 

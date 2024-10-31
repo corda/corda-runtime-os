@@ -46,11 +46,9 @@ class UtxoLedgerUtxoTransactionVerifierImplTest {
         val anotherPublicKeyExample: PublicKey = kpg
             .generateKeyPair().public
     }
+
     @BeforeEach
     fun beforeEach() {
-        //whenever(metadata.getLedgerModel()).thenReturn(UtxoLedgerTransactionImpl::class.java.name)
-        //whenever(metadata.getTransactionSubtype()).thenReturn("GENERAL")
-
         whenever(transaction.id).thenReturn(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)))
         whenever(transaction.signatories).thenReturn(listOf(signatory))
         whenever(transaction.inputStateRefs).thenReturn(listOf(stateRef))

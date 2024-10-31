@@ -12,7 +12,7 @@ class UtxoLedgerUtxoTransactionVerifierImpl(
     private val transactionFactory: () -> UtxoLedgerTransaction,
     private val transaction: UtxoLedgerTransaction = transactionFactory.invoke(),
     private val verify: (UtxoLedgerTransaction) -> Unit,
-): UtxoTransactionVerifier {
+) : UtxoTransactionVerifier {
 
     override fun verify() {
         verifySignatories(transaction.signatories)
