@@ -7,21 +7,23 @@ class DefaultSqlQueryProvider : SqlQueryProvider {
             FROM uniqueness_state_details
             WHERE (issue_tx_id_algo, issue_tx_id, issue_tx_output_idx) = 
             ANY(
-                SELECT UNNEST(? :: text[]),
-                SELECT UNNEST(? :: VARBINARY[]),
-                SELECT UNNEST(? :: int[])
+                SELECT 
+                    UNNEST(? :: text[]),
+                    UNNEST(? :: bytea[]),
+                    UNNEST(? :: int[])
             )
         """.trimIndent()
     }
 
     override fun findTransactionDetailByKeyQuery(): String {
         return """
-            SELECT tx_id_algo, tx_id, commit_timestamp, result
+            SELECT tx_id_algo, tx_id, result, commit_timestamp
             FROM uniqueness_tx_details
             WHERE (tx_id_algo, tx_id) =
             ANY(
-                SELECT UNNEST(? :: text[]),
-                SELECT UNNEST(? :: VARBINARY[])
+                SELECT 
+                    UNNEST(? :: text[]),
+                    UNNEST(? :: bytea[])
             )
         """.trimIndent()
     }

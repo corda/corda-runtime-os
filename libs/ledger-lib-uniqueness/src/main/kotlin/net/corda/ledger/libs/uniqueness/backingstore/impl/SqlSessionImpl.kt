@@ -21,7 +21,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.time.Duration
-import java.time.Instant
 
 class SqlSessionImpl(
     private val holdingIdentity: UniquenessHoldingIdentity,
@@ -209,7 +208,6 @@ class SqlSessionImpl(
 
         val results = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
 
-        // TODO - extract to integration test in isolation
         connection.prepareStatement(sqlQueryProvider.findTransactionDetailByKeyQuery()).use { stmt ->
             stmt.setObject(1, txPks.map { it.txIdAlgo }.toTypedArray())
             stmt.setObject(2, txPks.map { it.txId }.toTypedArray())
@@ -219,7 +217,7 @@ class SqlSessionImpl(
                     val txIdAlgo = rs.getString(1)
                     val txId = rs.getBytes(2)
                     val txResult = rs.getString(3).first()
-                    val txCommitTimestamp = rs.getObject(4, Instant::class.java)
+                    val txCommitTimestamp = rs.getTimestamp(4).toInstant()
 
                     val result = when (txResult) {
                         RESULT_ACCEPTED_REPRESENTATION -> {
