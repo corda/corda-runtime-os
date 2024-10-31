@@ -8,10 +8,11 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
 import net.corda.ledger.libs.uniqueness.backingstore.impl.SqlSessionImpl
-import net.corda.ledger.libs.uniqueness.backingstore.impl.SqlTransactionOpsImpl
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.PersistenceExceptionCategorizer
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.util.ByteArrays
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -77,6 +78,26 @@ class SqlSessionDbIntegrationTest {
         }
     }
 
+    @Test
+    fun getStateDetailsTest() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+
+        val retrieveDetails = createStateDetails(3).take(2)
+        dbConfig.dataSource.connection.use { connection ->
+            val session = createSession(connection)
+            val found = session.getStateDetails(retrieveDetails.map { it.stateRef })
+
+            assertSoftly { softly ->
+                softly.assertThat(found.count()).isEqualTo(retrieveDetails.count())
+                retrieveDetails.forEach {
+                    val row = found.entries.single { r -> r.key.txHash == it.stateRef.txHash && r.key.stateIndex == r.key.stateIndex }.value
+                    softly.assertThat(row.consumingTxId)
+                        .isEqualTo(it.consumingTxId)
+                }
+            }
+        }
+    }
+
     private fun createSession(connection: Connection): BackingStore.Session {
         return SqlSessionImpl(
             holdingIdentity,
@@ -99,6 +120,43 @@ class SqlSessionDbIntegrationTest {
                 }
             }
         )
+    }
+
+    private fun createStateDetails(n: Int): List<UniquenessCheckStateDetails> {
+        dbConfig.dataSource.connection.use { connection ->
+            connection
+                .prepareStatement(
+                    """
+                    INSERT INTO uniqueness_state_details(issue_tx_id_algo, issue_tx_id, issue_tx_output_idx, consuming_tx_id_algo, consuming_tx_id)
+                    VALUES (?,?,?,?,?)
+                """.trimIndent()
+                )
+                .use { statement ->
+                    val results = (1..n).map {
+                        val details = StateDetails(
+                            StateRef(SecureHashImpl("algo-$it", randomBytes()), it),
+                            SecureHashImpl("c-algo-$it", randomBytes())
+                        )
+
+
+                        statement.setString(1, details.stateRef.txHash.algorithm)
+                        statement.setBytes(2, details.stateRef.txHash.bytes)
+                        statement.setInt(3, details.stateRef.stateIndex)
+                        statement.setString(4, details.consumingId!!.algorithm)
+                        statement.setBytes(5, details.consumingId.bytes)
+
+                        statement.addBatch()
+                        println(statement)
+                        details
+                    }
+
+
+                    assertThat(statement.executeBatch().sum()).isEqualTo(n)
+                    connection.commit()
+
+                    return results
+                }
+        }
     }
 
     private fun createTxDetails(n: Int): List<TransactionDetails> {
@@ -126,9 +184,9 @@ class SqlSessionDbIntegrationTest {
                         statement.setBytes(2, txDetails.txId)
                         statement.setString(3, txDetails.originatorX500Name)
                         statement.setTimestamp(4,
-                            Timestamp.from(txDetails.commitTimestamp), SqlTransactionOpsImpl.tzUTC)
+                            Timestamp.from(txDetails.commitTimestamp), tzUTC)
                         statement.setTimestamp(5,
-                            Timestamp.from(txDetails.commitTimestamp.plusSeconds(100)), SqlTransactionOpsImpl.tzUTC)
+                            Timestamp.from(txDetails.commitTimestamp.plusSeconds(100)), tzUTC)
                         statement.setString(6, txDetails.result.toString())
 
                         statement.addBatch()
@@ -149,6 +207,17 @@ class SqlSessionDbIntegrationTest {
         return (1..16).map { ('0'..'9').random() }.joinToString("").toByteArray()
     }
 
+    data class StateDetails(val sRef: UniquenessCheckStateRef, val consumingId: SecureHash?):
+        UniquenessCheckStateDetails {
+        override fun getStateRef() = sRef
+        override fun getConsumingTxId(): SecureHash? = consumingId
+    }
+
+    data class StateRef(val hash: SecureHash, val index: Int):
+        UniquenessCheckStateRef {
+        override fun getTxHash(): SecureHash = hash
+        override fun getStateIndex(): Int = index
+    }
 
     data class TransactionDetails(
         val txIdAlgo: String,
