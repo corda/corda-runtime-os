@@ -158,7 +158,7 @@ class UtxoLedgerUtxoTransactionVerifierImplTest {
         whenever(referenceTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
         assertThatThrownBy { verifier.verify() }
             .isExactlyInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("Input and reference states' notaries need to be the same as the UtxoLedgerTransaction's notary")
+            .hasMessageContaining("Input and reference states' notaries need to be the same as the transaction's notary")
     }
 
     @Test
