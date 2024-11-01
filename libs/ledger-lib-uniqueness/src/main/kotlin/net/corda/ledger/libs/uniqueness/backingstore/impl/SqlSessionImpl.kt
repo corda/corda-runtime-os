@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.time.Duration
 
+@Suppress("LongParameterList")
 class SqlSessionImpl(
     private val holdingIdentity: UniquenessHoldingIdentity,
     private val connection: Connection,
@@ -32,8 +33,6 @@ class SqlSessionImpl(
 ) : BackingStore.Session {
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
-        // TODO: Replace constants with config
         const val MAX_ATTEMPTS = 10
     }
 
@@ -50,6 +49,7 @@ class SqlSessionImpl(
             holdingIdentity
         )
 
+    @Suppress("NestedBlockDepth")
     override fun executeTransaction(block: (BackingStore.Session, BackingStore.Session.TransactionOps) -> Unit) {
         val transactionStartTime = System.nanoTime()
 
@@ -58,7 +58,6 @@ class SqlSessionImpl(
                 try {
                     block(this, transactionOps)
                     connection.commit()
-                    println("########### TX COMMITTED")
 
                     backingStoreMetricsFactory.recordTransactionAttempts(
                         attemptNumber,
@@ -69,7 +68,7 @@ class SqlSessionImpl(
                     when (persistenceExceptionCategorizer.categorize(e)) {
                         PersistenceExceptionType.DATA_RELATED,
                         PersistenceExceptionType.TRANSIENT -> {
-                            // [EntityExistsException] Occurs when another worker committed a
+                            // [ConsumeStateFailedException] Occurs when another worker committed a
                             // request with conflicting input states. Retry (by not re-throwing the
                             // exception), because the requests with conflicts are removed from the
                             // batch by the code passed in as `block`.
@@ -87,13 +86,13 @@ class SqlSessionImpl(
                             if (attemptNumber < MAX_ATTEMPTS) {
                                 log.warn(
                                     "Retrying DB operation. The request might have been " +
-                                            "handled by a different notary worker or a DB error " +
-                                            "occurred when attempting to commit. Message: ${e.message}."
+                                        "handled by a different notary worker or a DB error " +
+                                        "occurred when attempting to commit. Message: ${e.message}."
                                 )
                             } else {
                                 throw IllegalStateException(
                                     "Failed to execute transaction after the maximum number of " +
-                                            "attempts (${MAX_ATTEMPTS}). Message: ${e.message}."
+                                        "attempts (${MAX_ATTEMPTS}). Message: ${e.message}."
                                 )
                             }
                         }
@@ -121,13 +120,14 @@ class SqlSessionImpl(
         }
     }
 
+    @Suppress("NestedBlockDepth")
     override fun getStateDetails(states: Collection<UniquenessCheckStateRef>): Map<UniquenessCheckStateRef, UniquenessCheckStateDetails> {
         val queryStartTime = System.nanoTime()
 
         val results = HashMap<
-                UniquenessCheckStateRef,
-                UniquenessCheckStateDetails
-                >()
+            UniquenessCheckStateRef,
+            UniquenessCheckStateDetails
+            >()
 
         val statePks = states.map {
             UniquenessTxAlgoStateRefKey(it.txHash.algorithm, uniquenessSecureHashFactory.getBytes(it.txHash), it.stateIndex)
@@ -145,7 +145,7 @@ class SqlSessionImpl(
                     val selectIssueTxId = rs.getBytes(2)
                     val selectConsumingTxId = rs.getObject(5)
                     val consumingTxId =
-                        if(rs.wasNull()) {
+                        if (rs.wasNull()) {
                             null
                         } else {
                             val selectConsumingTxIdAlgo = rs.getString(4)
@@ -163,28 +163,6 @@ class SqlSessionImpl(
             }
         }
 
-        // Use Hibernate Session to fetch multiple state entities by their primary keys.
-//        val multiLoadAccess =
-//            hibernateSession.byMultipleIds(UniquenessStateDetailEntity::class.java)
-//
-//        // multiLoad will return [null] for each ID that was not found in the DB.
-//        // However, we don't want to keep those.
-//        val existing = multiLoadAccess.multiLoad(statePks).filterNotNull()
-
-//        existing.forEach { stateEntity ->
-//            val consumingTxId =
-//                if (stateEntity.consumingTxId != null) {
-//                    uniquenessSecureHashFactory.createSecureHash(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
-//                } else {
-//                    null
-//                }
-//            val returnedState = UniquenessCheckStateRefImpl(
-//                uniquenessSecureHashFactory.createSecureHash(stateEntity.issueTxIdAlgo, stateEntity.issueTxId),
-//                stateEntity.issueTxOutputIndex
-//            )
-//            results[returnedState] = UniquenessCheckStateDetailsImpl(returnedState, consumingTxId)
-//        }
-
         backingStoreMetricsFactory.recordDatabaseReadTime(
             Duration.ofNanos(System.nanoTime() - queryStartTime),
             holdingIdentity
@@ -192,20 +170,13 @@ class SqlSessionImpl(
         return results
     }
 
+    @Suppress("NestedBlockDepth")
     override fun getTransactionDetails(txIds: Collection<SecureHash>): Map<out SecureHash, UniquenessCheckTransactionDetailsInternal> {
         val queryStartTime = System.nanoTime()
 
         val txPks = txIds.map {
             UniquenessTxAlgoIdKey(it.algorithm, uniquenessSecureHashFactory.getBytes(it))
         }
-
-        // Use Hibernate Session to fetch multiple transaction entities by their primary keys.
-//        val multiLoadAccess =
-//            hibernateSession.byMultipleIds(UniquenessTransactionDetailEntity::class.java)
-
-        // multiLoad will return [null] for each ID that was not found in the DB.
-        // However, we don't want to keep those.
-//        val existing = multiLoadAccess.multiLoad(txPks).filterNotNull()
 
         val results = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
 
@@ -230,14 +201,14 @@ class SqlSessionImpl(
                             UniquenessCheckResultFailureImpl(
                                 txCommitTimestamp,
                                 getTransactionError(txIdAlgo, txId) ?: throw IllegalStateException(
-                                    "Transaction with id ${txId} was rejected but no records were " +
-                                            "found in the rejected transactions table"
+                                    "Transaction with id $txId was rejected but no records were " +
+                                        "found in the rejected transactions table"
                                 )
                             )
                         }
                         else -> throw IllegalStateException(
                             "Transaction result can only be " +
-                                    "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'"
+                                "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'"
                         )
                     }
                     val txHash = uniquenessSecureHashFactory.createSecureHash(txIdAlgo, txId)
@@ -245,31 +216,6 @@ class SqlSessionImpl(
                 }
             }
         }
-
-//        val results = existing.map { txEntity ->
-//            val result = when (txEntity.result) {
-//                RESULT_ACCEPTED_REPRESENTATION -> {
-//                    UniquenessCheckResultSuccessImpl(txEntity.commitTimestamp)
-//                }
-//                RESULT_REJECTED_REPRESENTATION -> {
-//                    // If the transaction is rejected we need to make sure it is also
-//                    // stored in the rejected tx table
-//                    UniquenessCheckResultFailureImpl(
-//                        txEntity.commitTimestamp,
-//                        getTransactionError(txEntity) ?: throw IllegalStateException(
-//                            "Transaction with id ${txEntity.txId} was rejected but no records were " +
-//                                    "found in the rejected transactions table"
-//                        )
-//                    )
-//                }
-//                else -> throw IllegalStateException(
-//                    "Transaction result can only be " +
-//                            "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'"
-//                )
-//            }
-//            val txHash = uniquenessSecureHashFactory.createSecureHash(txEntity.txIdAlgo, txEntity.txId)
-//            txHash to UniquenessCheckTransactionDetailsInternal(txHash, result)
-//        }.toMap()
 
         backingStoreMetricsFactory.recordDatabaseReadTime(
             Duration.ofNanos(System.nanoTime() - queryStartTime),
@@ -289,7 +235,7 @@ class SqlSessionImpl(
             stmt.setBytes(2, txId)
             println("######## $stmt")
             stmt.executeQuery().use { rs ->
-                if(rs.next()) {
+                if (rs.next()) {
                     jpaBackingStoreObjectMapper(uniquenessSecureHashFactory).readValue(
                         rs.getBytes(1),
                         UniquenessCheckError::class.java
@@ -304,26 +250,5 @@ class SqlSessionImpl(
                 )
             }
         }
-
-//        val existing = entityManager.createNamedQuery(
-//            "UniquenessRejectedTransactionEntity.select",
-//            UniquenessRejectedTransactionEntity::class.java
-//        )
-//            .setParameter("txAlgo", txIdAlgo)
-//            .setParameter("txId", txId)
-//            .resultList as List<UniquenessRejectedTransactionEntity>
-//
-//        return existing.firstOrNull()?.let { rejectedTxEntity ->
-//            jpaBackingStoreObjectMapper(uniquenessSecureHashFactory).readValue(
-//                rejectedTxEntity.errorDetails,
-//                UniquenessCheckError::class.java
-//            )
-//        }.also {
-//            backingStoreMetricsFactory.recordDatabaseReadTime(
-//                Duration.ofNanos(System.nanoTime() - queryStartTime),
-//                holdingIdentity
-//            )
-//        }
     }
 }
-

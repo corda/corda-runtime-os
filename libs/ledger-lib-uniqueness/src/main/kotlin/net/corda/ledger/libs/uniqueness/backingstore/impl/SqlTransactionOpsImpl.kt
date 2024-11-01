@@ -4,7 +4,9 @@ import net.corda.crypto.core.bytes
 import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
+import net.corda.ledger.libs.uniqueness.backingstore.ConsumeStateFailedException
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
+import net.corda.uniqueness.datamodel.common.UniquenessConstants.REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
@@ -16,7 +18,6 @@ import java.sql.Timestamp
 import java.time.Duration
 import java.util.Calendar
 import java.util.TimeZone
-import javax.persistence.EntityExistsException
 
 // TODO - integration test these queries in isolation
 class SqlTransactionOpsImpl(
@@ -55,14 +56,14 @@ class SqlTransactionOpsImpl(
             println("######## $stmt")
             val updatedRowCount = stmt.executeBatch().sum()
             if (updatedRowCount == 0) {
-                // TODO: Figure out application specific exceptions
-                throw EntityExistsException(
+                throw ConsumeStateFailedException(
                     "No states were consumed, this might be an in-flight double spend"
                 )
             }
         }
     }
 
+    @Suppress("NestedBlockDepth")
     override fun commitTransactions(transactionDetails: Collection<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>) {
         val commitStartTime = System.nanoTime()
 
@@ -78,18 +79,22 @@ class SqlTransactionOpsImpl(
                     stmt.addBatch()
 
                     if (result is UniquenessCheckResultFailure) {
+                        val errorDetails = jpaBackingStoreObjectMapper(uniquenessSecureHashFactory).writeValueAsBytes(result.error)
+                        // NOTE: this limitation is put in to replicate the existing behaviour, but this is un-necessary.
+                        //  The type of VARBINARY(1024) as set in Liquibase, does not exist in PostgeSQL, and instead a BYTEA is used
+                        //  which fits 1Gb of space.
+                        if (errorDetails.size > REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH) {
+                            throw IllegalArgumentException(
+                                "The maximum size of the error_details field is $REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH"
+                            )
+                        }
                         rejectStmt.setString(1, request.txId.algorithm)
                         rejectStmt.setBytes(2, request.txId.bytes)
-                        rejectStmt.setBytes(
-                            3,
-                            jpaBackingStoreObjectMapper(uniquenessSecureHashFactory).writeValueAsBytes(result.error)
-                        )
+                        rejectStmt.setBytes(3, errorDetails)
                         rejectStmt.addBatch()
                     }
                 }
-                println("######## $stmt")
                 stmt.executeBatch()
-                println("######## $rejectStmt")
                 rejectStmt.executeBatch()
             }
         }

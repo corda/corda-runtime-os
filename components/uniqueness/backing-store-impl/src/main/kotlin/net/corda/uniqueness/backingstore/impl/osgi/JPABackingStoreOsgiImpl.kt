@@ -27,8 +27,6 @@ class JPABackingStoreOsgiImpl(delegate: BackingStore, jpaEntitiesRegistry: JpaEn
         jpaEntitiesRegistry: JpaEntitiesRegistry,
         @Reference(service = DbConnectionManager::class)
         dbConnectionManager: DbConnectionManager,
-//        @Reference(service = PersistenceExceptionCategorizer::class)
-//        persistenceExceptionCategorizer: PersistenceExceptionCategorizer,
         @Reference(service = VirtualNodeInfoReadService::class)
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
         @Reference(service = BackingStoreMetricsFactory::class)
@@ -36,12 +34,6 @@ class JPABackingStoreOsgiImpl(delegate: BackingStore, jpaEntitiesRegistry: JpaEn
         @Reference(service = UniquenessSecureHashFactory::class)
         uniquenessSecureHashFactory: UniquenessSecureHashFactory
     ) : this(
-//        JPABackingStoreImpl(
-//            getEntityManagerFactory = { getEntityManagerFactory(virtualNodeInfoReadService, dbConnectionManager, jpaEntitiesRegistry, it) },
-//            backingStoreMetricsFactory = backingStoreMetricsFactory,
-//            persistenceExceptionCategorizer = persistenceExceptionCategorizer,
-//            uniquenessSecureHashFactory = uniquenessSecureHashFactory
-//        ),
         SqlBackingStoreImpl(
             connectionFactory = {
                 val emf = getEntityManagerFactory(virtualNodeInfoReadService, dbConnectionManager, jpaEntitiesRegistry, it)

@@ -37,7 +37,6 @@ class SqlBackingStoreImpl(
             )
             connection.close()
         } catch (e: Exception) {
-            // TODO: Need to figure out what exceptions can be thrown and how to handle
             connection.close()
             throw e
         } finally {

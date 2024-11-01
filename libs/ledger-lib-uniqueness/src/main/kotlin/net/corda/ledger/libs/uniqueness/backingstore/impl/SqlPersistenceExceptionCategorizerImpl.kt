@@ -1,34 +1,13 @@
 package net.corda.ledger.libs.uniqueness.backingstore.impl
 
+import net.corda.ledger.libs.uniqueness.backingstore.ConsumeStateFailedException
 import net.corda.orm.PersistenceExceptionCategorizer
 import net.corda.orm.PersistenceExceptionType
 import net.corda.utilities.criteria
-import org.hibernate.QueryException
-import org.hibernate.ResourceClosedException
-import org.hibernate.SessionException
-import org.hibernate.TransactionException
-import org.hibernate.cache.CacheException
-import org.hibernate.exception.ConstraintViolationException
-import org.hibernate.exception.GenericJDBCException
-import org.hibernate.exception.JDBCConnectionException
-import org.hibernate.exception.LockAcquisitionException
-import org.hibernate.exception.SQLGrammarException
-import org.hibernate.procedure.NoSuchParameterException
-import org.hibernate.procedure.ParameterMisuseException
-import org.hibernate.property.access.spi.PropertyAccessException
 import org.slf4j.LoggerFactory
 import java.net.SocketException
 import java.sql.SQLException
 import java.sql.SQLTransientConnectionException
-import javax.persistence.EntityExistsException
-import javax.persistence.EntityNotFoundException
-import javax.persistence.LockTimeoutException
-import javax.persistence.NonUniqueResultException
-import javax.persistence.OptimisticLockException
-import javax.persistence.PessimisticLockException
-import javax.persistence.QueryTimeoutException
-import javax.persistence.RollbackException
-import javax.persistence.TransactionRequiredException
 
 class SqlPersistenceExceptionCategorizerImpl : PersistenceExceptionCategorizer {
 
@@ -48,52 +27,55 @@ class SqlPersistenceExceptionCategorizerImpl : PersistenceExceptionCategorizer {
         }
     }
 
+    // list of sqlSate codes: https://github.com/spring-projects/spring-framework/blob/main/spring-jdbc/src/main/resources/org/springframework/jdbc/support/sql-error-codes.xml
     private fun isFatal(exception: Exception): Boolean {
         val checks = listOf(
-            criteria<TransactionRequiredException>(),
-            criteria<ResourceClosedException>(),
-            criteria<SessionException>(),
+            criteria<SQLException> {
+                it.sqlState in setOf(
+                    // badSqlGrammarCodes
+                    "03000", "42000", "42601", "42602", "42622", "42804", "42P01",
+                    // incorrect field
+                    "42703"
+                )
+            },
         )
         return checks.any { it.meetsCriteria(exception) }
     }
 
     private fun isDataRelated(exception: Exception): Boolean {
         val checks = listOf(
-            criteria<EntityExistsException>(),
-            criteria<EntityNotFoundException>(),
-            criteria<NonUniqueResultException>(),
-            criteria<SQLGrammarException>(),
-            criteria<GenericJDBCException>(),
-            criteria<QueryException>(),
-            criteria<NoSuchParameterException>(),
-            criteria<ParameterMisuseException>(),
-            criteria<PropertyAccessException>(),
-            criteria<ConstraintViolationException>()
+            criteria<ConsumeStateFailedException>(),
+            criteria<SQLException> {
+                it.sqlState in setOf(
+                    // duplicateKeyCodes
+                    "21000", "23505",
+                    // dataIntegrityViolationCodes
+                    "23000", "23502", "23503", "23514",
+                )
+            },
         )
         return checks.any { it.meetsCriteria(exception) }
     }
 
     private fun isTransient(exception: Exception): Boolean {
         val checks = listOf(
-            criteria<LockTimeoutException>(),
-            criteria<OptimisticLockException>(),
-            criteria<PessimisticLockException>(),
-            criteria<QueryTimeoutException>(),
-            criteria<RollbackException>(),
-            criteria<org.hibernate.PessimisticLockException>(),
-            criteria<org.hibernate.QueryTimeoutException>(),
-            criteria<JDBCConnectionException>(),
-            criteria<LockAcquisitionException>(),
-            criteria<TransactionException>(),
-            criteria<CacheException>(),
             criteria<SQLTransientConnectionException> {
                 exception.message?.lowercase()?.contains("connection is not available") == true
             },
             criteria<SQLException> {
-                it.sqlState in setOf("08001", "08003", "08004", "08006", "08007", "58030")
+                it.sqlState in setOf(
+                    // dataAccessResourceFailureCodes
+                    "53000", "53100", "53200", "53300",
+                    // cannotAcquireLockCodes
+                    "55P03",
+                    // deadlockLoserCodes
+                    "40P01",
+                    // unsure when these happen (source unknown)
+                    "08001", "08003", "08004", "08006", "08007", "58030",
+                )
             },
             criteria<SQLException> {
-                it.message == CONNECTION_CLOSED_MESSAGE
+                it.message?.contains(CONNECTION_CLOSED_MESSAGE) ?: false
             },
             criteria<SocketException>()
         )

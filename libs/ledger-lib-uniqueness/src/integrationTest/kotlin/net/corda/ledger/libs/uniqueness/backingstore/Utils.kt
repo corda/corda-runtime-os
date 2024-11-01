@@ -9,13 +9,13 @@ fun randomBytes(): ByteArray {
     return (1..16).map { ('0'..'9').random() }.joinToString("").toByteArray()
 }
 
-data class StateDetails(val sRef: UniquenessCheckStateRef, val consumingId: SecureHash?):
+data class StateDetails(val sRef: UniquenessCheckStateRef, val consumingId: SecureHash?) :
     UniquenessCheckStateDetails {
     override fun getStateRef() = sRef
     override fun getConsumingTxId(): SecureHash? = consumingId
 }
 
-data class StateRef(val hash: SecureHash, val index: Int):
+data class StateRef(val hash: SecureHash, val index: Int) :
     UniquenessCheckStateRef {
     override fun getTxHash(): SecureHash = hash
     override fun getStateIndex(): Int = index

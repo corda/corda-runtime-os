@@ -41,7 +41,7 @@ class SqlSessionDbIntegrationTest {
 
     init {
         // uncomment this to run the test against local Postgres
-        System.setProperty("databaseType", "POSTGRES")
+        // System.setProperty("databaseType", "POSTGRES")
 
         dbConfig = DbUtils.getEntityManagerConfiguration("uniqueness_session")
 
@@ -109,13 +109,62 @@ class SqlSessionDbIntegrationTest {
         }
     }
 
+    @Test
+    fun `when executeTransaction commit`() {
+        val hash = SecureHashImpl("algoo", randomBytes())
+
+        // persist something
+        dbConfig.dataSource.connection.use { connection ->
+            val session = createSession(connection)
+            session.executeTransaction { _, _ ->
+                connection.prepareStatement(
+                    """
+                INSERT INTO uniqueness_rejected_txs(
+                tx_id_algo,
+                tx_id,
+                error_details
+            ) VALUES (?,?,?)
+                    """.trimIndent()
+                ).use { statement ->
+                    statement.setString(1, hash.algorithm)
+                    statement.setBytes(2, hash.bytes)
+                    statement.setBytes(
+                        3,
+                        jpaBackingStoreObjectMapper(UniquenessSecureHashFactoryTestImpl()).writeValueAsBytes(
+                            UniquenessCheckErrorMalformedRequestImpl("error ${UUID.randomUUID()}")
+                        )
+                    )
+                    println(statement)
+                    statement.executeUpdate()
+                }
+            }
+        }
+
+        // check it was committed
+        dbConfig.dataSource.connection.use { connection ->
+            val session = createSession(connection)
+            session.executeTransaction { _, _ ->
+                connection.prepareStatement(
+                    """
+                SELECT 1 FROM uniqueness_rejected_txs WHERE tx_id = ?
+                    """.trimIndent()
+                ).use { statement ->
+                    statement.setBytes(1, hash.bytes)
+                    println(statement)
+                    val rs = statement.executeQuery()
+                    assertThat(rs.next()).isTrue()
+                }
+            }
+        }
+    }
+
     private fun createSession(connection: Connection): BackingStore.Session {
         return SqlSessionImpl(
             holdingIdentity,
             connection,
             metricsFactory,
             exceptionCategorizer,
-            object: UniquenessSecureHashFactory {
+            object : UniquenessSecureHashFactory {
                 override fun createSecureHash(algorithm: String, bytes: ByteArray): SecureHash {
                     return SecureHashImpl(algorithm, bytes)
                 }
@@ -140,7 +189,7 @@ class SqlSessionDbIntegrationTest {
                     """
                     INSERT INTO uniqueness_state_details(issue_tx_id_algo, issue_tx_id, issue_tx_output_idx, consuming_tx_id_algo, consuming_tx_id)
                     VALUES (?,?,?,?,?)
-                """.trimIndent()
+                    """.trimIndent()
                 )
                 .use { statement ->
                     val results = (1..n).map {
@@ -148,7 +197,6 @@ class SqlSessionDbIntegrationTest {
                             StateRef(SecureHashImpl("algo-$it", randomBytes()), it),
                             SecureHashImpl("c-algo-$it", randomBytes())
                         )
-
 
                         statement.setString(1, details.stateRef.txHash.algorithm)
                         statement.setBytes(2, details.stateRef.txHash.bytes)
@@ -160,7 +208,6 @@ class SqlSessionDbIntegrationTest {
                         println(statement)
                         details
                     }
-
 
                     assertThat(statement.executeBatch().sum()).isEqualTo(n)
                     connection.commit()
@@ -175,17 +222,20 @@ class SqlSessionDbIntegrationTest {
 
         dbConfig.dataSource.connection.use { connection ->
             connection.autoCommit = true
-            connection.prepareStatement("""
+            connection.prepareStatement(
+                """
                 INSERT INTO uniqueness_rejected_txs(
                 tx_id_algo,
                 tx_id,
                 error_details
             ) VALUES (?,?,?)
-            """.trimIndent()).use { statement ->
+                """.trimIndent()
+            ).use { statement ->
                 details.forEach {
                     statement.setString(1, it.txIdAlgo)
                     statement.setBytes(2, it.txId)
-                    statement.setBytes(3,
+                    statement.setBytes(
+                        3,
                         jpaBackingStoreObjectMapper(UniquenessSecureHashFactoryTestImpl()).writeValueAsBytes(
                             UniquenessCheckErrorMalformedRequestImpl("error ${UUID.randomUUID()}")
                         )
@@ -208,7 +258,7 @@ class SqlSessionDbIntegrationTest {
                     INSERT INTO
                         uniqueness_tx_details(tx_id_algo, tx_id, originator_x500_name, commit_timestamp, expiry_datetime, result)
                     VALUES (?,?,?,?,?,?)
-                """.trimIndent()
+                    """.trimIndent()
                 )
                 .use { statement ->
                     val results = (1..n).map {
@@ -223,17 +273,22 @@ class SqlSessionDbIntegrationTest {
                         statement.setString(1, txDetails.txIdAlgo)
                         statement.setBytes(2, txDetails.txId)
                         statement.setString(3, txDetails.originatorX500Name)
-                        statement.setTimestamp(4,
-                            Timestamp.from(txDetails.commitTimestamp), tzUTC)
-                        statement.setTimestamp(5,
-                            Timestamp.from(txDetails.commitTimestamp.plusSeconds(100)), tzUTC)
+                        statement.setTimestamp(
+                            4,
+                            Timestamp.from(txDetails.commitTimestamp),
+                            tzUTC
+                        )
+                        statement.setTimestamp(
+                            5,
+                            Timestamp.from(txDetails.commitTimestamp.plusSeconds(100)),
+                            tzUTC
+                        )
                         statement.setString(6, txDetails.result.toString())
 
                         statement.addBatch()
                         println(statement)
                         txDetails
                     }
-
 
                     assertThat(statement.executeBatch().sum()).isEqualTo(n)
                     connection.commit()

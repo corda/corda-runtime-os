@@ -76,7 +76,7 @@ class TransactionOpsDbIntegrationTest {
                         consuming_tx_id_algo,
                         consuming_tx_id
                     FROM uniqueness_state_details
-                """.trimIndent()
+                    """.trimIndent()
                 )
 
                 assertSoftly { softly ->
@@ -133,6 +133,7 @@ class TransactionOpsDbIntegrationTest {
                 while (rs.next()) {
                     found.add(SecureHashImpl(rs.getString("issue_tx_id_algo"), rs.getBytes("issue_tx_id")))
                 }
+                @Suppress("SpreadOperator")
                 assertThat(found)
                     .containsExactlyInAnyOrder(*consumedStates.map { it.hash }.toTypedArray())
             }
@@ -151,7 +152,7 @@ class TransactionOpsDbIntegrationTest {
             Pair(requests[1], UniquenessCheckResultSuccessImpl(Instant.now())),
         )
         val rejected = listOf(
-            Pair(requests[2], UniquenessCheckResultFailureImpl(Instant.now(), object : UniquenessCheckError{})),
+            Pair(requests[2], UniquenessCheckResultFailureImpl(Instant.now(), object : UniquenessCheckError {})),
         )
 
         dbConfig.dataSource.connection.use { connection ->
@@ -181,7 +182,7 @@ class TransactionOpsDbIntegrationTest {
                 statement.setString(3, rejected.first().first.originatorX500Name)
 
                 val rs = statement.executeQuery()
-                val compare = ArrayDeque((success+rejected).sortedBy { it.first.originatorX500Name })
+                val compare = ArrayDeque((success + rejected).sortedBy { it.first.originatorX500Name })
                 assertSoftly { softly ->
                     while (rs.next()) {
                         val expected = compare.removeFirst()
@@ -215,7 +216,7 @@ class TransactionOpsDbIntegrationTest {
     }
 
     private fun createRequests(connection: Connection, n: Int): List<UniquenessCheckRequestInternal> {
-        val inputStates = ArrayDeque(createStateRefs(n*2))
+        val inputStates = ArrayDeque(createStateRefs(n * 2))
         createUnConsumedStates(connection, inputStates)
 
         return (1..n).map {
