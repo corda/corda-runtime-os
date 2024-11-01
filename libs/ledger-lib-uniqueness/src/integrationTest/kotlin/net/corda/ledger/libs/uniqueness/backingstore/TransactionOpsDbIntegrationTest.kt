@@ -35,7 +35,7 @@ class TransactionOpsDbIntegrationTest {
 
     init {
         // uncomment this to run the test against local Postgres
-        System.setProperty("databaseType", "POSTGRES")
+//        System.setProperty("databaseType", "POSTGRES")
 
         dbConfig = DbUtils.getEntityManagerConfiguration("uniqueness_tx_ops")
 

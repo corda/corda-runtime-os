@@ -38,7 +38,6 @@ class SqlTransactionOpsImpl(
                 stmt.setInt(3, stateRef.stateIndex)
                 stmt.addBatch()
             }
-            println("######## $stmt")
             stmt.executeBatch()
         }
     }
@@ -51,14 +50,15 @@ class SqlTransactionOpsImpl(
                 stmt.setString(3, stateRef.txHash.algorithm)
                 stmt.setBytes(4, stateRef.txHash.bytes)
                 stmt.setInt(5, stateRef.stateIndex)
-                stmt.addBatch()
-            }
-            println("######## $stmt")
-            val updatedRowCount = stmt.executeBatch().sum()
-            if (updatedRowCount == 0) {
-                throw ConsumeStateFailedException(
-                    "No states were consumed, this might be an in-flight double spend"
-                )
+
+                // Not using batch insert so we can check each query has done an update.
+                // this replicates existing behaviour, but could be further optimised!
+                val updatedRowCount = stmt.executeUpdate()
+                if (updatedRowCount == 0) {
+                    throw ConsumeStateFailedException(
+                        "No states were consumed, this might be an in-flight double spend"
+                    )
+                }
             }
         }
     }

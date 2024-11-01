@@ -21,6 +21,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.time.Duration
+import java.util.Calendar
+import java.util.TimeZone
 
 @Suppress("LongParameterList")
 class SqlSessionImpl(
@@ -34,6 +36,7 @@ class SqlSessionImpl(
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val MAX_ATTEMPTS = 10
+        private val tzUTC: Calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
     }
 
     init {
@@ -133,12 +136,10 @@ class SqlSessionImpl(
             UniquenessTxAlgoStateRefKey(it.txHash.algorithm, uniquenessSecureHashFactory.getBytes(it.txHash), it.stateIndex)
         }
 
-        // TODO - extract to integration test in isolation
         connection.prepareStatement(sqlQueryProvider.findStatesByKeyQuery()).use { stmt ->
             stmt.setObject(1, statePks.map { it.issueTxIdAlgo }.toTypedArray())
             stmt.setObject(2, statePks.map { it.issueTxId }.toTypedArray())
             stmt.setObject(3, statePks.map { it.issueTxOutputIndex }.toTypedArray())
-            println("######## $stmt")
             stmt.executeQuery().use { rs ->
                 while (rs.next()) {
                     val selectIssueTxIdAlgo = rs.getString(1)
@@ -183,13 +184,12 @@ class SqlSessionImpl(
         connection.prepareStatement(sqlQueryProvider.findTransactionDetailByKeyQuery()).use { stmt ->
             stmt.setObject(1, txPks.map { it.txIdAlgo }.toTypedArray())
             stmt.setObject(2, txPks.map { it.txId }.toTypedArray())
-            println("######## $stmt")
             stmt.executeQuery().use { rs ->
                 while (rs.next()) {
                     val txIdAlgo = rs.getString(1)
                     val txId = rs.getBytes(2)
                     val txResult = rs.getString(3).first()
-                    val txCommitTimestamp = rs.getTimestamp(4).toInstant()
+                    val txCommitTimestamp = rs.getTimestamp(4, tzUTC).toInstant()
 
                     val result = when (txResult) {
                         RESULT_ACCEPTED_REPRESENTATION -> {
@@ -233,7 +233,6 @@ class SqlSessionImpl(
         return connection.prepareStatement(sqlQueryProvider.findRejectedTransactionQuery()).use { stmt ->
             stmt.setString(1, txIdAlgo)
             stmt.setBytes(2, txId)
-            println("######## $stmt")
             stmt.executeQuery().use { rs ->
                 if (rs.next()) {
                     jpaBackingStoreObjectMapper(uniquenessSecureHashFactory).readValue(
