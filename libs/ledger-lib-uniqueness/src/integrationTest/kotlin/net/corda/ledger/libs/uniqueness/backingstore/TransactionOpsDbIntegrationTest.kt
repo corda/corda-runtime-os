@@ -149,11 +149,11 @@ class TransactionOpsDbIntegrationTest {
         }
 
         val success = listOf(
-            Pair(requests[0], UniquenessCheckResultSuccessImpl(Instant.now())),
-            Pair(requests[1], UniquenessCheckResultSuccessImpl(Instant.now())),
+            Pair(requests[0], UniquenessCheckResultSuccessImpl(Instant.now().toSafeWindowsPrecision())),
+            Pair(requests[1], UniquenessCheckResultSuccessImpl(Instant.now().toSafeWindowsPrecision())),
         )
         val rejected = listOf(
-            Pair(requests[2], UniquenessCheckResultFailureImpl(Instant.now(), object : UniquenessCheckError {})),
+            Pair(requests[2], UniquenessCheckResultFailureImpl(Instant.now().toSafeWindowsPrecision(), object : UniquenessCheckError {})),
         )
 
         dbConfig.dataSource.connection.use { connection ->
@@ -189,10 +189,10 @@ class TransactionOpsDbIntegrationTest {
                         val expected = compare.removeFirst()
                         softly.assertThat(rs.getString("tx_id_algo")).isEqualTo(expected.first.txId.algorithm)
                         softly.assertThat(rs.getBytes("tx_id")).isEqualTo(expected.first.txId.bytes)
-                        softly.assertThat(rs.getTimestamp("expiry_datetime").toInstant().toSafeWindowsPrecision())
-                            .isEqualTo(expected.first.timeWindowUpperBound.toSafeWindowsPrecision())
-                        softly.assertThat(rs.getTimestamp("commit_timestamp").toInstant().toSafeWindowsPrecision())
-                            .isEqualTo(expected.second.resultTimestamp.toSafeWindowsPrecision())
+                        softly.assertThat(rs.getTimestamp("expiry_datetime").toInstant())
+                            .isEqualTo(expected.first.timeWindowUpperBound)
+                        softly.assertThat(rs.getTimestamp("commit_timestamp").toInstant())
+                            .isEqualTo(expected.second.resultTimestamp)
                         softly.assertThat(rs.getString("result")).isEqualTo(expected.second.toCharacterRepresentation().toString())
                     }
                 }
@@ -230,8 +230,8 @@ class TransactionOpsDbIntegrationTest {
                 listOf(inputStates.removeFirst()),
                 listOf(inputStates.removeFirst()),
                 1,
-                Instant.now().minusSeconds(10),
-                Instant.now().plusSeconds(1000),
+                Instant.now().minusSeconds(10).toSafeWindowsPrecision(),
+                Instant.now().plusSeconds(1000).toSafeWindowsPrecision(),
             )
         }
     }

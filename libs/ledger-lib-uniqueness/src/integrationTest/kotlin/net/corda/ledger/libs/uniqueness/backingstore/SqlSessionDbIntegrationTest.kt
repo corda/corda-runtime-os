@@ -79,8 +79,8 @@ class SqlSessionDbIntegrationTest {
             assertSoftly { softly ->
                 softly.assertThat(found.count()).isEqualTo(combined.count())
                 combined.forEach {
-                    softly.assertThat(found[SecureHashImpl(it.txIdAlgo, it.txId)]?.result?.resultTimestamp?.toSafeWindowsPrecision())
-                        .isEqualTo(it.commitTimestamp.toSafeWindowsPrecision())
+                    softly.assertThat(found[SecureHashImpl(it.txIdAlgo, it.txId)]?.result?.resultTimestamp)
+                        .isEqualTo(it.commitTimestamp)
                 }
                 rejectedDetails.forEach {
                     softly.assertThat(found[SecureHashImpl(it.txIdAlgo, it.txId)]?.result?.toCharacterRepresentation())
@@ -267,7 +267,7 @@ class SqlSessionDbIntegrationTest {
                             "algo$it",
                             randomBytes(),
                             "X500 name$it",
-                            Instant.now(),
+                            Instant.now().toSafeWindowsPrecision(),
                             result,
                         )
 
