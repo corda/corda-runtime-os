@@ -32,7 +32,7 @@ class JPABackingStoreOsgiImpl(delegate: BackingStore, jpaEntitiesRegistry: JpaEn
         @Reference(service = BackingStoreMetricsFactory::class)
         backingStoreMetricsFactory: BackingStoreMetricsFactory,
         @Reference(service = UniquenessSecureHashFactory::class)
-        uniquenessSecureHashFactory: UniquenessSecureHashFactory
+        uniquenessSecureHashFactory: UniquenessSecureHashFactory,
     ) : this(
         SqlBackingStoreImpl(
             connectionFactory = {

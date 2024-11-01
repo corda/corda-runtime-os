@@ -20,9 +20,6 @@ class SqlBackingStoreImpl(
 ) : BackingStore {
     override fun session(holdingIdentity: UniquenessHoldingIdentity, block: (BackingStore.Session) -> Unit) {
         val sessionStartTime = System.nanoTime()
-
-//        // Enable Hibernate JDBC batch and set the batch size on a per-session basis.
-//        entityManager.unwrap(Session::class.java).jdbcBatchSize = HIBERNATE_JDBC_BATCH_SIZE
         val connection = connectionFactory(holdingIdentity)
         @Suppress("TooGenericExceptionCaught")
         try {
