@@ -30,8 +30,8 @@ class DefaultSqlQueryProvider : SqlQueryProvider {
 
     override fun findRejectedTransactionQuery(): String {
         return """
-            SELECT error_details FROM UniquenessRejectedTransactionEntity
-            WHERE txIdAlgo = ? AND txId = ?
+            SELECT error_details FROM uniqueness_rejected_txs
+            WHERE tx_id_algo = ? AND tx_id = ?
         """.trimIndent()
     }
 
@@ -42,7 +42,7 @@ class DefaultSqlQueryProvider : SqlQueryProvider {
                 issue_tx_id,
                 issue_tx_output_idx,
                 consuming_tx_id_algo,
-                consuming_tx_id,
+                consuming_tx_id
             )
             VALUES (?,?,?,NULL,NULL)
         """.trimIndent()
@@ -50,14 +50,14 @@ class DefaultSqlQueryProvider : SqlQueryProvider {
 
     override fun consumeStatesQuery(): String {
         return """
-            UPDATE UniquenessStateDetailEntity SET 
-                consumingTxIdAlgo = ?, 
-                consumingTxId = ? 
+            UPDATE uniqueness_state_details SET 
+                consuming_tx_id_algo = ?, 
+                consuming_tx_id = ? 
             WHERE 
-                issueTxIdAlgo = ? AND 
-                issueTxId = ? AND 
-                issueTxOutputIndex = ? AND 
-                consumingTxId IS NULL
+                issue_tx_id_algo = ? AND 
+                issue_tx_id = ? AND 
+                issue_tx_output_idx = ? AND 
+                consuming_tx_id IS NULL
         """.trimIndent()
     }
 

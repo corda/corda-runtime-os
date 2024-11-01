@@ -7,12 +7,15 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
+import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactoryTestImpl
 import net.corda.ledger.libs.uniqueness.backingstore.impl.SqlSessionImpl
+import net.corda.ledger.libs.uniqueness.backingstore.impl.jpaBackingStoreObjectMapper
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.PersistenceExceptionCategorizer
+import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.util.ByteArrays
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -26,6 +29,7 @@ import java.sql.Timestamp
 import java.time.Instant
 import java.util.Calendar
 import java.util.TimeZone
+import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SqlSessionDbIntegrationTest {
@@ -63,16 +67,23 @@ class SqlSessionDbIntegrationTest {
     fun getTransactionDetailsTest() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
+        // creating more than needed to make sure where clause works.
         val retrieveTxDetails = createTxDetails(3).take(2)
+        val rejectedDetails = createRejectedTxDetails(2).take(1)
+        val combined = retrieveTxDetails + rejectedDetails
         dbConfig.dataSource.connection.use { connection ->
             val session = createSession(connection)
-            val found = session.getTransactionDetails(retrieveTxDetails.map { SecureHashImpl(it.txIdAlgo, it.txId) })
+            val found = session.getTransactionDetails(combined.map { SecureHashImpl(it.txIdAlgo, it.txId) })
 
             assertSoftly { softly ->
-                softly.assertThat(found.count()).isEqualTo(retrieveTxDetails.count())
-                retrieveTxDetails.forEach {
+                softly.assertThat(found.count()).isEqualTo(combined.count())
+                combined.forEach {
                     softly.assertThat(found[SecureHashImpl(it.txIdAlgo, it.txId)]?.result?.resultTimestamp)
                         .isEqualTo(it.commitTimestamp)
+                }
+                rejectedDetails.forEach {
+                    softly.assertThat(found[SecureHashImpl(it.txIdAlgo, it.txId)]?.result?.toCharacterRepresentation())
+                        .isEqualTo('R')
                 }
             }
         }
@@ -159,7 +170,37 @@ class SqlSessionDbIntegrationTest {
         }
     }
 
-    private fun createTxDetails(n: Int): List<TransactionDetails> {
+    private fun createRejectedTxDetails(n: Int): List<TransactionDetails> {
+        val details = createTxDetails(n, 'R')
+
+        dbConfig.dataSource.connection.use { connection ->
+            connection.autoCommit = true
+            connection.prepareStatement("""
+                INSERT INTO uniqueness_rejected_txs(
+                tx_id_algo,
+                tx_id,
+                error_details
+            ) VALUES (?,?,?)
+            """.trimIndent()).use { statement ->
+                details.forEach {
+                    statement.setString(1, it.txIdAlgo)
+                    statement.setBytes(2, it.txId)
+                    statement.setBytes(3,
+                        jpaBackingStoreObjectMapper(UniquenessSecureHashFactoryTestImpl()).writeValueAsBytes(
+                            UniquenessCheckErrorMalformedRequestImpl("error ${UUID.randomUUID()}")
+                        )
+                    )
+                    statement.addBatch()
+                }
+                println(statement)
+                statement.executeBatch()
+            }
+        }
+
+        return details
+    }
+
+    private fun createTxDetails(n: Int, result: Char = 'A'): List<TransactionDetails> {
         dbConfig.dataSource.connection.use { connection ->
             connection
                 .prepareStatement(
@@ -176,9 +217,8 @@ class SqlSessionDbIntegrationTest {
                             randomBytes(),
                             "X500 name$it",
                             Instant.now(),
-                            'A',
+                            result,
                         )
-
 
                         statement.setString(1, txDetails.txIdAlgo)
                         statement.setBytes(2, txDetails.txId)
@@ -200,54 +240,6 @@ class SqlSessionDbIntegrationTest {
 
                     return results
                 }
-        }
-    }
-
-    private fun randomBytes(): ByteArray {
-        return (1..16).map { ('0'..'9').random() }.joinToString("").toByteArray()
-    }
-
-    data class StateDetails(val sRef: UniquenessCheckStateRef, val consumingId: SecureHash?):
-        UniquenessCheckStateDetails {
-        override fun getStateRef() = sRef
-        override fun getConsumingTxId(): SecureHash? = consumingId
-    }
-
-    data class StateRef(val hash: SecureHash, val index: Int):
-        UniquenessCheckStateRef {
-        override fun getTxHash(): SecureHash = hash
-        override fun getStateIndex(): Int = index
-    }
-
-    data class TransactionDetails(
-        val txIdAlgo: String,
-        val txId: ByteArray,
-        val originatorX500Name: String,
-        val commitTimestamp: Instant,
-        val result: Char
-    ) {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as TransactionDetails
-
-            if (txIdAlgo != other.txIdAlgo) return false
-            if (!txId.contentEquals(other.txId)) return false
-            if (originatorX500Name != other.originatorX500Name) return false
-            if (commitTimestamp != other.commitTimestamp) return false
-            if (result != other.result) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result1 = txIdAlgo.hashCode()
-            result1 = 31 * result1 + txId.contentHashCode()
-            result1 = 31 * result1 + originatorX500Name.hashCode()
-            result1 = 31 * result1 + commitTimestamp.hashCode()
-            result1 = 31 * result1 + result.hashCode()
-            return result1
         }
     }
 }

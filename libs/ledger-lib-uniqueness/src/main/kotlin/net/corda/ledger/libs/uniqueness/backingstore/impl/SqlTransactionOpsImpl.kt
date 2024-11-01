@@ -1,5 +1,6 @@
 package net.corda.ledger.libs.uniqueness.backingstore.impl
 
+import net.corda.crypto.core.bytes
 import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
@@ -45,9 +46,9 @@ class SqlTransactionOpsImpl(
         connection.prepareStatement(sqlQueryProvider.consumeStatesQuery()).use { stmt ->
             stateRefs.forEach { stateRef ->
                 stmt.setString(1, consumingTxId.algorithm)
-                stmt.setBytes(2, uniquenessSecureHashFactory.getBytes(consumingTxId))
+                stmt.setBytes(2, consumingTxId.bytes)
                 stmt.setString(3, stateRef.txHash.algorithm)
-                stmt.setBytes(4, uniquenessSecureHashFactory.getBytes(stateRef.txHash))
+                stmt.setBytes(4, stateRef.txHash.bytes)
                 stmt.setInt(5, stateRef.stateIndex)
                 stmt.addBatch()
             }
@@ -69,7 +70,7 @@ class SqlTransactionOpsImpl(
             connection.prepareStatement(sqlQueryProvider.insertRejectedTransactionQuery()).use { rejectStmt ->
                 transactionDetails.forEach { (request, result) ->
                     stmt.setString(1, request.txId.algorithm)
-                    stmt.setBytes(2, uniquenessSecureHashFactory.getBytes(request.txId))
+                    stmt.setBytes(2, request.txId.bytes)
                     stmt.setString(3, request.originatorX500Name)
                     stmt.setTimestamp(4, Timestamp.from(request.timeWindowUpperBound), tzUTC)
                     stmt.setTimestamp(5, Timestamp.from(result.resultTimestamp), tzUTC)
@@ -78,7 +79,7 @@ class SqlTransactionOpsImpl(
 
                     if (result is UniquenessCheckResultFailure) {
                         rejectStmt.setString(1, request.txId.algorithm)
-                        rejectStmt.setBytes(2, uniquenessSecureHashFactory.getBytes(request.txId))
+                        rejectStmt.setBytes(2, request.txId.bytes)
                         rejectStmt.setBytes(
                             3,
                             jpaBackingStoreObjectMapper(uniquenessSecureHashFactory).writeValueAsBytes(result.error)

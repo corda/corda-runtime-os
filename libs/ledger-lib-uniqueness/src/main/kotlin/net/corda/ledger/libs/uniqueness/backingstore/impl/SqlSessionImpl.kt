@@ -58,6 +58,7 @@ class SqlSessionImpl(
                 try {
                     block(this, transactionOps)
                     connection.commit()
+                    println("########### TX COMMITTED")
 
                     backingStoreMetricsFactory.recordTransactionAttempts(
                         attemptNumber,
@@ -290,7 +291,7 @@ class SqlSessionImpl(
             stmt.executeQuery().use { rs ->
                 if(rs.next()) {
                     jpaBackingStoreObjectMapper(uniquenessSecureHashFactory).readValue(
-                        rs.getString(1),
+                        rs.getBytes(1),
                         UniquenessCheckError::class.java
                     )
                 } else {
