@@ -13,6 +13,7 @@ import net.corda.ledger.libs.uniqueness.backingstore.impl.jpaBackingStoreObjectM
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.PersistenceExceptionCategorizer
+import net.corda.test.util.time.toSafeWindowsPrecision
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
@@ -78,8 +79,8 @@ class SqlSessionDbIntegrationTest {
             assertSoftly { softly ->
                 softly.assertThat(found.count()).isEqualTo(combined.count())
                 combined.forEach {
-                    softly.assertThat(found[SecureHashImpl(it.txIdAlgo, it.txId)]?.result?.resultTimestamp)
-                        .isEqualTo(it.commitTimestamp)
+                    softly.assertThat(found[SecureHashImpl(it.txIdAlgo, it.txId)]?.result?.resultTimestamp?.toSafeWindowsPrecision())
+                        .isEqualTo(it.commitTimestamp.toSafeWindowsPrecision())
                 }
                 rejectedDetails.forEach {
                     softly.assertThat(found[SecureHashImpl(it.txIdAlgo, it.txId)]?.result?.toCharacterRepresentation())

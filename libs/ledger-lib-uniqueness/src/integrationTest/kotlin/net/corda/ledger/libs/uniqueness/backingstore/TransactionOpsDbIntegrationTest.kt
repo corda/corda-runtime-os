@@ -11,6 +11,7 @@ import net.corda.ledger.libs.uniqueness.backingstore.impl.DefaultSqlQueryProvide
 import net.corda.ledger.libs.uniqueness.backingstore.impl.SqlTransactionOpsImpl
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.orm.EntityManagerConfiguration
+import net.corda.test.util.time.toSafeWindowsPrecision
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
@@ -188,8 +189,10 @@ class TransactionOpsDbIntegrationTest {
                         val expected = compare.removeFirst()
                         softly.assertThat(rs.getString("tx_id_algo")).isEqualTo(expected.first.txId.algorithm)
                         softly.assertThat(rs.getBytes("tx_id")).isEqualTo(expected.first.txId.bytes)
-                        softly.assertThat(rs.getTimestamp("expiry_datetime").toInstant()).isEqualTo(expected.first.timeWindowUpperBound)
-                        softly.assertThat(rs.getTimestamp("commit_timestamp").toInstant()).isEqualTo(expected.second.resultTimestamp)
+                        softly.assertThat(rs.getTimestamp("expiry_datetime").toInstant().toSafeWindowsPrecision())
+                            .isEqualTo(expected.first.timeWindowUpperBound.toSafeWindowsPrecision())
+                        softly.assertThat(rs.getTimestamp("commit_timestamp").toInstant().toSafeWindowsPrecision())
+                            .isEqualTo(expected.second.resultTimestamp.toSafeWindowsPrecision())
                         softly.assertThat(rs.getString("result")).isEqualTo(expected.second.toCharacterRepresentation().toString())
                     }
                 }
