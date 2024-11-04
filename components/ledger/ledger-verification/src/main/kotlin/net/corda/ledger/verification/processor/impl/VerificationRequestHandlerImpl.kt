@@ -43,7 +43,6 @@ class VerificationRequestHandlerImpl(private val responseFactory: ExternalEventR
 
         return try {
             UtxoLedgerTransactionVerifierImpl(
-                transactionFactory,
                 transaction
             ) { utxoLedgerTransaction ->
                 verifyMetadata(utxoLedgerTransaction.metadata)

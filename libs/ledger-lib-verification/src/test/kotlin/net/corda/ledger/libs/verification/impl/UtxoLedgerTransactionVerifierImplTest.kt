@@ -30,7 +30,7 @@ class UtxoLedgerTransactionVerifierImplTest {
     private val referenceTransactionState = mock<TransactionState<ContractState>>()
     private val metadata = mock<TransactionMetadata>()
 
-    private val verifier = UtxoLedgerTransactionVerifierImpl({ transaction }, transaction) {
+    private val verifier = UtxoLedgerTransactionVerifierImpl(transaction) {
         // NO-OP contract verification
     }
 
