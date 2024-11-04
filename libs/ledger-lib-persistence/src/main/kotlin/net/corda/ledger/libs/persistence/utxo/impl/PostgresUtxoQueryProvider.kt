@@ -3,9 +3,13 @@ package net.corda.ledger.libs.persistence.utxo.impl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 
 class PostgresUtxoQueryProvider : AbstractUtxoQueryProvider() {
+    override fun wrapInList(placeHolder: String): String {
+        return "= ANY($placeHolder)"
+    }
+
     override val persistTransaction: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)
+            INSERT INTO utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)
                 VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash, FALSE, 0)
             ON CONFLICT(id) DO
             UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated, is_filtered = FALSE
@@ -15,7 +19,7 @@ class PostgresUtxoQueryProvider : AbstractUtxoQueryProvider() {
 
     override val persistUnverifiedTransaction: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)
+            INSERT INTO utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)
                 VALUES (:id, :privacySalt, :accountId, :createdAt, '$UNVERIFIED', :updatedAt, :metadataHash, FALSE, 0)
             ON CONFLICT(id) DO
             UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
@@ -37,7 +41,7 @@ class PostgresUtxoQueryProvider : AbstractUtxoQueryProvider() {
 
     override val persistTransactionMetadata: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction_metadata(hash, canonical_data, group_parameters_hash, cpi_file_checksum)
+            INSERT INTO utxo_transaction_metadata(hash, canonical_data, group_parameters_hash, cpi_file_checksum)
                 VALUES (:hash, :canonicalData, :groupParametersHash, :cpiFileChecksum)
             ON CONFLICT DO NOTHING"""
             .trimIndent()
@@ -83,7 +87,7 @@ class PostgresUtxoQueryProvider : AbstractUtxoQueryProvider() {
 
     override val persistSignedGroupParameters: String
         get() = """
-            INSERT INTO {h-schema}utxo_group_parameters(
+            INSERT INTO utxo_group_parameters(
                 hash, parameters, signature_public_key, signature_content, signature_spec, created)
             VALUES (
                 :hash, :parameters, :signature_public_key, :signature_content, :signature_spec, :createdAt)

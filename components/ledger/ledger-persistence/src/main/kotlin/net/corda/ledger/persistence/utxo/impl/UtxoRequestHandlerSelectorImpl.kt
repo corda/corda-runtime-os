@@ -47,6 +47,8 @@ import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.utilities.time.UTCClock
+import org.hibernate.Session
+import org.hibernate.internal.SessionImpl
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -63,7 +65,10 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
     @Suppress("LongMethod")
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
         val persistenceService = UtxoPersistenceServiceImpl(
-            entityManagerFactory = sandbox.getEntityManagerFactory(),
+            connectionFactory = {
+                val emf = sandbox.getEntityManagerFactory()
+                (emf.createEntityManager().unwrap(Session::class.java) as SessionImpl).connection()
+            },
             repository = sandbox.getSandboxSingletonService(),
             serializationService = sandbox.getSerializationService(),
             sandboxDigestService = sandbox.getSandboxSingletonService(),
