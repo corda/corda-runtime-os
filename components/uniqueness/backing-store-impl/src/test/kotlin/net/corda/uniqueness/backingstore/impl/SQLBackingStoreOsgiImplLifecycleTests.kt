@@ -12,7 +12,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
-import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreLifecycleImpl
+import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreLifecycleImpl
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -24,13 +24,13 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 
-class JPABackingStoreOsgiImplLifecycleTests {
+class SQLBackingStoreOsgiImplLifecycleTests {
 
     private val lifecycleCoordinator = mock<LifecycleCoordinator>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry>()
     private val dbConnectionManager = mock<DbConnectionManager>()
-    private lateinit var backingStore: JPABackingStoreLifecycleImpl
+    private lateinit var backingStore: SQLBackingStoreLifecycleImpl
 
     inner class DummyLifecycle : LifecycleEvent
 
@@ -38,7 +38,7 @@ class JPABackingStoreOsgiImplLifecycleTests {
     fun init() {
         whenever(lifecycleCoordinatorFactory.createCoordinator(any(), any())).thenReturn(lifecycleCoordinator)
         whenever(jpaEntitiesRegistry.get(any())) doReturn mock<JpaEntitiesSet>()
-        backingStore = JPABackingStoreLifecycleImpl(
+        backingStore = SQLBackingStoreLifecycleImpl(
             lifecycleCoordinatorFactory,
             jpaEntitiesRegistry,
             dbConnectionManager,

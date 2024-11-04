@@ -4,15 +4,15 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.db.core.PersistenceExceptionCategorizer
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
 import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactoryTestImpl
 import net.corda.ledger.libs.uniqueness.backingstore.impl.SqlSessionImpl
-import net.corda.ledger.libs.uniqueness.backingstore.impl.jpaBackingStoreObjectMapper
+import net.corda.ledger.libs.uniqueness.backingstore.impl.backingStoreObjectMapper
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.orm.EntityManagerConfiguration
-import net.corda.orm.PersistenceExceptionCategorizer
 import net.corda.test.util.time.toSafeWindowsPrecision
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
@@ -131,7 +131,7 @@ class SqlSessionDbIntegrationTest {
                     statement.setBytes(2, hash.bytes)
                     statement.setBytes(
                         3,
-                        jpaBackingStoreObjectMapper(UniquenessSecureHashFactoryTestImpl()).writeValueAsBytes(
+                        backingStoreObjectMapper(UniquenessSecureHashFactoryTestImpl()).writeValueAsBytes(
                             UniquenessCheckErrorMalformedRequestImpl("error ${UUID.randomUUID()}")
                         )
                     )
@@ -237,7 +237,7 @@ class SqlSessionDbIntegrationTest {
                     statement.setBytes(2, it.txId)
                     statement.setBytes(
                         3,
-                        jpaBackingStoreObjectMapper(UniquenessSecureHashFactoryTestImpl()).writeValueAsBytes(
+                        backingStoreObjectMapper(UniquenessSecureHashFactoryTestImpl()).writeValueAsBytes(
                             UniquenessCheckErrorMalformedRequestImpl("error ${UUID.randomUUID()}")
                         )
                     )

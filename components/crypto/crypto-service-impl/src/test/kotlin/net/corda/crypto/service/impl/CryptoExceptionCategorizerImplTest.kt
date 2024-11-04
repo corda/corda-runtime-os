@@ -2,8 +2,8 @@ package net.corda.crypto.service.impl
 
 import net.corda.crypto.service.CryptoExceptionType
 import net.corda.db.connection.manager.DBConfigurationException
-import net.corda.orm.PersistenceExceptionCategorizer
-import net.corda.orm.PersistenceExceptionType
+import net.corda.db.core.PersistenceExceptionCategorizer
+import net.corda.db.core.PersistenceExceptionType
 import net.corda.v5.crypto.exceptions.CryptoException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

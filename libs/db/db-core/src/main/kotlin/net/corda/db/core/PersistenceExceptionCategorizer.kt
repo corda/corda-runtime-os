@@ -1,4 +1,4 @@
-package net.corda.orm
+package net.corda.db.core
 
 interface PersistenceExceptionCategorizer {
 

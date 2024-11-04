@@ -1,8 +1,8 @@
 package net.corda.ledger.libs.uniqueness
 
+import net.corda.db.core.PersistenceExceptionCategorizer
+import net.corda.db.core.PersistenceExceptionType
 import net.corda.ledger.libs.uniqueness.backingstore.impl.SqlSessionImpl
-import net.corda.orm.PersistenceExceptionCategorizer
-import net.corda.orm.PersistenceExceptionType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow

@@ -8,7 +8,7 @@ import org.osgi.service.component.annotations.Component
 import java.time.Duration
 
 @Component(service = [BackingStoreMetricsFactory::class])
-class JPABackingStoreOsgiMetricsFactory @Activate constructor() : BackingStoreMetricsFactory {
+class SQLBackingStoreOsgiMetricsFactory @Activate constructor() : BackingStoreMetricsFactory {
 
     override fun recordSessionExecutionTime(executionTime: Duration, holdingIdentity: UniquenessHoldingIdentity) {
         CordaMetrics.Metric.UniquenessBackingStoreSessionExecutionTime

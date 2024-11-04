@@ -25,7 +25,7 @@ import net.corda.v5.crypto.SecureHash
  */
 // TODO: Remove this entirely and use standard Corda serialization libraries
 @Suppress("ForbiddenComment")
-fun jpaBackingStoreObjectMapper(uniquenessSecureHashFactory: UniquenessSecureHashFactory) = jacksonObjectMapper().apply {
+fun backingStoreObjectMapper(uniquenessSecureHashFactory: UniquenessSecureHashFactory) = jacksonObjectMapper().apply {
     registerModule(JavaTimeModule())
     val module = SimpleModule()
     module.addSerializer(SecureHash::class.java, SecureHashSerializer)

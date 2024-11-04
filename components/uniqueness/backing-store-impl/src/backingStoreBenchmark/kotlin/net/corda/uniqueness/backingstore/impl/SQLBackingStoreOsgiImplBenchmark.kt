@@ -9,7 +9,6 @@ import net.corda.db.testkit.DbUtils
 import net.corda.db.testkit.TestDbInfo
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
-import net.corda.ledger.libs.uniqueness.backingstore.impl.JPABackingStoreEntities
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -17,8 +16,8 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreLifecycleImpl
-import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiImpl
+import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreLifecycleImpl
+import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreOsgiImpl
 import net.corda.uniqueness.backingstore.impl.osgi.UniquenessSecureHashFactoryOsgiImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
@@ -61,7 +60,7 @@ import kotlin.system.measureTimeMillis
 @Execution(ExecutionMode.SAME_THREAD)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.MethodName::class)
-class JPABackingStoreOsgiImplBenchmark {
+class SQLBackingStoreOsgiImplBenchmark {
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -128,7 +127,7 @@ class JPABackingStoreOsgiImplBenchmark {
                 showSql = false,
                 rewriteBatchedInserts = true),
             "vnode-uniqueness",
-            JPABackingStoreEntities.classes
+            emptySet()
         )
 
         val jpaEntitiesRegistry = JpaEntitiesRegistryImpl()
@@ -151,11 +150,11 @@ class JPABackingStoreOsgiImplBenchmark {
         // we just exported the logic to a class
         val secureHashFactory = UniquenessSecureHashFactoryOsgiImpl()
 
-        backingStore = JPABackingStoreLifecycleImpl(
+        backingStore = SQLBackingStoreLifecycleImpl(
             mock(),
             jpaEntitiesRegistry,
             dbConnectionManager,
-            JPABackingStoreOsgiImpl(jpaEntitiesRegistry, dbConnectionManager, virtualNodeInfoReadService, metrics, secureHashFactory)
+            SQLBackingStoreOsgiImpl(jpaEntitiesRegistry, dbConnectionManager, virtualNodeInfoReadService, metrics, secureHashFactory)
         ).apply {
             eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
         }

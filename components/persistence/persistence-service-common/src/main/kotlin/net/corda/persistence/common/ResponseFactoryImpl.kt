@@ -3,13 +3,13 @@ package net.corda.persistence.common
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
+import net.corda.db.core.PersistenceExceptionCategorizer
+import net.corda.db.core.PersistenceExceptionType
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.records.Record
-import net.corda.orm.PersistenceExceptionCategorizer
-import net.corda.orm.PersistenceExceptionType
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
 import net.corda.persistence.common.exceptions.NullParameterException

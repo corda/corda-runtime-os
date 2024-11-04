@@ -1,10 +1,10 @@
 package net.corda.ledger.libs.uniqueness.backingstore.impl
 
+import net.corda.db.core.PersistenceExceptionCategorizer
 import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
-import net.corda.orm.PersistenceExceptionCategorizer
 import java.sql.Connection
 import java.time.Duration
 

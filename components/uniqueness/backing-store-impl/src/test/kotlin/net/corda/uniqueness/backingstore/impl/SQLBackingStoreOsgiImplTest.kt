@@ -6,18 +6,13 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
 import net.corda.ledger.libs.uniqueness.backingstore.impl.DefaultSqlQueryProvider
-import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessRejectedTransactionEntity
-import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessStateDetailEntity
-import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTransactionDetailEntity
-import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTxAlgoIdKey
-import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTxAlgoStateRefKey
-import net.corda.ledger.libs.uniqueness.backingstore.impl.jpaBackingStoreObjectMapper
+import net.corda.ledger.libs.uniqueness.backingstore.impl.backingStoreObjectMapper
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiImpl
+import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreOsgiImpl
 import net.corda.uniqueness.backingstore.impl.osgi.UniquenessSecureHashFactoryOsgiImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
@@ -25,7 +20,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
-import org.hibernate.MultiIdentifierLoadAccess
 import org.hibernate.Session
 import org.hibernate.internal.SessionImpl
 import org.junit.jupiter.api.BeforeEach
@@ -49,9 +43,8 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
-import javax.persistence.TypedQuery
 
-class JPABackingStoreOsgiImplTest {
+class SQLBackingStoreOsgiImplTest {
     private val entityManager = mock<EntityManager>()
     private val entityTransaction = mock<EntityTransaction>()
     private val entityManagerFactory = mock<EntityManagerFactory>()
@@ -65,18 +58,13 @@ class JPABackingStoreOsgiImplTest {
     // we just exported the logic to a class
     private val secureHashFactory = UniquenessSecureHashFactoryOsgiImpl()
 
-    private val backingStore = JPABackingStoreOsgiImpl(
+    private val backingStore = SQLBackingStoreOsgiImpl(
         jpaEntitiesRegistry,
         dbConnectionManager,
         virtualNodeInfoReadService,
         metricsFactory,
         secureHashFactory
     )
-
-    /* These lists act as the database, the data added to these lists will be returned by the multi loads */
-    private val txnDetails = mutableListOf<UniquenessTransactionDetailEntity>()
-    private val stateEntities = mutableListOf<UniquenessStateDetailEntity>()
-    private val errorEntities = mutableListOf<UniquenessRejectedTransactionEntity>()
 
     private val groupId = UUID.randomUUID().toString()
     private val notaryRepIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId).let {
@@ -87,37 +75,12 @@ class JPABackingStoreOsgiImplTest {
     @Suppress("ComplexMethod")
     @BeforeEach
     fun init() {
-        whenever(entityTransaction.isActive) doReturn true
-
-        val stateMultiLoad = mock<MultiIdentifierLoadAccess<UniquenessStateDetailEntity>>().apply {
-            whenever(multiLoad(any<List<UniquenessTxAlgoStateRefKey>>())) doReturn stateEntities
-        }
-        val txMultiLoad = mock<MultiIdentifierLoadAccess<UniquenessTransactionDetailEntity>>().apply {
-            whenever(multiLoad(any<List<UniquenessTxAlgoIdKey>>())) doReturn txnDetails
-        }
-
-        val txnErrorQuery = mock<TypedQuery<UniquenessRejectedTransactionEntity>>().apply {
-            whenever(setParameter(eq("txAlgo"), any())) doReturn this
-            whenever(setParameter(eq("txId"), any())) doReturn this
-            whenever(resultList) doReturn errorEntities
-        }
-
         val dummySession = mock<SessionImpl>().apply {
-            whenever(byMultipleIds(UniquenessStateDetailEntity::class.java)) doReturn stateMultiLoad
-            whenever(byMultipleIds(UniquenessTransactionDetailEntity::class.java)) doReturn txMultiLoad
-
             whenever(connection()) doReturn mockConnection
         }
 
         whenever(entityManager.transaction) doReturn entityTransaction
         whenever(entityManager.unwrap(Session::class.java)) doReturn dummySession
-        whenever(
-            entityManager.createNamedQuery(
-                "UniquenessRejectedTransactionEntity.select",
-                UniquenessRejectedTransactionEntity::class.java
-            )
-        ) doReturn txnErrorQuery
-
 
         whenever(entityManagerFactory.createEntityManager()) doReturn entityManager
 
@@ -147,12 +110,6 @@ class JPABackingStoreOsgiImplTest {
 
         whenever(metricsFactory.recordTransactionAttempts(any(), any())).doAnswer {  }
         whenever(metricsFactory.incrementTransactionErrorCount(any(), any())).doAnswer {  }
-    }
-
-    @Test
-    fun `Registers jpa entries on init`() {
-        // backing store is created outside this method, so test seems empty
-        verify(jpaEntitiesRegistry, times(1)).register(any(), any())
     }
 
     @Test
@@ -242,7 +199,7 @@ class JPABackingStoreOsgiImplTest {
             .doReturn(mockPreparedStatement)
 
 
-        val error = jpaBackingStoreObjectMapper(secureHashFactory).writeValueAsBytes(
+        val error = backingStoreObjectMapper(secureHashFactory).writeValueAsBytes(
             UniquenessCheckErrorMalformedRequestImpl("Error")
         )
         val mockErrorResultSet = mock<ResultSet> {
