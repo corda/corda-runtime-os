@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory
  * Corda lifecycle integration for the underlying [BackingStore] component.
  */
 @Component(service = [BackingStoreLifecycle::class])
-open class SQLBackingStoreLifecycleImpl @Activate constructor(
+open class BackingStoreLifecycleImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = JpaEntitiesRegistry::class)

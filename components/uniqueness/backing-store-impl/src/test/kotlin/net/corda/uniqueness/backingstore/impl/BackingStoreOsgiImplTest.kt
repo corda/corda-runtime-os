@@ -4,6 +4,7 @@ import net.corda.crypto.core.bytes
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
+import net.corda.db.core.PersistenceExceptionCategorizer
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
 import net.corda.ledger.libs.uniqueness.backingstore.impl.DefaultSqlQueryProvider
 import net.corda.ledger.libs.uniqueness.backingstore.impl.backingStoreObjectMapper
@@ -12,7 +13,7 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreOsgiImpl
+import net.corda.uniqueness.backingstore.impl.osgi.BackingStoreOsgiImpl
 import net.corda.uniqueness.backingstore.impl.osgi.UniquenessSecureHashFactoryOsgiImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
@@ -44,7 +45,7 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 
-class SQLBackingStoreOsgiImplTest {
+class BackingStoreOsgiImplTest {
     private val entityManager = mock<EntityManager>()
     private val entityTransaction = mock<EntityTransaction>()
     private val entityManagerFactory = mock<EntityManagerFactory>()
@@ -58,9 +59,10 @@ class SQLBackingStoreOsgiImplTest {
     // we just exported the logic to a class
     private val secureHashFactory = UniquenessSecureHashFactoryOsgiImpl()
 
-    private val backingStore = SQLBackingStoreOsgiImpl(
+    private val backingStore = BackingStoreOsgiImpl(
         jpaEntitiesRegistry,
         dbConnectionManager,
+        mock<PersistenceExceptionCategorizer>(),
         virtualNodeInfoReadService,
         metricsFactory,
         secureHashFactory

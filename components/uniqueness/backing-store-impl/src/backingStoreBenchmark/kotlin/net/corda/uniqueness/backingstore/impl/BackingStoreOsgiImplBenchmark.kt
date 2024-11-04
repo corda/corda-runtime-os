@@ -16,8 +16,8 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreLifecycleImpl
-import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreOsgiImpl
+import net.corda.uniqueness.backingstore.impl.osgi.BackingStoreLifecycleImpl
+import net.corda.uniqueness.backingstore.impl.osgi.BackingStoreOsgiImpl
 import net.corda.uniqueness.backingstore.impl.osgi.UniquenessSecureHashFactoryOsgiImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
@@ -60,7 +60,7 @@ import kotlin.system.measureTimeMillis
 @Execution(ExecutionMode.SAME_THREAD)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.MethodName::class)
-class SQLBackingStoreOsgiImplBenchmark {
+class BackingStoreOsgiImplBenchmark {
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -150,11 +150,17 @@ class SQLBackingStoreOsgiImplBenchmark {
         // we just exported the logic to a class
         val secureHashFactory = UniquenessSecureHashFactoryOsgiImpl()
 
-        backingStore = SQLBackingStoreLifecycleImpl(
+        backingStore = BackingStoreLifecycleImpl(
             mock(),
             jpaEntitiesRegistry,
             dbConnectionManager,
-            SQLBackingStoreOsgiImpl(jpaEntitiesRegistry, dbConnectionManager, virtualNodeInfoReadService, metrics, secureHashFactory)
+            BackingStoreOsgiImpl(
+                jpaEntitiesRegistry,
+                dbConnectionManager,
+                mock(),
+                virtualNodeInfoReadService,
+                metrics,
+                secureHashFactory)
         ).apply {
             eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
         }

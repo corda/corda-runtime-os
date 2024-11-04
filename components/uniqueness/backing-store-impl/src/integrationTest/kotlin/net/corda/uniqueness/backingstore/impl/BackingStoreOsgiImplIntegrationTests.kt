@@ -13,10 +13,11 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
+import net.corda.orm.impl.PersistenceExceptionCategorizerImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreOsgiMetricsFactory
-import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreOsgiImpl
+import net.corda.uniqueness.backingstore.impl.osgi.BackingStoreOsgiImpl
+import net.corda.uniqueness.backingstore.impl.osgi.BackingStoreOsgiMetricsFactory
 import net.corda.uniqueness.backingstore.impl.osgi.UniquenessSecureHashFactoryOsgiImpl
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
@@ -82,8 +83,8 @@ import javax.persistence.RollbackException
  */
 @Suppress("FunctionName")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class SQLBackingStoreOsgiImplIntegrationTests {
-    private lateinit var backingStoreImpl: SQLBackingStoreOsgiImpl
+class BackingStoreOsgiImplIntegrationTests {
+    private lateinit var backingStoreImpl: BackingStoreOsgiImpl
     private lateinit var testClock: AutoTickTestClock
     private val baseTime = Instant.EPOCH
     private val defaultTimeWindowUpperBound = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
@@ -139,7 +140,7 @@ class SQLBackingStoreOsgiImplIntegrationTests {
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
     }
 
-    private fun createBackingStoreImpl(emFactory: EntityManagerFactory): SQLBackingStoreOsgiImpl {
+    private fun createBackingStoreImpl(emFactory: EntityManagerFactory): BackingStoreOsgiImpl {
         val dbConnectionManager = mock<DbConnectionManager>().apply {
             whenever(getOrCreateEntityManagerFactory(eq(notaryVNodeIdentityDbId), any(), any())) doReturn emFactory
             whenever(getClusterDataSource()) doReturn dbConfig.dataSource
@@ -155,12 +156,12 @@ class SQLBackingStoreOsgiImplIntegrationTests {
             )
             )
         }
-        return SQLBackingStoreOsgiImpl(
+        return BackingStoreOsgiImpl(
             JpaEntitiesRegistryImpl(),
             dbConnectionManager,
-//            PersistenceExceptionCategorizerImpl(),
+            PersistenceExceptionCategorizerImpl(),
             virtualNodeInfoReadService,
-            SQLBackingStoreOsgiMetricsFactory(),
+            BackingStoreOsgiMetricsFactory(),
             secureHashFactory
         )
     }

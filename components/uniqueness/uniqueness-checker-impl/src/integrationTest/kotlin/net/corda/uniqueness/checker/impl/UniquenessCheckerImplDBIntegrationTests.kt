@@ -20,8 +20,8 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreOsgiMetricsFactory
-import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreOsgiImpl
+import net.corda.uniqueness.backingstore.impl.osgi.BackingStoreOsgiImpl
+import net.corda.uniqueness.backingstore.impl.osgi.BackingStoreOsgiMetricsFactory
 import net.corda.uniqueness.backingstore.impl.osgi.UniquenessSecureHashFactoryOsgiImpl
 import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestResponse
@@ -272,11 +272,11 @@ class UniquenessCheckerImplDBIntegrationTests {
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
 
         val uniquenessMetricsFactory = BatchedUniquenessCheckerMetricsFactoryOsgiImpl()
-        val backingStoreMetricsFactory = SQLBackingStoreOsgiMetricsFactory()
+        val backingStoreMetricsFactory = BackingStoreOsgiMetricsFactory()
 
         val secureHashFactory = UniquenessSecureHashFactoryOsgiImpl()
 
-        val backingStore = SQLBackingStoreOsgiImpl(
+        val backingStore = BackingStoreOsgiImpl(
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
                 whenever(getOrCreateEntityManagerFactory(
@@ -289,6 +289,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     eq(noDbHoldingIdentityDbId), any(), any())) doThrow DBConfigurationException("")
                 whenever(getClusterDataSource()) doReturn clusterDbConfig.dataSource
             },
+            mock(),
             mock<VirtualNodeInfoReadService>().apply {
                 whenever(getByHoldingIdentityShortHash(eq(defaultHoldingIdentity.shortHash))).thenReturn(
                     VirtualNodeInfo(
