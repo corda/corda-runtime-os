@@ -20,22 +20,19 @@ class SqlBackingStoreImpl(
 ) : BackingStore {
     override fun session(holdingIdentity: UniquenessHoldingIdentity, block: (BackingStore.Session) -> Unit) {
         val sessionStartTime = System.nanoTime()
-        val connection = connectionFactory(holdingIdentity)
         @Suppress("TooGenericExceptionCaught")
         try {
-            block(
-                SqlSessionImpl(
-                    holdingIdentity,
-                    connection,
-                    backingStoreMetricsFactory,
-                    persistenceExceptionCategorizer,
-                    uniquenessSecureHashFactory
+            connectionFactory(holdingIdentity).use { connection ->
+                block(
+                    SqlSessionImpl(
+                        holdingIdentity,
+                        connection,
+                        backingStoreMetricsFactory,
+                        persistenceExceptionCategorizer,
+                        uniquenessSecureHashFactory
+                    )
                 )
-            )
-            connection.close()
-        } catch (e: Exception) {
-            connection.close()
-            throw e
+            }
         } finally {
             backingStoreMetricsFactory.recordSessionExecutionTime(
                 Duration.ofNanos(System.nanoTime() - sessionStartTime),
