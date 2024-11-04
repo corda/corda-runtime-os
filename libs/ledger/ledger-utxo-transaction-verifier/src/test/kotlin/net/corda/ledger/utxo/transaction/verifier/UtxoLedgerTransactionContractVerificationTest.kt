@@ -51,7 +51,7 @@ class UtxoLedgerTransactionContractVerificationTest {
         on { getContractVerificationContractCountMetric() } doReturn mock()
         on { getContractVerificationContractTime(any()) } doReturn timer
     }
-    private val verifier = UtxoLedgerTransactionVerifierImpl({ transaction }, transaction) {
+    private val verifier = UtxoLedgerTransactionVerifierImpl(transaction) {
         verifyContracts({ transaction }, transaction, injectionService, metricFactory)
     }
 
