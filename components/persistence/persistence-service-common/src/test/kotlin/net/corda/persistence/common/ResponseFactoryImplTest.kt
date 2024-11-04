@@ -2,8 +2,8 @@ package net.corda.persistence.common
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.orm.PersistenceExceptionCategorizer
-import net.corda.orm.PersistenceExceptionType
+import net.corda.db.core.PersistenceExceptionCategorizer
+import net.corda.db.core.PersistenceExceptionType
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory

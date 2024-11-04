@@ -7,8 +7,8 @@ import net.corda.crypto.service.CryptoExceptionType.FATAL
 import net.corda.crypto.service.CryptoExceptionType.PLATFORM
 import net.corda.crypto.service.CryptoExceptionType.TRANSIENT
 import net.corda.db.connection.manager.DBConfigurationException
-import net.corda.orm.PersistenceExceptionCategorizer
-import net.corda.orm.PersistenceExceptionType
+import net.corda.db.core.PersistenceExceptionCategorizer
+import net.corda.db.core.PersistenceExceptionType
 import net.corda.utilities.criteria
 import net.corda.v5.crypto.exceptions.CryptoException
 import org.osgi.service.component.annotations.Activate

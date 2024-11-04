@@ -1,11 +1,7 @@
 package net.corda.orm.impl
 
-import net.corda.orm.PersistenceExceptionCategorizer
-import net.corda.orm.PersistenceExceptionType
-import net.corda.orm.PersistenceExceptionType.DATA_RELATED
-import net.corda.orm.PersistenceExceptionType.FATAL
-import net.corda.orm.PersistenceExceptionType.TRANSIENT
-import net.corda.orm.PersistenceExceptionType.UNCATEGORIZED
+import net.corda.db.core.PersistenceExceptionCategorizer
+import net.corda.db.core.PersistenceExceptionType
 import net.corda.utilities.criteria
 import org.hibernate.QueryException
 import org.hibernate.ResourceClosedException
@@ -45,10 +41,10 @@ class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategorizer {
 
     override fun categorize(exception: Exception): PersistenceExceptionType {
         return when {
-            isFatal(exception) -> FATAL
-            isDataRelated(exception) -> DATA_RELATED
-            isTransient(exception) -> TRANSIENT
-            else -> UNCATEGORIZED
+            isFatal(exception) -> PersistenceExceptionType.FATAL
+            isDataRelated(exception) -> PersistenceExceptionType.DATA_RELATED
+            isTransient(exception) -> PersistenceExceptionType.TRANSIENT
+            else -> PersistenceExceptionType.UNCATEGORIZED
         }.also {
             logger.warn("Categorized exception as $it: $exception", exception)
         }

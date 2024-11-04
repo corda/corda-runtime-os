@@ -1,8 +1,8 @@
 package net.corda.ledger.libs.uniqueness.backingstore.impl
 
+import net.corda.db.core.PersistenceExceptionCategorizer
+import net.corda.db.core.PersistenceExceptionType
 import net.corda.ledger.libs.uniqueness.backingstore.ConsumeStateFailedException
-import net.corda.orm.PersistenceExceptionCategorizer
-import net.corda.orm.PersistenceExceptionType
 import net.corda.utilities.criteria
 import org.slf4j.LoggerFactory
 import java.net.SocketException

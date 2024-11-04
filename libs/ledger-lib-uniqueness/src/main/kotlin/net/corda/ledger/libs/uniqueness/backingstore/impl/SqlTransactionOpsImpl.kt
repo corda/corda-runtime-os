@@ -79,7 +79,7 @@ class SqlTransactionOpsImpl(
                     stmt.addBatch()
 
                     if (result is UniquenessCheckResultFailure) {
-                        val errorDetails = jpaBackingStoreObjectMapper(uniquenessSecureHashFactory).writeValueAsBytes(result.error)
+                        val errorDetails = backingStoreObjectMapper(uniquenessSecureHashFactory).writeValueAsBytes(result.error)
                         // NOTE: this limitation is put in to replicate the existing behaviour, but this is un-necessary.
                         //  The type of VARBINARY(1024) as set in Liquibase, does not exist in PostgeSQL, and instead a BYTEA is used
                         //  which fits 1Gb of space.

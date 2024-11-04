@@ -20,13 +20,11 @@ dependencies {
 
     implementation 'net.corda:corda-application'
     implementation 'net.corda:corda-crypto'
-    implementation "org.hibernate:hibernate-core:$hibernateVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:db:db-orm")
-    implementation project(":libs:db:db-orm-impl")
+    implementation project(":libs:db:db-core")
 
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
@@ -43,12 +41,4 @@ dependencies {
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly libs.postgresql.jdbc
-}
-
-tasks.named('jar', Jar) {
-    bundle {
-        bnd '''\
-DynamicImport-Package: org.hibernate.proxy
-'''
-    }
 }

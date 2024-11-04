@@ -1,7 +1,7 @@
 package net.corda.orm.impl
 
+import net.corda.db.core.PersistenceExceptionType
 import net.corda.orm.impl.PersistenceExceptionCategorizerImpl.Companion.CONNECTION_CLOSED_MESSAGE
-import net.corda.orm.PersistenceExceptionType
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.QueryException
 import org.hibernate.ResourceClosedException

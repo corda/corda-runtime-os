@@ -2,11 +2,11 @@ package net.corda.ledger.libs.uniqueness.backingstore
 
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.db.core.PersistenceExceptionType
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.libs.uniqueness.backingstore.impl.SqlPersistenceExceptionCategorizerImpl
 import net.corda.orm.EntityManagerConfiguration
-import net.corda.orm.PersistenceExceptionType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Test

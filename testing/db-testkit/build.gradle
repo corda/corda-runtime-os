@@ -18,10 +18,10 @@ dependencies {
     implementation "net.corda:corda-db-schema"
     implementation project(":testing:test-utilities")
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:db:db-admin")
+    api project(":libs:db:db-admin")
     implementation project(":libs:db:db-admin-impl")
-    implementation project(":libs:db:db-core")
-    implementation project(":libs:db:db-orm")
+    api project(":libs:db:db-core")
+    api project(":libs:db:db-orm")
     implementation project(':testing:db-hsqldb-json')
 
     implementation libs.typesafe.config

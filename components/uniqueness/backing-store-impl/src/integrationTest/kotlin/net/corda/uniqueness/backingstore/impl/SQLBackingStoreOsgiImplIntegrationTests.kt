@@ -7,8 +7,7 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
 import net.corda.db.testkit.TestDbInfo
-import net.corda.ledger.libs.uniqueness.backingstore.impl.JPABackingStoreEntities
-import net.corda.ledger.libs.uniqueness.backingstore.impl.jpaBackingStoreObjectMapper
+import net.corda.ledger.libs.uniqueness.backingstore.impl.backingStoreObjectMapper
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.EntityManagerConfiguration
@@ -16,8 +15,8 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiImpl
-import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiMetricsFactory
+import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreOsgiMetricsFactory
+import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreOsgiImpl
 import net.corda.uniqueness.backingstore.impl.osgi.UniquenessSecureHashFactoryOsgiImpl
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
@@ -83,8 +82,8 @@ import javax.persistence.RollbackException
  */
 @Suppress("FunctionName")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class JPABackingStoreOsgiImplIntegrationTests {
-    private lateinit var backingStoreImpl: JPABackingStoreOsgiImpl
+class SQLBackingStoreOsgiImplIntegrationTests {
+    private lateinit var backingStoreImpl: SQLBackingStoreOsgiImpl
     private lateinit var testClock: AutoTickTestClock
     private val baseTime = Instant.EPOCH
     private val defaultTimeWindowUpperBound = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
@@ -111,7 +110,6 @@ class JPABackingStoreOsgiImplIntegrationTests {
     private val notaryVNodeEmFactory: EntityManagerFactory = databaseInstaller.setupDatabase(
         TestDbInfo(name = "unique_test_default", schemaName = notaryVNodeIdentityDbName, rewriteBatchedInserts = true),
         "vnode-uniqueness",
-        JPABackingStoreEntities.classes
     )
 
     private val secureHashFactory = UniquenessSecureHashFactoryOsgiImpl()
@@ -141,7 +139,7 @@ class JPABackingStoreOsgiImplIntegrationTests {
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
     }
 
-    private fun createBackingStoreImpl(emFactory: EntityManagerFactory): JPABackingStoreOsgiImpl {
+    private fun createBackingStoreImpl(emFactory: EntityManagerFactory): SQLBackingStoreOsgiImpl {
         val dbConnectionManager = mock<DbConnectionManager>().apply {
             whenever(getOrCreateEntityManagerFactory(eq(notaryVNodeIdentityDbId), any(), any())) doReturn emFactory
             whenever(getClusterDataSource()) doReturn dbConfig.dataSource
@@ -157,19 +155,19 @@ class JPABackingStoreOsgiImplIntegrationTests {
             )
             )
         }
-        return JPABackingStoreOsgiImpl(
+        return SQLBackingStoreOsgiImpl(
             JpaEntitiesRegistryImpl(),
             dbConnectionManager,
 //            PersistenceExceptionCategorizerImpl(),
             virtualNodeInfoReadService,
-            JPABackingStoreOsgiMetricsFactory(),
+            SQLBackingStoreOsgiMetricsFactory(),
             secureHashFactory
         )
     }
 
     private fun createEntityManagerFactory(persistenceUnitName: String = "uniqueness"): EntityManagerFactory {
         return EntityManagerFactoryFactoryImpl().create(
-            persistenceUnitName, JPABackingStoreEntities.classes.toList(), dbConfig
+            persistenceUnitName, emptyList(), dbConfig
         )
     }
 
@@ -404,7 +402,7 @@ class JPABackingStoreOsgiImplIntegrationTests {
         fun `Persisting an error throws if the size is bigger than the maximum`() {
             // We need to establish the object size without any message (i.e. a blank message) to
             // see how much space we need to fill in order to hit our maximum valid  size.
-            val baseObjectSize = jpaBackingStoreObjectMapper(secureHashFactory)
+            val baseObjectSize = backingStoreObjectMapper(secureHashFactory)
                 .writeValueAsBytes(UniquenessCheckErrorMalformedRequestImpl("")).size
 
             // Available characters that need filling is the hard-coded limit minus fixed size
@@ -770,7 +768,7 @@ class JPABackingStoreOsgiImplIntegrationTests {
     @Test
     fun `Persisting with an incorrect DB set up throws a rollback exception at committing`() {
         val noDbEmFactory: EntityManagerFactory = EntityManagerFactoryFactoryImpl()
-            .create("testunit", JPABackingStoreEntities.classes.toList(), dbConfig)
+            .create("testunit", emptyList(), dbConfig)
 
         val storeImpl = createBackingStoreImpl(noDbEmFactory)
 

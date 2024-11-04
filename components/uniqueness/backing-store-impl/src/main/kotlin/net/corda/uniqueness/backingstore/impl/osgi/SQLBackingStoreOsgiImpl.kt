@@ -5,7 +5,6 @@ import net.corda.db.schema.CordaDb
 import net.corda.ledger.libs.uniqueness.UniquenessSecureHashFactory
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
-import net.corda.ledger.libs.uniqueness.backingstore.impl.JPABackingStoreEntities
 import net.corda.ledger.libs.uniqueness.backingstore.impl.SqlBackingStoreImpl
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
@@ -19,7 +18,7 @@ import org.osgi.service.component.annotations.Reference
 import javax.persistence.EntityManagerFactory
 
 @Component(service = [BackingStore::class])
-class JPABackingStoreOsgiImpl(delegate: BackingStore, jpaEntitiesRegistry: JpaEntitiesRegistry) : BackingStore by delegate {
+class SQLBackingStoreOsgiImpl(delegate: BackingStore, jpaEntitiesRegistry: JpaEntitiesRegistry) : BackingStore by delegate {
 
     @Suppress("LongParameterList")
     @Activate constructor(
@@ -48,7 +47,7 @@ class JPABackingStoreOsgiImpl(delegate: BackingStore, jpaEntitiesRegistry: JpaEn
     init {
         jpaEntitiesRegistry.register(
             CordaDb.Uniqueness.persistenceUnitName,
-            JPABackingStoreEntities.classes
+            emptySet()
         )
     }
 

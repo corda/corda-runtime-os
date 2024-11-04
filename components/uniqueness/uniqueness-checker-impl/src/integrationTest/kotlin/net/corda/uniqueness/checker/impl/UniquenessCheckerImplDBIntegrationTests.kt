@@ -20,9 +20,8 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.impl.JPABackingStoreTestUtilities
-import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiImpl
-import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiMetricsFactory
+import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreOsgiMetricsFactory
+import net.corda.uniqueness.backingstore.impl.osgi.SQLBackingStoreOsgiImpl
 import net.corda.uniqueness.backingstore.impl.osgi.UniquenessSecureHashFactoryOsgiImpl
 import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestResponse
@@ -44,6 +43,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.Assertions.assertIterableEquals
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -75,7 +75,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
     init {
         // uncomment this to run the test against local Postgres
-        System.setProperty("databaseType", "POSTGRES")
+//        System.setProperty("databaseType", "POSTGRES")
 
         clusterDbConfig = DbUtils.getEntityManagerConfiguration(
             inMemoryDbName = "clusterdb",
@@ -239,28 +239,29 @@ class UniquenessCheckerImplDBIntegrationTests {
         }
 
         val emff = EntityManagerFactoryFactoryImpl()
-        val jpaBackingStoreEntities = JPABackingStoreTestUtilities.getJPABackingStoreEntities().toList()
         defaultHoldingIdentityDb = emff.create(
             persistenceUnitName,
-            jpaBackingStoreEntities,
+            emptyList(),
             defaultEMConfig
         )
 
         bobHoldingIdentityDb = emff.create(
             persistenceUnitName,
-            jpaBackingStoreEntities,
+            emptyList(),
             bobEMConfig
         )
 
         charlieHoldingIdentityDb = emff.create(
             persistenceUnitName,
-            jpaBackingStoreEntities,
+            emptyList(),
             charlieEMConfig
         )
     }
 
     @BeforeEach
     fun init() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+
         /*
          * Specific clock values are important to our testing in some cases, so we use a mock time
          * facilities service which provides a clock starting at a known point in time (baseTime)
@@ -271,11 +272,11 @@ class UniquenessCheckerImplDBIntegrationTests {
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
 
         val uniquenessMetricsFactory = BatchedUniquenessCheckerMetricsFactoryOsgiImpl()
-        val backingStoreMetricsFactory = JPABackingStoreOsgiMetricsFactory()
+        val backingStoreMetricsFactory = SQLBackingStoreOsgiMetricsFactory()
 
         val secureHashFactory = UniquenessSecureHashFactoryOsgiImpl()
 
-        val backingStore = JPABackingStoreOsgiImpl(
+        val backingStore = SQLBackingStoreOsgiImpl(
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
                 whenever(getOrCreateEntityManagerFactory(
