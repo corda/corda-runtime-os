@@ -15,9 +15,9 @@ import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
-import net.corda.orm.impl.PersistenceExceptionCategorizerImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.impl.JPABackingStoreTestUtilities
@@ -71,11 +71,17 @@ import kotlin.test.assertEquals
 // TODO - Find an elegant way to avoid duplication of unit tests
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UniquenessCheckerImplDBIntegrationTests {
+    private val clusterDbConfig: EntityManagerConfiguration
 
-    private val clusterDbConfig = DbUtils.getEntityManagerConfiguration(
-        inMemoryDbName = "clusterdb",
-        showSql = false
-    )
+    init {
+        // uncomment this to run the test against local Postgres
+//        System.setProperty("databaseType", "POSTGRES")
+
+        clusterDbConfig = DbUtils.getEntityManagerConfiguration(
+            inMemoryDbName = "clusterdb",
+            showSql = false
+        )
+    }
 
     private val baseTime: Instant = Instant.EPOCH
 
@@ -282,7 +288,6 @@ class UniquenessCheckerImplDBIntegrationTests {
                     eq(noDbHoldingIdentityDbId), any(), any())) doThrow DBConfigurationException("")
                 whenever(getClusterDataSource()) doReturn clusterDbConfig.dataSource
             },
-            PersistenceExceptionCategorizerImpl(),
             mock<VirtualNodeInfoReadService>().apply {
                 whenever(getByHoldingIdentityShortHash(eq(defaultHoldingIdentity.shortHash))).thenReturn(
                     VirtualNodeInfo(

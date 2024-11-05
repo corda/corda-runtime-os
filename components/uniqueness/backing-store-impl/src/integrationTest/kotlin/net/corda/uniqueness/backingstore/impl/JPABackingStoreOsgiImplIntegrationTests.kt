@@ -8,13 +8,12 @@ import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
 import net.corda.db.testkit.TestDbInfo
 import net.corda.ledger.libs.uniqueness.backingstore.impl.JPABackingStoreEntities
-import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTransactionDetailEntity
 import net.corda.ledger.libs.uniqueness.backingstore.impl.jpaBackingStoreObjectMapper
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
-import net.corda.orm.impl.PersistenceExceptionCategorizerImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiImpl
@@ -43,6 +42,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.Session
+import org.hibernate.internal.SessionImpl
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -53,8 +53,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -64,6 +62,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
+import java.sql.Connection
+import java.sql.PreparedStatement
+import java.sql.SQLException
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -73,21 +74,12 @@ import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
-import javax.persistence.EntityExistsException
 import javax.persistence.EntityManagerFactory
-import javax.persistence.OptimisticLockException
 import javax.persistence.RollbackException
-import kotlin.reflect.full.createInstance
 
 /**
- * Note: To run tests against PostgreSQL, follow the steps in the link below.
- * https://github.com/corda/corda-runtime-os/wiki/Debugging-integration-tests#debugging-integration-tests-with-postgres
- *
- * Also, in order to run the Intellij Code Coverage feature, you may need to exclude the following types to avoid
- * Hibernate related errors.
- *  - org.hibernate.hql.internal.antlr.HqlTokenTypes
- *  - org.hibernate.hql.internal.antlr.SqlTokenTypes
- *  - org.hibernate.sql.ordering.antlr.GeneratedOrderByFragmentRendererTokenTypes
+ * Note: To run tests against PostgreSQL, run:
+ * `gradle :components:uniqueness:backing-store-impl:integrationTest -PdatabaseType=POSTGRES`
  */
 @Suppress("FunctionName")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -103,12 +95,19 @@ class JPABackingStoreOsgiImplIntegrationTests {
         .let { UniquenessHoldingIdentity(it.x500Name, it.groupId, it.shortHash, it.hash) }
     private val notaryVNodeIdentityDbName = VirtualNodeDbType.UNIQUENESS.getSchemaName(notaryVNodeIdentity.shortHash)
     private val notaryVNodeIdentityDbId = UUID.randomUUID()
-    private val dbConfig = DbUtils.getEntityManagerConfiguration(notaryVNodeIdentityDbName)
+    private val dbConfig: EntityManagerConfiguration
     private val databaseInstaller = DatabaseInstaller(
         EntityManagerFactoryFactoryImpl(),
         LiquibaseSchemaMigratorImpl(),
         JpaEntitiesRegistryImpl()
     )
+
+    init {
+        // uncomment this to run the test against local Postgres
+        System.setProperty("databaseType", "POSTGRES")
+        dbConfig = DbUtils.getEntityManagerConfiguration(notaryVNodeIdentityDbName)
+    }
+
     private val notaryVNodeEmFactory: EntityManagerFactory = databaseInstaller.setupDatabase(
         TestDbInfo(name = "unique_test_default", schemaName = notaryVNodeIdentityDbName, rewriteBatchedInserts = true),
         "vnode-uniqueness",
@@ -161,7 +160,7 @@ class JPABackingStoreOsgiImplIntegrationTests {
         return JPABackingStoreOsgiImpl(
             JpaEntitiesRegistryImpl(),
             dbConnectionManager,
-            PersistenceExceptionCategorizerImpl(),
+//            PersistenceExceptionCategorizerImpl(),
             virtualNodeInfoReadService,
             JPABackingStoreOsgiMetricsFactory(),
             secureHashFactory
@@ -409,6 +408,10 @@ class JPABackingStoreOsgiImplIntegrationTests {
                 .writeValueAsBytes(UniquenessCheckErrorMalformedRequestImpl("")).size
 
             // Available characters that need filling is the hard-coded limit minus fixed size
+            // NOTE: this is incorrect.
+            //  The type of VARBINARY(1024) as set in Liquibase, does not exist in Postgesql, and instead a BYTEA is used
+            //  which fits 1Gb of space.
+            //  For now, this limitation is put into place to replicate the existing behaviour, but we should consider relaxing this.
             val maxErrMsgLength =
                 UniquenessConstants.REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH - baseObjectSize
 
@@ -657,17 +660,24 @@ class JPABackingStoreOsgiImplIntegrationTests {
         fun `Exceptions thrown while querying triggers retry`() {
             val spyEmFactory = Mockito.spy(createEntityManagerFactory())
             val spyEm = Mockito.spy(spyEmFactory.createEntityManager())
-            Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
-
-            val mockSession = mock<Session> {
-                on { byMultipleIds(eq(UniquenessTransactionDetailEntity::class.java)) } doThrow EntityExistsException()
+            val statementMock = mock<PreparedStatement> {
+                on { executeQuery() } doThrow SQLException("Connection is closed")
             }
+            val connectionMock = mock<Connection> {
+                on { prepareStatement(any()) } doReturn statementMock
+            }
+            val mockSession = mock<SessionImpl> {
+                on { connection() } doReturn connectionMock
+            }
+            Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
+            Mockito.doReturn(mockSession).whenever(spyEm).unwrap(eq(Session::class.java))
+
             Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
             Mockito.doReturn(mockSession).whenever(spyEm).unwrap(eq(Session::class.java))
 
             val storeImpl = createBackingStoreImpl(spyEmFactory)
 
-            assertThrows<EntityExistsException> {
+            assertThrows<SQLException> {
                 storeImpl.session(notaryVNodeUniquenessHoldingIdentity) { session ->
                     val txIds = listOf(randomSecureHash())
                     session.getTransactionDetails(txIds)
@@ -676,13 +686,22 @@ class JPABackingStoreOsgiImplIntegrationTests {
         }
 
         // Review with CORE-4983 for different types of exceptions such as PersistenceException.
-        @ParameterizedTest
-        @ValueSource(classes = [EntityExistsException::class, RollbackException::class, OptimisticLockException::class])
-        fun `Persistence errors raised while persisting triggers retry`(e: Class<Exception>) {
+        @Test
+        fun `Persistence errors raised while persisting triggers retry`() {
             val spyEmFactory = Mockito.spy(createEntityManagerFactory())
             val spyEm = Mockito.spy(spyEmFactory.createEntityManager())
-            Mockito.doThrow(e.kotlin.createInstance()).whenever(spyEm).persist(any())
+
+            val statementMock = mock<PreparedStatement> {
+                on { executeBatch() } doThrow SQLException("Connection is closed")
+            }
+            val connectionMock = mock<Connection> {
+                on { prepareStatement(any()) } doReturn statementMock
+            }
+            val mockSession = mock<SessionImpl> {
+                on { connection() } doReturn connectionMock
+            }
             Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
+            Mockito.doReturn(mockSession).whenever(spyEm).unwrap(eq(Session::class.java))
 
             val storeImpl = createBackingStoreImpl(spyEmFactory)
 
@@ -693,16 +712,26 @@ class JPABackingStoreOsgiImplIntegrationTests {
                     session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
                 }
             }
-            Mockito.verify(spyEm, times(MAX_ATTEMPTS)).persist(any())
+            Mockito.verify(connectionMock, times(MAX_ATTEMPTS)).rollback()
+            Mockito.verify(statementMock, times(MAX_ATTEMPTS)).executeBatch()
         }
 
         @Test
         fun `Transaction rollback gets triggered if transaction is active for an unexpected exception type`() {
             val spyEmFactory = Mockito.spy(createEntityManagerFactory())
             val spyEm = Mockito.spy(spyEmFactory.createEntityManager())
-            val spyEmTransaction = Mockito.spy(spyEm.transaction)
+
+            val statementMock = mock<PreparedStatement> {
+                on { executeBatch() } doThrow SQLException("Connection is closed")
+            }
+            val connectionMock = mock<Connection> {
+                on { prepareStatement(any()) } doReturn statementMock
+            }
+            val mockSession = mock<SessionImpl> {
+                on { connection() } doReturn connectionMock
+            }
             Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
-            Mockito.doReturn(spyEmTransaction).whenever(spyEm).transaction
+            Mockito.doReturn(mockSession).whenever(spyEm).unwrap(eq(Session::class.java))
 
             val storeImpl = createBackingStoreImpl(spyEmFactory)
 
@@ -711,10 +740,9 @@ class JPABackingStoreOsgiImplIntegrationTests {
                     session.executeTransaction { _, _ -> throw DummyException("dummy exception") }
                 }
             }
-            // Note that unlike for expected exceptions, no retry should happen.
-            Mockito.verify(spyEmTransaction, times(1)).begin()
-            Mockito.verify(spyEmTransaction, never()).commit()
-            Mockito.verify(spyEmTransaction, times(1)).rollback()
+
+            Mockito.verify(connectionMock, never()).commit()
+            Mockito.verify(connectionMock, times(1)).rollback()
         }
     }
 

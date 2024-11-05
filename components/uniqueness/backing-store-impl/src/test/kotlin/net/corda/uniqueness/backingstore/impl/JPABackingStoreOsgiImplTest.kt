@@ -5,6 +5,7 @@ import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
+import net.corda.ledger.libs.uniqueness.backingstore.impl.DefaultSqlQueryProvider
 import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessRejectedTransactionEntity
 import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessStateDetailEntity
 import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTransactionDetailEntity
@@ -15,12 +16,9 @@ import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
-import net.corda.orm.PersistenceExceptionCategorizer
-import net.corda.orm.PersistenceExceptionType
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiImpl
 import net.corda.uniqueness.backingstore.impl.osgi.UniquenessSecureHashFactoryOsgiImpl
-import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
@@ -29,9 +27,9 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.MultiIdentifierLoadAccess
 import org.hibernate.Session
+import org.hibernate.internal.SessionImpl
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
@@ -42,29 +40,24 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import java.sql.Connection
+import java.sql.PreparedStatement
+import java.sql.ResultSet
+import java.sql.Timestamp
 import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
+import java.util.Calendar
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
-import javax.persistence.OptimisticLockException
 import javax.persistence.TypedQuery
 
 class JPABackingStoreOsgiImplTest {
-
-    private companion object {
-        private const val MAX_ATTEMPTS = 10
-    }
-
     private val entityManager = mock<EntityManager>()
     private val entityTransaction = mock<EntityTransaction>()
     private val entityManagerFactory = mock<EntityManagerFactory>()
     private val dummyDataSource = mock<CloseableDataSource>()
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry>()
     private val dbConnectionManager = mock<DbConnectionManager>()
-    private val persistenceExceptionCategorizer = mock<PersistenceExceptionCategorizer>()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val metricsFactory = mock<BackingStoreMetricsFactory>()
 
@@ -75,7 +68,6 @@ class JPABackingStoreOsgiImplTest {
     private val backingStore = JPABackingStoreOsgiImpl(
         jpaEntitiesRegistry,
         dbConnectionManager,
-        persistenceExceptionCategorizer,
         virtualNodeInfoReadService,
         metricsFactory,
         secureHashFactory
@@ -90,8 +82,7 @@ class JPABackingStoreOsgiImplTest {
     private val notaryRepIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId).let {
         UniquenessHoldingIdentity(it.x500Name, it.groupId, it.shortHash, it.hash)
     }
-
-    private val originatorX500Name = "C=GB, L=London, O=Alice"
+    private val mockConnection = mock<Connection>()
 
     @Suppress("ComplexMethod")
     @BeforeEach
@@ -111,12 +102,11 @@ class JPABackingStoreOsgiImplTest {
             whenever(resultList) doReturn errorEntities
         }
 
-        val dummySession = mock<Session>().apply {
-            // No need do anything here as this will have no effect in a unit test
-            whenever(setJdbcBatchSize(any())).thenAnswer { }
-
+        val dummySession = mock<SessionImpl>().apply {
             whenever(byMultipleIds(UniquenessStateDetailEntity::class.java)) doReturn stateMultiLoad
             whenever(byMultipleIds(UniquenessTransactionDetailEntity::class.java)) doReturn txMultiLoad
+
+            whenever(connection()) doReturn mockConnection
         }
 
         whenever(entityManager.transaction) doReturn entityTransaction
@@ -168,7 +158,7 @@ class JPABackingStoreOsgiImplTest {
     @Test
     fun `Session always closes entity manager after use`() {
         backingStore.session(notaryRepIdentity) { }
-        verify(entityManager, times(1)).close()
+        verify(mockConnection, times(1)).close()
     }
 
     @Test
@@ -177,7 +167,7 @@ class JPABackingStoreOsgiImplTest {
         assertThrows<RuntimeException> {
             backingStore.session(notaryRepIdentity) { throw RuntimeException("test exception") }
         }
-        verify(entityManager, times(1)).close()
+        verify(mockConnection, times(1)).close()
     }
 
     @Test
@@ -186,24 +176,40 @@ class JPABackingStoreOsgiImplTest {
             session.executeTransaction { _, _ -> }
         }
 
-        verify(entityTransaction, times(1)).begin()
-        verify(entityTransaction, times(1)).commit()
-        verify(entityManager, times(1)).close()
+        verify(mockConnection, times(1)).commit()
+        verify(mockConnection, times(1)).close()
     }
 
     @Test
     fun `Throw if no error detail is available for a failed transaction`() {
-        // Prepare a rejected transaction
-        txnDetails.add(
-            UniquenessTransactionDetailEntity(
-                "SHA-256",
-                "0xA1".toByteArray(),
-                originatorX500Name,
-                LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
-                LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
-                UniquenessConstants.RESULT_REJECTED_REPRESENTATION
-            )
-        )
+        val txId = randomSecureHash()
+
+        // NOTE: this isn't really a good unit test as it's testing the side effects of the class's dependency
+        // so ths mocking gets messy.
+        // it would be better to just verify the expected queries are called,
+        // then unit test the functions that do the parsing
+        val sqlQueryProvider = DefaultSqlQueryProvider()
+        val mockResultSet = mock<ResultSet> {
+            on { next() }.thenReturn(true).thenReturn(false)
+            on { getString(1) } doReturn (txId.algorithm)
+            on { getBytes(2) } doReturn (txId.bytes)
+            on { getString(3) } doReturn ("R")
+            on { getTimestamp(eq(4), any<Calendar>())} doReturn (Timestamp.from(Instant.now()))
+        }
+        val mockPreparedStatement = mock<PreparedStatement> {
+            on { executeQuery() } doReturn mockResultSet
+        }
+        whenever(mockConnection.prepareStatement(sqlQueryProvider.findTransactionDetailByKeyQuery()))
+            .doReturn(mockPreparedStatement)
+
+        val mockErrorResultSet = mock<ResultSet> {
+            on { next() } doReturn false
+        }
+        val mockErrorPreparedStatement = mock<PreparedStatement> {
+            on { executeQuery() } doReturn mockErrorResultSet
+        }
+        whenever(mockConnection.prepareStatement(sqlQueryProvider.findRejectedTransactionQuery()))
+            .doReturn(mockErrorPreparedStatement)
 
         // Expect an exception because no error details is available from the mock.
         assertThrows<IllegalStateException> {
@@ -216,113 +222,46 @@ class JPABackingStoreOsgiImplTest {
     @Test
     fun `Retrieve correct failed status without exceptions when both tx details and rejection details are present`() {
         val txId = randomSecureHash()
-        // Prepare a rejected transaction
-        txnDetails.add(
-            UniquenessTransactionDetailEntity(
-                "SHA-256",
-                txId.bytes,
-                originatorX500Name,
-                LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
-                LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
-                UniquenessConstants.RESULT_REJECTED_REPRESENTATION
-            )
-        )
 
-        errorEntities.add(
-            UniquenessRejectedTransactionEntity(
-                "SHA-256",
-                txId.bytes,
-                jpaBackingStoreObjectMapper(secureHashFactory).writeValueAsBytes(
-                    UniquenessCheckErrorMalformedRequestImpl("Error")
-                )
-            )
+        // NOTE: this isn't really a good unit test as it's testing the side effects of the class's dependency
+        // so ths mocking gets messy.
+        // it would be better to just verify the expected queries are called,
+        // then unit test the functions that do the parsing
+        val sqlQueryProvider = DefaultSqlQueryProvider()
+        val mockResultSet = mock<ResultSet> {
+            on { next() }.thenReturn(true).thenReturn(false)
+            on { getString(1) } doReturn (txId.algorithm)
+            on { getBytes(2) } doReturn (txId.bytes)
+            on { getString(3) } doReturn ("R")
+            on { getTimestamp(eq(4), any<Calendar>())} doReturn (Timestamp.from(Instant.now()))
+        }
+        val mockPreparedStatement = mock<PreparedStatement> {
+            on { executeQuery() } doReturn mockResultSet
+        }
+        whenever(mockConnection.prepareStatement(sqlQueryProvider.findTransactionDetailByKeyQuery()))
+            .doReturn(mockPreparedStatement)
+
+
+        val error = jpaBackingStoreObjectMapper(secureHashFactory).writeValueAsBytes(
+            UniquenessCheckErrorMalformedRequestImpl("Error")
         )
+        val mockErrorResultSet = mock<ResultSet> {
+            on { next() }.thenReturn(true).thenReturn(false)
+            on { getBytes(1) } doReturn error
+        }
+        val mockErrorPreparedStatement = mock<PreparedStatement> {
+            on { executeQuery() } doReturn mockErrorResultSet
+        }
+        whenever(mockConnection.prepareStatement(sqlQueryProvider.findRejectedTransactionQuery()))
+            .doReturn(mockErrorPreparedStatement)
+        whenever(mockErrorResultSet.getBytes(1)).doReturn(error)
 
         backingStore.session(notaryRepIdentity) { session ->
-            val txResult = session.getTransactionDetails(listOf(txId))[txId]?.result!!
+            val txResult = session.getTransactionDetails(listOf(txId))[txId]?.result
 
             assertThat(txResult).isInstanceOf(UniquenessCheckResultFailure::class.java)
             assertThat((txResult as UniquenessCheckResultFailure).error)
                 .isInstanceOf(UniquenessCheckErrorMalformedRequest::class.java)
         }
     }
-
-    @Test
-    fun `Executing transaction does not retry upon fatal exception`() {
-        whenever(persistenceExceptionCategorizer.categorize(any())).thenReturn(PersistenceExceptionType.FATAL)
-        var execCounter = 0
-        assertThrows<DummyException> {
-            backingStore.session(notaryRepIdentity) { session ->
-                session.executeTransaction { _, _ ->
-                    execCounter++
-                    throw DummyException()
-                }
-            }
-        }
-        assertThat(execCounter).isEqualTo(1)
-    }
-
-    @Test
-    fun `Executing transaction retries upon data_related exception`() {
-        whenever(persistenceExceptionCategorizer.categorize(any())).thenReturn(PersistenceExceptionType.DATA_RELATED)
-        var execCounter = 0
-        assertThrows<IllegalStateException> {
-            backingStore.session(notaryRepIdentity) { session ->
-                session.executeTransaction { _, _ ->
-                    execCounter++
-                    throw DummyException()
-                }
-            }
-        }
-        assertThat(execCounter).isEqualTo(MAX_ATTEMPTS)
-    }
-
-    @Test
-    fun `Executing transaction retries upon transient exception`() {
-        whenever(persistenceExceptionCategorizer.categorize(any())).thenReturn(PersistenceExceptionType.TRANSIENT)
-        var execCounter = 0
-        assertThrows<IllegalStateException> {
-            backingStore.session(notaryRepIdentity) { session ->
-                session.executeTransaction { _, _ ->
-                    execCounter++
-                    throw DummyException()
-                }
-            }
-        }
-        assertThat(execCounter).isEqualTo(MAX_ATTEMPTS)
-    }
-
-    @Test
-    fun `Executing transaction does not retry upon uncategorized exception`() {
-        whenever(persistenceExceptionCategorizer.categorize(any())).thenReturn(PersistenceExceptionType.UNCATEGORIZED)
-        var execCounter = 0
-        assertThrows<DummyException> {
-            backingStore.session(notaryRepIdentity) { session ->
-                session.executeTransaction { _, _ ->
-                    execCounter++
-                    throw DummyException()
-                }
-            }
-        }
-        assertThat(execCounter).isEqualTo(1)
-    }
-
-    @Test
-    fun `Executing transaction succeeds after transient failures`() {
-        whenever(persistenceExceptionCategorizer.categorize(any())).thenReturn(PersistenceExceptionType.TRANSIENT)
-        val retryCnt = 3
-        var execCounter = 0
-        assertDoesNotThrow {
-            backingStore.session(notaryRepIdentity) { session ->
-                session.executeTransaction { _, _ ->
-                    execCounter++
-                    if (execCounter < retryCnt)
-                        throw OptimisticLockException()
-                }
-            }
-        }
-        assertThat(execCounter).isEqualTo(retryCnt)
-    }
-
-    class DummyException(message: String = "") : Exception(message)
 }
