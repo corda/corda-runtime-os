@@ -1,0 +1,22 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+description 'Corda Ledger verification library'
+
+ext.cordaEnableFormatting = true
+
+dependencies {
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
+
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
+
+    implementation 'net.corda:corda-ledger-utxo'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    testImplementation project(":libs:crypto:crypto-core")
+}

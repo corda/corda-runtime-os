@@ -2,11 +2,10 @@ package net.corda.ledger.utxo.transaction.verifier
 
 import io.micrometer.core.instrument.Timer
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.libs.verification.impl.UtxoLedgerTransactionVerifierImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
-import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -23,7 +22,6 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -33,7 +31,7 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.util.concurrent.Callable
 
-class UtxoLedgerTransactionVerifierTest {
+class UtxoLedgerTransactionContractVerificationTest {
 
     private val transaction = mock<UtxoLedgerTransaction>()
     private val signatory = mock<PublicKey>()
@@ -53,7 +51,9 @@ class UtxoLedgerTransactionVerifierTest {
         on { getContractVerificationContractCountMetric() } doReturn mock()
         on { getContractVerificationContractTime(any()) } doReturn timer
     }
-    private val verifier = UtxoLedgerTransactionVerifier({ transaction }, transaction, injectionService, metricFactory)
+    private val verifier = UtxoLedgerTransactionVerifierImpl(transaction) {
+        verifyContracts({ transaction }, transaction, injectionService, metricFactory)
+    }
 
     @BeforeEach
     fun beforeEach() {
@@ -75,113 +75,6 @@ class UtxoLedgerTransactionVerifierTest {
         whenever(inputTransactionState.notaryKey).thenReturn(publicKeyExample)
         whenever(referenceTransactionState.notaryName).thenReturn(notaryX500Name)
         whenever(referenceTransactionState.notaryKey).thenReturn(publicKeyExample)
-    }
-
-    @Test
-    fun `a valid transaction does not throw an exception`() {
-        verifier.verify()
-    }
-
-    @Test
-    fun `throws an exception if there are no signatories`() {
-        whenever(transaction.signatories).thenReturn(emptyList())
-        assertThatThrownBy { verifier.verify() }
-            .isExactlyInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("At least one signatory")
-    }
-
-    @Test
-    fun `throws an exception when there are no input and output states`() {
-        whenever(transaction.inputStateRefs).thenReturn(emptyList())
-        whenever(transaction.outputContractStates).thenReturn(emptyList())
-        assertThatThrownBy { verifier.verify() }
-            .isExactlyInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("At least one input state, or one output state")
-    }
-
-    @Test
-    fun `does not throw an exception when there are input states but no output states`() {
-        whenever(transaction.inputStateRefs).thenReturn(listOf(stateRef))
-        whenever(transaction.outputContractStates).thenReturn(emptyList())
-        verifier.verify()
-    }
-
-    @Test
-    fun `does not throw an exception when there are output states but no input states`() {
-        whenever(transaction.inputStateRefs).thenReturn(emptyList())
-        whenever(transaction.outputContractStates).thenReturn(listOf(state))
-        verifier.verify()
-    }
-
-    @Test
-    fun `throws an exception if there are no commands`() {
-        whenever(transaction.commands).thenReturn(emptyList())
-        assertThatThrownBy { verifier.verify() }
-            .isExactlyInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("At least one command")
-    }
-
-    @Test
-    fun `throws an exception if the same input state appears twice`() {
-        whenever(transaction.inputStateRefs).thenReturn(listOf(stateRef, stateRef))
-        assertThatThrownBy { verifier.verify() }
-            .isExactlyInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("Duplicate input states detected")
-    }
-
-    @Test
-    fun `throws an exception if the same reference state appears twice`() {
-        val referenceStateRef = mock<StateRef>()
-
-        whenever(transaction.referenceStateRefs).thenReturn(listOf(referenceStateRef, referenceStateRef))
-        assertThatThrownBy { verifier.verify() }
-            .isExactlyInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("Duplicate reference states detected")
-    }
-
-    @Test
-    fun `throws an exception if there are overlapping input and reference states`() {
-        whenever(transaction.referenceStateRefs).thenReturn(listOf(stateRef))
-        assertThatThrownBy { verifier.verify() }
-            .isExactlyInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("cannot be both an input and a reference input in the same transaction.")
-    }
-
-    @Test
-    fun `throws an exception when input and reference states don't have the same notary (names are different)`() {
-        whenever(inputTransactionState.notaryName).thenReturn(notaryX500Name)
-        whenever(referenceTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
-        assertThatThrownBy { verifier.verify() }
-            .isExactlyInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("Input and reference states' notaries need to be the same.")
-    }
-
-    @Test
-    fun `does not throw when input and reference states don't have the same notary keys (but the names are still the same)`() {
-        whenever(inputTransactionState.notaryKey).thenReturn(publicKeyExample)
-        whenever(referenceTransactionState.notaryKey).thenReturn(anotherPublicKeyExample)
-        assertDoesNotThrow { verifier.verify() }
-    }
-
-    @Test
-    fun `throws an exception when input and reference states don't have the same notary passed into verification (names are different)`() {
-        whenever(inputTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
-        whenever(referenceTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
-        assertThatThrownBy { verifier.verify() }
-            .isExactlyInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("Input and reference states' notaries need to be the same as the UtxoLedgerTransaction's notary")
-    }
-
-    @Test
-    fun `does not throw when input and reference states have different notary keys passed into verification (names are the same)`() {
-        whenever(inputTransactionState.notaryKey).thenReturn(anotherPublicKeyExample)
-        whenever(referenceTransactionState.notaryKey).thenReturn(anotherPublicKeyExample)
-        assertDoesNotThrow { verifier.verify() }
-    }
-
-    @Test
-    fun `throws an exception if input states are older than output states`() {
-        // TODO CORE-8957 (needs to access the previous transactions from the backchain somehow)
     }
 
     @Test

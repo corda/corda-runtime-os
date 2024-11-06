@@ -1,29 +1,25 @@
-package net.corda.ledger.utxo.transaction.verifier
+package net.corda.ledger.libs.verification.impl
 
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateRef
 import java.security.PublicKey
 
-/*
- * Shared verification for [UtxoTransactionBuilder] and [UtxoLedgerTransaction].
- */
-abstract class UtxoTransactionVerifier {
-    protected open val subjectClass: String = "transaction"
+object VerificationUtils {
 
-    protected fun verifySignatories(signatories: List<PublicKey>) {
+    fun verifySignatories(signatories: List<PublicKey>) {
         check(signatories.isNotEmpty()) {
-            "At least one signatory signing key must be applied to the current $subjectClass" +
+            "At least one signatory signing key must be applied to the current transaction" +
                 " in order to create a signed transaction."
         }
     }
 
-    protected fun verifyInputsAndOutputs(inputStateRefs: List<StateRef>, outputStates: List<*>) {
+    fun verifyInputsAndOutputs(inputStateRefs: List<StateRef>, outputStates: List<*>) {
         check(inputStateRefs.isNotEmpty() || outputStates.isNotEmpty()) {
-            "At least one input state, or one output state must be applied to the current $subjectClass."
+            "At least one input state, or one output state must be applied to the current transaction."
         }
     }
 
-    protected fun verifyNoDuplicateInputsOrReferences(inputStateRefs: List<StateRef>, referenceStateRefs: List<StateRef>) {
+    fun verifyNoDuplicateInputsOrReferences(inputStateRefs: List<StateRef>, referenceStateRefs: List<StateRef>) {
         // The input states part of this check may be repeated later in
         //   net.corda.ledger.utxo.transaction.verifier.UtxoTransactionEncumbranceVerifierKt
         // checkEncumbranceGroup if there is state encumbrance on this transaction.
@@ -36,7 +32,7 @@ abstract class UtxoTransactionVerifier {
         check(duplicateReferences.isEmpty()) { "Duplicate reference states detected: ${duplicateReferences.keys}" }
     }
 
-    protected fun verifyNoInputAndReferenceOverlap(inputStateRefs: List<StateRef>, referenceStateRefs: List<StateRef>) {
+    fun verifyNoInputAndReferenceOverlap(inputStateRefs: List<StateRef>, referenceStateRefs: List<StateRef>) {
         val intersection = inputStateRefs intersect referenceStateRefs.toSet()
         check(intersection.isEmpty()) {
             "A state cannot be both an input and a reference input in the same transaction. Offending " +
@@ -44,9 +40,9 @@ abstract class UtxoTransactionVerifier {
         }
     }
 
-    protected fun verifyCommands(commands: List<Command>) {
+    fun verifyCommands(commands: List<Command>) {
         check(commands.isNotEmpty()) {
-            "At least one command must be applied to the current $subjectClass."
+            "At least one command must be applied to the current transaction."
         }
     }
 }

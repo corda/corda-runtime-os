@@ -17,6 +17,7 @@ dependencies {
     implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
     implementation project(':libs:serialization:json-validator')
     implementation project(':libs:serialization:json-validator-lib')
+    implementation project(':libs:ledger-lib-verification')
 
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-base'
