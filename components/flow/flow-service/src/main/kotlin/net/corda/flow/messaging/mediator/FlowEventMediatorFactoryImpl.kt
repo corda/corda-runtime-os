@@ -56,6 +56,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.UUID
 
 @Suppress("LongParameterList")
@@ -133,10 +134,12 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .build()
 
     private fun buildRetryRequest(key: String, syncRpcRequest: MediatorMessage<Any>) : MediatorMessage<Any> {
-        //TODO - is this ok. this header comes from tracing.
-        val requestId = syncRpcRequest.getProperty(REQUEST_ID_HEADER).toString()
+        // TODO are they all entity requests
+        val entityRequest = deserializer.deserialize(syncRpcRequest.payload as ByteArray) as EntityRequest
+        val requestId = entityRequest.flowExternalEventContext.requestId
         val externalEventRetryRequest = ExternalEventRetryRequest.newBuilder()
             .setRequestId(requestId)
+            .setTimestamp(Instant.now())
             .build()
         val flowEvent = FlowEvent.newBuilder()
             .setFlowId(key)

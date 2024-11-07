@@ -205,6 +205,7 @@ class ExternalEventManagerImpl(
     private fun generateRecord(externalEventState: ExternalEventState, instant: Instant?) : Record<*, *> {
         val eventToSend = externalEventState.eventToSend
         if (instant != null) {
+            //dont update timestamp in some scenarios to avoid updating the state
             eventToSend.timestamp = instant
         }
         val topic = eventToSend.topic
