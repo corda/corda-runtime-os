@@ -88,7 +88,7 @@ class ExternalEventRetryRequestHandler : FlowEventHandler<ExternalEventRetryRequ
     }
 
     private fun retryIsExpired(retryTimeout: Long, now: Instant): Boolean {
-        return retryTimeout > now.toEpochMilli()
+        return retryTimeout < now.toEpochMilli()
     }
 
     private fun getExpiry(metaData: Metadata?): Long? {
