@@ -177,8 +177,8 @@ class ExternalEventManagerImpl(
     override fun getRetryEvent(
         externalEventState: ExternalEventState,
     ): Record<*, *> {
-        //Don't update ExternalEventState with new timestamp as this will result in State change being detected and potentially
-        // additional checkpoints saved for cases where multiple sequential RPC calls have transient retry errors
+        //Don't update ExternalEventState with new timestamp as this will result in State change being detected by the message pattern
+        // and additional checkpoints saved for cases where multiple sequential RPC calls have transient retry errors
         return generateRecord(externalEventState, null)
     }
 

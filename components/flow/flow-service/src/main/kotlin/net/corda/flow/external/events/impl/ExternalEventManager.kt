@@ -92,6 +92,7 @@ interface ExternalEventManager {
      * Returns the event as is from the state. No additional checks required.
      * @param externalEventState The [ExternalEventState] to get the event from.
      * @param instant The current time. Used to set timestamp.
+     * @return The external event request to resend
      * */
     fun getRetryEvent(
         externalEventState: ExternalEventState

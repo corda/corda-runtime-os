@@ -83,7 +83,6 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         private const val RPC_CLIENT = "RpcClient"
         private const val RETRY_TOPIC_POLL_LIMIT = 5
         private const val RETRY_TOPIC = FLOW_EVENT_TOPIC
-        private const val REQUEST_ID_HEADER = "request_id"
 
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -134,7 +133,6 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .build()
 
     private fun buildRetryRequest(key: String, syncRpcRequest: MediatorMessage<Any>) : MediatorMessage<Any> {
-        // TODO are they all entity requests
         val entityRequest = deserializer.deserialize(syncRpcRequest.payload as ByteArray) as EntityRequest
         val requestId = entityRequest.flowExternalEventContext.requestId
         val externalEventRetryRequest = ExternalEventRetryRequest.newBuilder()
@@ -166,7 +164,6 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
     }
 
     private fun getRetryTopicConfig(messagingConfig: SmartConfig): SmartConfig {
-        // TODO - perhaps we should configure consumer to poll less frequently than primary topic consumers
         return messagingConfig.withValue(KAFKA_CONSUMER_MAX_POLL_RECORDS, ConfigValueFactory.fromAnyRef(RETRY_TOPIC_POLL_LIMIT))
     }
 

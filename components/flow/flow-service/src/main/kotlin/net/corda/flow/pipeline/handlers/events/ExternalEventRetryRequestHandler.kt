@@ -9,7 +9,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.configuration.FlowConfig
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
@@ -105,5 +105,5 @@ class ExternalEventRetryRequestHandler : FlowEventHandler<ExternalEventRetryRequ
     }
 
     private fun retryTimeout(config: SmartConfig) =
-        config.getLong(MessagingConfig.Subscription.MEDIATOR_PROCESSING_TRANSIENT_ERROR_TIMEOUT)
+        config.getLong(FlowConfig.EXTERNAL_EVENT_TRANSIENT_ERROR_TIMEOUT)
 }
