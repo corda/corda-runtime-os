@@ -1,6 +1,7 @@
 package net.corda.messaging.mediator.processor
 
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -44,6 +45,7 @@ class EventProcessorTest {
     private lateinit var eventProcessor: EventProcessor<String, String, String>
 
     private val inputState1: State = mock()
+    private val retryTopic: String = "flow.event"
     private val asyncMessage: String = "ASYNC_PAYLOAD"
     private val syncMessage: String = "SYNC_PAYLOAD"
     private val updatedProcessingState = StateAndEventProcessor.State("bar", null)
@@ -67,7 +69,7 @@ class EventProcessorTest {
             } else RoutingDestination(client, "endpoint", RoutingDestination.Type.ASYNCHRONOUS)
         }
         eventMediatorConfig = buildTestConfig()
-        val retryConfig = EventMediatorConfigBuilder.RetryConfig("retry.topic", buildRetryRequest)
+        val retryConfig = EventMediatorConfigBuilder.RetryConfig(retryTopic, buildRetryRequest)
         eventMediatorRetryConfig = buildTestConfig(retryConfig)
 
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
@@ -185,9 +187,11 @@ class EventProcessorTest {
     }
 
     @Test
-    fun `when sync processing fails with a transient error, retry is OFF, a NOOP state change signal is set and no retry event is sent`() {
-        val mockedState = mock<State>()
+    fun `when sync processing fails with a transient error, retry is OFF, a CREATE state change signal is set and no retry event is sent`
+                () {
         val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), null))
+        val mockedState = mock<State>()
+        whenever(stateManagerHelper.createOrUpdateState(any(), anyOrNull(), anyOrNull())).thenReturn(mockedState)
 
         whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
@@ -198,31 +202,28 @@ class EventProcessorTest {
                 )
             )
         }
-        whenever(stateManagerHelper.failStateProcessing(any(), eq(null), any())).thenReturn(mockedState)
-
         val outputMap = eventProcessor.processEvents(input)
 
         val output = outputMap["key"]
         assertEquals(emptyList<MediatorMessage<Any>>(), output?.asyncOutputs)
-        assertThat(output?.stateChangeAndOperation?.outputState).isEqualTo(null)
-        assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Noop::class.java)
+        assertThat(output?.stateChangeAndOperation?.outputState).isEqualTo(mockedState)
+        assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Create::class.java)
     }
 
     @Test
-    fun `when sync processing fails with a transient error, retry is ON, a NOOP state change signal is set and a retry event is sent`() {
+    fun `when transient error while processing retry topic, retry is ON, a NOOP state change signal is set and a retry event is sent`() {
+        val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key", retryTopic), null))
         val mockedState = mock<State>()
-        val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), null))
-
+        whenever(stateManagerHelper.createOrUpdateState(any(), anyOrNull(), anyOrNull())).thenReturn(mockedState)
         whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
-            Response<State>(
+            Response<String>(
                 null,
                 listOf(
                     Record("", "key", syncMessage)
                 )
             )
         }
-        whenever(stateManagerHelper.failStateProcessing(any(), eq(null), any())).thenReturn(mockedState)
         eventProcessor = EventProcessor(eventMediatorRetryConfig, stateManagerHelper, messageRouter, mediatorInputService)
         val outputMap = eventProcessor.processEvents(input)
 
@@ -230,6 +231,29 @@ class EventProcessorTest {
         assertEquals(1, output?.asyncOutputs?.size)
         assertThat(output?.stateChangeAndOperation?.outputState).isEqualTo(null)
         assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Noop::class.java)
+    }
+
+    @Test
+    fun `when transient error while processing event topic, retry is ON, a NOOP state change signal is set and a retry event is sent`() {
+        val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key", "flow.start"), null))
+        val mockedState = mock<State>()
+        whenever(stateManagerHelper.createOrUpdateState(any(), anyOrNull(), any())).thenReturn(mockedState)
+        whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
+        whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
+            Response(
+                StateAndEventProcessor.State("", Metadata(mapOf())),
+                listOf(
+                    Record("", "key", syncMessage)
+                )
+            )
+        }
+        eventProcessor = EventProcessor(eventMediatorRetryConfig, stateManagerHelper, messageRouter, mediatorInputService)
+        val outputMap = eventProcessor.processEvents(input)
+
+        val output = outputMap["key"]
+        assertEquals(1, output?.asyncOutputs?.size)
+        assertThat(output?.stateChangeAndOperation?.outputState).isEqualTo(mockedState)
+        assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Create::class.java)
     }
 
     private fun buildTestConfig(retryConfig: EventMediatorConfigBuilder.RetryConfig<String>? = null) = EventMediatorConfig(

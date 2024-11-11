@@ -75,13 +75,15 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         var processorState = inputProcessorState
         val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
         val stateChangeAndOperation = try {
+            var isNoopState = false
             input.records.forEach { consumerInputEvent ->
-                val (updatedProcessorState, newAsyncOutputs) = processConsumerInput(consumerInputEvent, processorState, key)
+                val (updatedProcessorState, newAsyncOutputs, isNoop) = processConsumerInput(consumerInputEvent, processorState, key)
                 processorState = updatedProcessorState
                 asyncOutputs.addOutputs(consumerInputEvent, newAsyncOutputs)
+                if (isNoop) isNoopState = isNoop
             }
             val state = stateManagerHelper.createOrUpdateState(key.toString(), inputState, processorState)
-            stateChangeAndOperation(inputState, state)
+            if (isNoopState) StateChangeAndOperation.Noop else stateChangeAndOperation(inputState, state)
         } catch (e: EventProcessorSyncEventsIntermittentException) {
             asyncOutputs.clear()
             StateChangeAndOperation.Transient
@@ -232,13 +234,12 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                         outputEvents.add(it)
                     }
                 }
+
                 // If we're on the retry topic and run into another transient error, exit early and do not update the state to save
                 // performance.
                 // If we are not on the retry topic then we need to save the state before adding the retry event. This will allow the
                 // flow cleanup processors to execute on an idle flow checkpoint
-                if (isRetryTopic) {
-                    return SyncProcessingOutput(emptyList(), true, outputEvents)
-                } else null
+                return SyncProcessingOutput(emptyList(), isRetryTopic, outputEvents)
             }
         }
         return SyncProcessingOutput(outputEvents)
