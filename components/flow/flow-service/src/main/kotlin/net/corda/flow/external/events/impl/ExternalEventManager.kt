@@ -95,6 +95,7 @@ interface ExternalEventManager {
      * @return The external event request to resend
      * */
     fun getRetryEvent(
-        externalEventState: ExternalEventState
+        externalEventState: ExternalEventState,
+        instant: Instant,
     ): Record<*, *>
 }

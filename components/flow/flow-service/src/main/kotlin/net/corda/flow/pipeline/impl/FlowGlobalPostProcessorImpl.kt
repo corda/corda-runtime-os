@@ -162,7 +162,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val externalEventState = context.checkpoint.externalEventState ?: return emptyList()
 
         return when (context.inputEvent.payload) {
-            is ExternalEventRetryRequest -> getTransientRetryRequest(externalEventState)
+            is ExternalEventRetryRequest -> getTransientRetryRequest(externalEventState, now)
             else -> {
                 val retryWindow = Duration.ofMillis(context.flowConfig.getLong(EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW))
                 externalEventManager.getEventToSend(externalEventState, now, retryWindow).let { (updatedState, record) ->
@@ -173,9 +173,9 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         }
     }
 
-    private fun getTransientRetryRequest(externalEventState: ExternalEventState):
+    private fun getTransientRetryRequest(externalEventState: ExternalEventState, now: Instant):
             List<Record<*, *>> {
-        return listOf(externalEventManager.getRetryEvent(externalEventState))
+        return listOf(externalEventManager.getRetryEvent(externalEventState, now))
     }
 
     private fun updateFlowSessionMetadata(context: FlowEventContext<Any>): Metadata? {

@@ -4,8 +4,6 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
-import net.corda.flow.state.impl.CheckpointMetadataKeys.RETRY_EXPIRY
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -42,7 +40,6 @@ class ExternalEventResponseHandler @Activate constructor(
         }
 
         val externalEventState = checkpoint.externalEventState
-        var metadata = context.metadata
 
         if (externalEventState == null) {
             log.debug {
@@ -65,25 +62,6 @@ class ExternalEventResponseHandler @Activate constructor(
 
         checkpoint.externalEventState = updatedExternalEventState
 
-        //if an ExternalEventResponse is received then clear the expiry time
-        val transientRetryExpiry = getExpiry(metadata)
-        if (transientRetryExpiry != null && externalEventState.response != null) {
-            metadata = clearExpiry(metadata)
-        }
-
-        return context.copy(metadata = metadata)
-    }
-
-    private fun clearExpiry(metadata: Metadata?): Metadata? {
-        if (metadata == null) return null
-        val newMap = metadata.toMutableMap()
-        newMap.remove(RETRY_EXPIRY)
-        return Metadata(newMap)
-    }
-
-    private fun getExpiry(metaData: Metadata?): Long? {
-        if (metaData == null) return null
-        val expiry = metaData[RETRY_EXPIRY] ?: return null
-        return expiry as Long
+        return context
     }
 }
