@@ -30,7 +30,7 @@ class ExternalEventRetryRequestHandler : FlowEventHandler<ExternalEventRetryRequ
         val now = Instant.now()
         val externalEventRetryRequest = context.inputEventPayload
         var metaData = context.metadata
-        val messagingConfig = context.configs.getConfig(ConfigKeys.MESSAGING_CONFIG)
+        val flowConfig = context.configs.getConfig(ConfigKeys.FLOW_CONFIG)
 
         if (!checkpoint.doesExist) {
             log.debug {
@@ -63,7 +63,7 @@ class ExternalEventRetryRequestHandler : FlowEventHandler<ExternalEventRetryRequ
             val expiryTime = getExpiry(metaData)
             if (expiryTime == null) {
                 //first retry so time to set an expiry
-                metaData = setExpiry(metaData, messagingConfig, now)
+                metaData = setExpiry(metaData, flowConfig, now)
             } else if (retryIsExpired(expiryTime, now)) {
                 //retry timeout is exceeded so fail the flow
                 log.debug {
@@ -97,8 +97,8 @@ class ExternalEventRetryRequestHandler : FlowEventHandler<ExternalEventRetryRequ
         return expiry as Long
     }
 
-    private fun setExpiry(metaData: Metadata?, messagingConfig: SmartConfig, now: Instant): Metadata {
-        val retryTimeout = retryTimeout(messagingConfig) + now.toEpochMilli()
+    private fun setExpiry(metaData: Metadata?, flowConfig: SmartConfig, now: Instant): Metadata {
+        val retryTimeout = retryTimeout(flowConfig) + now.toEpochMilli()
         val newEntry = mapOf(CheckpointMetadataKeys.RETRY_EXPIRY to retryTimeout)
         if (metaData == null) return Metadata(newEntry)
         return Metadata(metaData + newEntry)
