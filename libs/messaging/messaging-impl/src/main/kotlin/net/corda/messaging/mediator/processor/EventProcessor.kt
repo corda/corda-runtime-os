@@ -15,6 +15,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.tracing.addTraceContextToRecord
+import org.slf4j.LoggerFactory
 
 /**
  * Class to process records received from the consumer.
@@ -32,6 +33,8 @@ class EventProcessor<K : Any, S : Any, E : Any>(
 
     private val metrics = EventMediatorMetrics(config.name)
     private val retryConfig = config.retryConfig
+    private val logger = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
+
 
     /**
      * Process a group of events.
@@ -80,7 +83,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 val (updatedProcessorState, newAsyncOutputs, isNoop) = processConsumerInput(consumerInputEvent, processorState, key)
                 processorState = updatedProcessorState
                 asyncOutputs.addOutputs(consumerInputEvent, newAsyncOutputs)
-                if (isNoop) isNoopState = isNoop
+                if (isNoop) isNoopState = true
             }
             val state = stateManagerHelper.createOrUpdateState(key.toString(), inputState, processorState)
             if (isNoopState) StateChangeAndOperation.Noop else stateChangeAndOperation(inputState, state)
@@ -153,6 +156,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     return ConsumerInputOutput(processorStateUpdated, newAsyncOutputs, true)
                 }
             } catch (e: Exception) {
+                logger.warn("Failed process synchronous events for key $key", e)
                 throw EventProcessorSyncEventsFatalException(processorStateUpdated, e)
             }
         }
