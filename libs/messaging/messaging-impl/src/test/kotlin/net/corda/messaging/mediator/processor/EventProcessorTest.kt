@@ -270,7 +270,7 @@ class EventProcessorTest {
         retryConfig
     )
 
-    private val buildRetryRequest: ((String, MediatorMessage<Any>) -> MediatorMessage<Any>) = { _, message ->
-        message
+    private val buildRetryRequest: ((String, MediatorMessage<Any>) -> List<MediatorMessage<Any>>) = { _, message ->
+        listOf(message)
     }
 }
