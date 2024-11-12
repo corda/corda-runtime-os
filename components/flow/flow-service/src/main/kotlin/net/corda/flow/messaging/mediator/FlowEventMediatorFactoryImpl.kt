@@ -153,7 +153,9 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
                 .setFlowId(key)
                 .setPayload(externalEventRetryRequest)
                 .build()
-            listOf(MediatorMessage(flowEvent, syncRpcRequest.properties))
+            //ensure key is set correctly on new message destined for flow topic
+            val properties = syncRpcRequest.properties.toMutableMap().apply { this["key"] = key }
+            listOf(MediatorMessage(flowEvent, properties))
         } catch (ex: Exception) {
             //In this scenario we failed to build the retry event. This will likely result in the flow hanging until the idle processor
             // kicks in. This shouldn't be possible and is just a safety net.
