@@ -104,6 +104,6 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
 
     data class RetryConfig<K: Any>(
         val retryTopic: String,
-        val buildRetryRequest: ((K, MediatorMessage<Any>) -> MediatorMessage<Any>)? = null,
+        val buildRetryRequest: ((K, MediatorMessage<Any>) -> List<MediatorMessage<Any>>)? = null,
     )
 }

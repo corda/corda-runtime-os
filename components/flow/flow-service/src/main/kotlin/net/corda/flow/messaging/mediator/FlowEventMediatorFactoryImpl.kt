@@ -83,7 +83,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         private const val RPC_CLIENT = "RpcClient"
         private const val RETRY_TOPIC_POLL_LIMIT = 5
         private const val RETRY_TOPIC = FLOW_EVENT_TOPIC
-
+        private const val TOKEN_RETRY = "TokenRetry"
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -110,44 +110,62 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         messageProcessor: StateAndEventProcessor<String, Checkpoint, FlowEvent>,
         stateManager: StateManager,
     ) = EventMediatorConfigBuilder<String, Checkpoint, FlowEvent>()
-        .name("FlowEventMediator")
-        .messagingConfig(messagingConfig)
-        .consumerFactories(
-            *createMediatorConsumerFactories(messagingConfig, bootConfig).toTypedArray()
-        )
-        .clientFactories(
-            messagingClientFactoryFactory.createMessageBusClientFactory(
-                MESSAGE_BUS_CLIENT, messagingConfig
-            ),
-            messagingClientFactoryFactory.createRPCClientFactory(
-                RPC_CLIENT
+            .name("FlowEventMediator")
+            .messagingConfig(messagingConfig)
+            .consumerFactories(
+                *createMediatorConsumerFactories(messagingConfig, bootConfig).toTypedArray()
             )
-        )
-        .messageProcessor(messageProcessor)
-        .messageRouterFactory(createMessageRouterFactory(messagingConfig))
-        .threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
-        .threadName("flow-event-mediator")
-        .stateManager(stateManager)
-        .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
-        .retryConfig(EventMediatorConfigBuilder.RetryConfig(RETRY_TOPIC, ::buildRetryRequest))
-        .build()
+            .clientFactories(
+                messagingClientFactoryFactory.createMessageBusClientFactory(
+                    MESSAGE_BUS_CLIENT, messagingConfig
+                ),
+                messagingClientFactoryFactory.createRPCClientFactory(
+                    RPC_CLIENT
+                )
+            )
+            .messageProcessor(messageProcessor)
+            .messageRouterFactory(createMessageRouterFactory(messagingConfig))
+            .threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
+            .threadName("flow-event-mediator")
+            .stateManager(stateManager)
+            .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
+            .retryConfig(EventMediatorConfigBuilder.RetryConfig(RETRY_TOPIC, ::buildRetryRequest))
+            .build()
 
-    private fun buildRetryRequest(key: String, syncRpcRequest: MediatorMessage<Any>) : MediatorMessage<Any> {
-        val entityRequest = deserializer.deserialize(syncRpcRequest.payload as ByteArray) as EntityRequest
-        val requestId = entityRequest.flowExternalEventContext.requestId
-        val externalEventRetryRequest = ExternalEventRetryRequest.newBuilder()
-            .setRequestId(requestId)
-            .setTimestamp(Instant.now())
-            .build()
-        val flowEvent = FlowEvent.newBuilder()
-            .setFlowId(key)
-            .setPayload(externalEventRetryRequest)
-            .build()
-        return MediatorMessage(flowEvent, syncRpcRequest.properties)
+
+    private fun buildRetryRequest(key: String, syncRpcRequest: MediatorMessage<Any>) : List<MediatorMessage<Any>> {
+        return try {
+            val requestId = getRequestId(syncRpcRequest)
+            val externalEventRetryRequest = ExternalEventRetryRequest.newBuilder()
+                .setRequestId(requestId)
+                .setTimestamp(Instant.now())
+                .build()
+            val flowEvent = FlowEvent.newBuilder()
+                .setFlowId(key)
+                .setPayload(externalEventRetryRequest)
+                .build()
+            listOf(MediatorMessage(flowEvent, syncRpcRequest.properties))
+        } catch (ex: Exception) {
+            //In this scenario we failed to build the retry event. This will likely result in the flow hanging until the idle processor
+            // kicks in. This shouldn't be possible as is just a safety net.
+            logger.warn("Failed to generate a retry event for key $key. No retry will be triggered.", ex)
+            emptyList()
+        }
+    }
+
+    private fun getRequestId(syncRpcRequest: MediatorMessage<Any>): String {
+        return when (val entityRequest = deserializer.deserialize(syncRpcRequest.payload as ByteArray)) {
+            is EntityRequest -> entityRequest.flowExternalEventContext.requestId
+            is FlowOpsRequest -> entityRequest.flowExternalEventContext.requestId
+            is LedgerPersistenceRequest -> entityRequest.flowExternalEventContext.requestId
+            is TransactionVerificationRequest -> entityRequest.flowExternalEventContext.requestId
+            is UniquenessCheckRequestAvro -> entityRequest.flowExternalEventContext.requestId
+            is TokenPoolCacheEvent -> TOKEN_RETRY
+            else -> "InvalidEntityType"
+        }
     }
 
     private fun createMediatorConsumerFactories(messagingConfig: SmartConfig, bootConfig: SmartConfig): List<MediatorConsumerFactory> {
-
         val retryTopicMessagingConfig = getRetryTopicConfig(messagingConfig)
         val mediatorConsumerFactory: MutableList<MediatorConsumerFactory> = mutableListOf(
             mediatorConsumerFactory(FLOW_START, messagingConfig),

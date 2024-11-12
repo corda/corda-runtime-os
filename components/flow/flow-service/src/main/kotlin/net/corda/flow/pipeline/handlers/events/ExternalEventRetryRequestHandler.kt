@@ -14,6 +14,7 @@ class ExternalEventRetryRequestHandler : FlowEventHandler<ExternalEventRetryRequ
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val TOKEN_RETRY = "TokenRetry"
     }
 
     override val type = ExternalEventRetryRequest::class.java
@@ -49,7 +50,10 @@ class ExternalEventRetryRequestHandler : FlowEventHandler<ExternalEventRetryRequ
                         "$retryRequestId while flow [${context.inputEvent.flowId} is not waiting " +
                         "for an ${ExternalEventResponse::class.simpleName}"
             )
-        } else if (externalEventStateRequestId != retryRequestId) {
+        }
+        //Discard events not related. Some token requests do not contain the external event id so this validation will allow all token
+        // requests to be resent. e.g TokenForceClaimRelease
+        else if (externalEventStateRequestId != retryRequestId && retryRequestId != TOKEN_RETRY) {
             log.info("Discarding retry request received with requestId $retryRequestId. This is likely a stale record polled. Checkpoint " +
                     "is currently waiting to receive a response for requestId $externalEventStateRequestId")
         }

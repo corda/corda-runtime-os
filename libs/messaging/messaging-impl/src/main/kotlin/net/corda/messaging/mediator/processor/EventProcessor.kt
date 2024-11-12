@@ -235,7 +235,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 val outputEvents: MutableList<MediatorMessage<Any>> = mutableListOf()
                 if (retryConfig != null) {
                     retryConfig.buildRetryRequest?.let { it(key, message) }?.let {
-                        outputEvents.add(it)
+                        outputEvents.addAll(it)
                     }
                 }
 
