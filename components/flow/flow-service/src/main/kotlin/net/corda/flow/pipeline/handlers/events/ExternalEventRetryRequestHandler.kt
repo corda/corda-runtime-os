@@ -9,6 +9,10 @@ import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+/**
+ * Handles pre-processing of events that are intended to trigger a resend of an external event.
+ * This can be triggered by the mediator in the event of transient errors.
+ */
 @Component(service = [FlowEventHandler::class])
 class ExternalEventRetryRequestHandler : FlowEventHandler<ExternalEventRetryRequest> {
 

@@ -110,29 +110,38 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         messageProcessor: StateAndEventProcessor<String, Checkpoint, FlowEvent>,
         stateManager: StateManager,
     ) = EventMediatorConfigBuilder<String, Checkpoint, FlowEvent>()
-            .name("FlowEventMediator")
-            .messagingConfig(messagingConfig)
-            .consumerFactories(
-                *createMediatorConsumerFactories(messagingConfig, bootConfig).toTypedArray()
+        .name("FlowEventMediator")
+        .messagingConfig(messagingConfig)
+        .consumerFactories(
+            *createMediatorConsumerFactories(messagingConfig, bootConfig).toTypedArray()
+        )
+        .clientFactories(
+            messagingClientFactoryFactory.createMessageBusClientFactory(
+                MESSAGE_BUS_CLIENT, messagingConfig
+            ),
+            messagingClientFactoryFactory.createRPCClientFactory(
+                RPC_CLIENT
             )
-            .clientFactories(
-                messagingClientFactoryFactory.createMessageBusClientFactory(
-                    MESSAGE_BUS_CLIENT, messagingConfig
-                ),
-                messagingClientFactoryFactory.createRPCClientFactory(
-                    RPC_CLIENT
-                )
-            )
-            .messageProcessor(messageProcessor)
-            .messageRouterFactory(createMessageRouterFactory(messagingConfig))
-            .threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
-            .threadName("flow-event-mediator")
-            .stateManager(stateManager)
-            .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
-            .retryConfig(EventMediatorConfigBuilder.RetryConfig(RETRY_TOPIC, ::buildRetryRequest))
-            .build()
+        )
+        .messageProcessor(messageProcessor)
+        .messageRouterFactory(createMessageRouterFactory(messagingConfig))
+        .threads(messagingConfig.getInt(MEDIATOR_PROCESSING_THREAD_POOL_SIZE))
+        .threadName("flow-event-mediator")
+        .stateManager(stateManager)
+        .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
+        .retryConfig(EventMediatorConfigBuilder.RetryConfig(RETRY_TOPIC, ::buildRetryRequest))
+        .build()
 
 
+    /**
+     * Build a request to trigger a resend of external events via the flow event pipeline.
+     * Request id is calculated from the previous request payload when possible to allow for some validation in the pipeline.
+     * This validation is an enhancement and not strictly required.
+     * A new Timestamp is set on each request to ensure each request is unique for replay logic handling.
+     * @param key the key of the input record
+     * @param syncRpcRequest the previous sync request which failed.
+     * @return list of output retry events.
+     */
     private fun buildRetryRequest(key: String, syncRpcRequest: MediatorMessage<Any>) : List<MediatorMessage<Any>> {
         return try {
             val requestId = getRequestId(syncRpcRequest)
@@ -147,12 +156,19 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
             listOf(MediatorMessage(flowEvent, syncRpcRequest.properties))
         } catch (ex: Exception) {
             //In this scenario we failed to build the retry event. This will likely result in the flow hanging until the idle processor
-            // kicks in. This shouldn't be possible as is just a safety net.
+            // kicks in. This shouldn't be possible and is just a safety net.
             logger.warn("Failed to generate a retry event for key $key. No retry will be triggered.", ex)
             emptyList()
         }
     }
 
+    /**
+     * Determine the external event request id where possible.
+     * Note, some token events have no request id as there is no response.
+     * For these use a hardcoded request id which will be ignored at the validation step.
+     * @param syncRpcRequest the previous request
+     * @return Request ID to set in the retry event.
+     */
     private fun getRequestId(syncRpcRequest: MediatorMessage<Any>): String {
         return when (val entityRequest = deserializer.deserialize(syncRpcRequest.payload as ByteArray)) {
             is EntityRequest -> entityRequest.flowExternalEventContext.requestId
