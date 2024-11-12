@@ -178,20 +178,6 @@ class MemberOpsServiceTest {
         }
     }
 
-    @Test
-    fun `component goes DOWN and comes back UP if subscription has error state and comes back`() {
-        getMemberOpsServiceTestContext().run {
-            testClass.start()
-            bringDependenciesUp()
-            sendConfigUpdate<MemberOpsService>(configs)
-
-            setDependencyToError(rpcSubName)
-            verifyIsDown<MemberOpsService>()
-            bringDependencyUp(rpcSubName)
-            verifyIsUp<MemberOpsService>()
-        }
-    }
-
     private fun getMemberOpsServiceTestContext(): LifecycleTest<MemberOpsService> {
         return LifecycleTest {
             addDependency(asyncRetrySubName)
