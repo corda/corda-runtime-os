@@ -174,6 +174,13 @@ class ExternalEventManagerImpl(
         return externalEventState to record
     }
 
+    override fun getRetryEvent(
+        externalEventState: ExternalEventState,
+        instant: Instant,
+    ): Record<*, *> {
+        return generateRecord(externalEventState, instant)
+    }
+
     private fun checkRetry(externalEventState: ExternalEventState, instant: Instant, retryWindow: Duration) {
         when {
             (externalEventState.sendTimestamp + retryWindow) >= instant -> {

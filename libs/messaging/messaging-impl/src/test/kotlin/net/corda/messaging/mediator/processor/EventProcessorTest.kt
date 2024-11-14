@@ -1,6 +1,7 @@
 package net.corda.messaging.mediator.processor
 
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -10,6 +11,7 @@ import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
+import net.corda.messaging.api.mediator.config.RetryConfig
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
@@ -34,6 +36,7 @@ import java.util.UUID
 @Execution(ExecutionMode.SAME_THREAD)
 class EventProcessorTest {
     private lateinit var eventMediatorConfig: EventMediatorConfig<String, String, String>
+    private lateinit var eventMediatorRetryConfig: EventMediatorConfig<String, String, String>
     private lateinit var stateManagerHelper: StateManagerHelper<String>
     private lateinit var client: MessagingClient
     private lateinit var messageRouter: MessageRouter
@@ -42,6 +45,7 @@ class EventProcessorTest {
     private lateinit var eventProcessor: EventProcessor<String, String, String>
 
     private val inputState1: State = mock()
+    private val retryTopic: String = "flow.event"
     private val asyncMessage: String = "ASYNC_PAYLOAD"
     private val syncMessage: String = "SYNC_PAYLOAD"
     private val updatedProcessingState = StateAndEventProcessor.State("bar", null)
@@ -65,6 +69,8 @@ class EventProcessorTest {
             } else RoutingDestination(client, "endpoint", RoutingDestination.Type.ASYNCHRONOUS)
         }
         eventMediatorConfig = buildTestConfig()
+        val retryConfig = RetryConfig(retryTopic, buildRetryRequest)
+        eventMediatorRetryConfig = buildTestConfig(retryConfig)
 
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
             Response(
@@ -181,9 +187,11 @@ class EventProcessorTest {
     }
 
     @Test
-    fun `when sync processing fails with a transient error, a transient state change signal is sent`() {
-        val mockedState = mock<State>()
+    fun `when sync processing fails with a transient error, retry is OFF, a CREATE state change signal is set and no retry event is sent`
+                () {
         val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), null))
+        val mockedState = mock<State>()
+        whenever(stateManagerHelper.createOrUpdateState(any(), anyOrNull(), anyOrNull())).thenReturn(mockedState)
 
         whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
@@ -194,17 +202,61 @@ class EventProcessorTest {
                 )
             )
         }
-        whenever(stateManagerHelper.failStateProcessing(any(), eq(null), any())).thenReturn(mockedState)
-
         val outputMap = eventProcessor.processEvents(input)
 
         val output = outputMap["key"]
         assertEquals(emptyList<MediatorMessage<Any>>(), output?.asyncOutputs)
-        assertThat(output?.stateChangeAndOperation?.outputState).isEqualTo(null)
-        assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Transient::class.java)
+        assertThat(output?.stateChangeAndOperation?.outputState).isEqualTo(mockedState)
+        assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Create::class.java)
     }
 
-    private fun buildTestConfig() = EventMediatorConfig(
+    @Test
+    fun `when transient error while processing retry topic, retry is ON, a NOOP state change signal is set and a retry event is sent`() {
+        val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key", retryTopic), null))
+        val mockedState = mock<State>()
+        whenever(stateManagerHelper.createOrUpdateState(any(), anyOrNull(), anyOrNull())).thenReturn(mockedState)
+        whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
+        whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
+            Response<String>(
+                null,
+                listOf(
+                    Record("", "key", syncMessage)
+                )
+            )
+        }
+        eventProcessor = EventProcessor(eventMediatorRetryConfig, stateManagerHelper, messageRouter, mediatorInputService)
+        val outputMap = eventProcessor.processEvents(input)
+
+        val output = outputMap["key"]
+        assertEquals(1, output?.asyncOutputs?.size)
+        assertThat(output?.stateChangeAndOperation?.outputState).isEqualTo(null)
+        assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Noop::class.java)
+    }
+
+    @Test
+    fun `when transient error while processing event topic, retry is ON, a NOOP state change signal is set and a retry event is sent`() {
+        val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key", "flow.start"), null))
+        val mockedState = mock<State>()
+        whenever(stateManagerHelper.createOrUpdateState(any(), anyOrNull(), any())).thenReturn(mockedState)
+        whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
+        whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
+            Response(
+                StateAndEventProcessor.State("", Metadata(mapOf())),
+                listOf(
+                    Record("", "key", syncMessage)
+                )
+            )
+        }
+        eventProcessor = EventProcessor(eventMediatorRetryConfig, stateManagerHelper, messageRouter, mediatorInputService)
+        val outputMap = eventProcessor.processEvents(input)
+
+        val output = outputMap["key"]
+        assertEquals(1, output?.asyncOutputs?.size)
+        assertThat(output?.stateChangeAndOperation?.outputState).isEqualTo(mockedState)
+        assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Create::class.java)
+    }
+
+    private fun buildTestConfig(retryConfig: RetryConfig<String>? = null) = EventMediatorConfig(
         "",
         SmartConfigImpl.empty(),
         emptyList(),
@@ -214,6 +266,11 @@ class EventProcessorTest {
         1,
         "",
         mock(),
-        20
+        20,
+        retryConfig
     )
+
+    private val buildRetryRequest: ((String, MediatorMessage<Any>) -> List<MediatorMessage<Any>>) = { _, message ->
+        listOf(message)
+    }
 }

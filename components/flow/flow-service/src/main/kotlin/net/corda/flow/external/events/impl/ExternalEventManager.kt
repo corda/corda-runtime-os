@@ -1,6 +1,5 @@
 package net.corda.flow.external.events.impl
 
-import java.time.Instant
 import net.corda.data.flow.event.external.ExternalEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.state.external.ExternalEventState
@@ -8,6 +7,7 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.messaging.api.records.Record
 import java.time.Duration
+import java.time.Instant
 
 /**
  * [ExternalEventManager] encapsulates external event behaviour by creating and modifying [ExternalEventState]s.
@@ -86,4 +86,16 @@ interface ExternalEventManager {
         instant: Instant,
         retryWindow: Duration
     ): Pair<ExternalEventState, Record<*, *>?>
+
+    /**
+     * Get the external event to send for the transient error retry scenario.
+     * Returns the event as is from the state. No additional checks required.
+     * @param externalEventState The [ExternalEventState] to get the event from.
+     * @param instant The current time. Used to set timestamp.
+     * @return The external event request to resend
+     * */
+    fun getRetryEvent(
+        externalEventState: ExternalEventState,
+        instant: Instant,
+    ): Record<*, *>
 }

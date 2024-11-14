@@ -27,6 +27,7 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
     private var threadName: String? = null
     private var stateManager: StateManager? = null
     private var minGroupSize: Int? = null
+    private var retryConfig: RetryConfig<K>? = null
 
     /** Sets name for [MultiSourceEventMediator]. */
     fun name(name: String) =
@@ -74,6 +75,13 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
     fun stateManager(stateManager: StateManager) =
         apply { this.stateManager = stateManager }
 
+    /**
+     * Sets the topic to push retry events triggered by transient errors in the message pattern when sending RPC calls.
+     * As well as setting how to build a retry event from the sync request
+     */
+    fun retryConfig(retryConfig: RetryConfig<K>) =
+        apply { this.retryConfig = retryConfig }
+
     /** Builds [EventMediatorConfig]. */
     fun build(): EventMediatorConfig<K, S, E> {
         check(consumerFactories.isNotEmpty()) { "At least on consumer factory has to be set" }
@@ -89,6 +97,8 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
             threadName = checkNotNull(threadName) { "Thread name not set" },
             stateManager = checkNotNull(stateManager) { "State manager not set" },
             minGroupSize = checkNotNull(minGroupSize) { "Min group size not set" },
+            retryConfig = retryConfig
         )
     }
+
 }

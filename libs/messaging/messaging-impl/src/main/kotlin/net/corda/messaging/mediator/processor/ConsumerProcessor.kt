@@ -118,6 +118,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         metrics.processorTimer.recordCallable {
             try {
                 val inputs = getInputs(consumer)
+                // If no records polled return early.
+                if (inputs.isEmpty()) return@recordCallable
                 val outputs = processInputs(inputs)
                 categorizeOutputs(outputs, failureCounts)
                 commit(consumer, outputs, failureCounts)
