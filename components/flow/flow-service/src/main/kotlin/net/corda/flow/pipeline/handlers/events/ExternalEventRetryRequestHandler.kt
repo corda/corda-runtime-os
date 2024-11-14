@@ -34,7 +34,7 @@ class ExternalEventRetryRequestHandler : FlowEventHandler<ExternalEventRetryRequ
                         externalEventRetryRequest
             }
             throw FlowEventException(
-                "ExternalEventResponseHandler received a ${ExternalEventRetryRequest::class.simpleName} for flow" +
+                "ExternalEventRetryRequestHandler received a ${ExternalEventRetryRequest::class.simpleName} for flow" +
                         " [${context.inputEvent.flowId}] that does not exist"
             )
         }
@@ -50,7 +50,7 @@ class ExternalEventRetryRequestHandler : FlowEventHandler<ExternalEventRetryRequ
                         "${ExternalEventRetryRequest::class.simpleName}: $externalEventRetryRequest"
             }
             throw FlowEventException(
-                "ExternalEventResponseHandler received an ${ExternalEventRetryRequest::class.simpleName} with request id: " +
+                "ExternalEventRetryRequestHandler received an ${ExternalEventRetryRequest::class.simpleName} with request id: " +
                         "$retryRequestId while flow [${context.inputEvent.flowId} is not waiting " +
                         "for an ${ExternalEventResponse::class.simpleName}"
             )
