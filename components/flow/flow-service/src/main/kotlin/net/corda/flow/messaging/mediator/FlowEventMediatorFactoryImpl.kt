@@ -32,6 +32,7 @@ import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.RoutingDestination.Type.ASYNCHRONOUS
 import net.corda.messaging.api.mediator.RoutingDestination.Type.SYNCHRONOUS
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
+import net.corda.messaging.api.mediator.config.RetryConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
@@ -129,7 +130,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .threadName("flow-event-mediator")
         .stateManager(stateManager)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
-        .retryConfig(EventMediatorConfigBuilder.RetryConfig(RETRY_TOPIC, ::buildRetryRequest))
+        .retryConfig(RetryConfig(RETRY_TOPIC, ::buildRetryRequest))
         .build()
 
 

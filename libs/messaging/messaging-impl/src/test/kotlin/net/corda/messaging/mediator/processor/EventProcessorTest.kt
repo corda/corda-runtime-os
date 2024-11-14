@@ -11,7 +11,7 @@ import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
-import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
+import net.corda.messaging.api.mediator.config.RetryConfig
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
@@ -69,7 +69,7 @@ class EventProcessorTest {
             } else RoutingDestination(client, "endpoint", RoutingDestination.Type.ASYNCHRONOUS)
         }
         eventMediatorConfig = buildTestConfig()
-        val retryConfig = EventMediatorConfigBuilder.RetryConfig(retryTopic, buildRetryRequest)
+        val retryConfig = RetryConfig(retryTopic, buildRetryRequest)
         eventMediatorRetryConfig = buildTestConfig(retryConfig)
 
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
@@ -256,7 +256,7 @@ class EventProcessorTest {
         assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Create::class.java)
     }
 
-    private fun buildTestConfig(retryConfig: EventMediatorConfigBuilder.RetryConfig<String>? = null) = EventMediatorConfig(
+    private fun buildTestConfig(retryConfig: RetryConfig<String>? = null) = EventMediatorConfig(
         "",
         SmartConfigImpl.empty(),
         emptyList(),

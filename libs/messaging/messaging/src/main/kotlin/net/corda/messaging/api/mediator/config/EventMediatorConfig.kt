@@ -42,7 +42,7 @@ data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val threadName: String,
     val stateManager: StateManager,
     val minGroupSize: Int,
-    val retryConfig: EventMediatorConfigBuilder.RetryConfig<K>? = null
+    val retryConfig: RetryConfig<K>? = null
 ) {
     /**
      * Timeout for polling consumers.

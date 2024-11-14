@@ -2,7 +2,6 @@ package net.corda.messaging.api.mediator.config
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManager
-import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
@@ -102,8 +101,4 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
         )
     }
 
-    data class RetryConfig<K: Any>(
-        val retryTopic: String,
-        val buildRetryRequest: ((K, MediatorMessage<Any>) -> List<MediatorMessage<Any>>)? = null,
-    )
 }

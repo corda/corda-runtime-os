@@ -163,18 +163,6 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         return ConsumerInputOutput(processorStateUpdated, newAsyncOutputs)
     }
 
-    data class ConsumerInputOutput<S: Any>(
-        val updatedState: StateAndEventProcessor.State<S>?,
-        val outputEvents: List<MediatorMessage<Any>>,
-        val isNoop: Boolean = false
-    )
-
-    data class SyncProcessingOutput<K: Any, E: Any>(
-        val syncResponses:  List<Record<K, E>>,
-        val isNoopRetry: Boolean = false,
-        val asyncOutputs: List<MediatorMessage<Any>> = emptyList()
-    )
-
     private fun getNextEvent(
         queue: ArrayDeque<Record<K, E>>,
         consumerInputHash: String
@@ -232,10 +220,10 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     )
                 }
             } catch (e: CordaMessageAPIIntermittentException) {
-                val outputEvents: MutableList<MediatorMessage<Any>> = mutableListOf()
+                val asyncOutputEvents: MutableList<MediatorMessage<Any>> = mutableListOf()
                 if (retryConfig != null) {
                     retryConfig.buildRetryRequest?.let { it(key, message) }?.let {
-                        outputEvents.addAll(it)
+                        asyncOutputEvents.addAll(it)
                     }
                 }
 
@@ -243,7 +231,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 // performance.
                 // If we are not on the retry topic then we need to save the state before adding the retry event. This will allow the
                 // flow cleanup processors to execute on an idle flow checkpoint
-                return SyncProcessingOutput(emptyList(), isRetryTopic, outputEvents)
+                return SyncProcessingOutput(emptyList(), isRetryTopic, asyncOutputEvents)
             }
         }
         return SyncProcessingOutput(outputEvents)
@@ -263,4 +251,27 @@ class EventProcessor<K : Any, S : Any, E : Any>(
 
     private fun List<Pair<String, String>>.toMessageProperties() =
         associateTo(mutableMapOf()) { (key, value) -> key to (value as Any) }
+
+
+    /**
+     * The outputs from processing a single consumer input event from the bus.
+     * This will includes updates from all sync events which are processed as a result of a consumer input
+     * @property updatedState The state and event processor output state after processing
+     */
+    data class ConsumerInputOutput<S: Any>(
+        val updatedState: StateAndEventProcessor.State<S>?,
+        val outputEvents: List<MediatorMessage<Any>>,
+        val isNoop: Boolean = false
+    )
+
+    /**
+     * The outputs from processing a single consumer input event from the bus.
+     * This will includes updates from all sync events which are processed as a result of a consumer input
+     * @property updatedState The state and event processor output state after processing
+     */
+    data class SyncProcessingOutput<K: Any, E: Any>(
+        val syncResponses:  List<Record<K, E>>,
+        val isNoopRetry: Boolean = false,
+        val asyncOutputs: List<MediatorMessage<Any>> = emptyList()
+    )
 }
