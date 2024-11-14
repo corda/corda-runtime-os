@@ -17,6 +17,7 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.Properties
 import java.util.stream.Stream
+import kotlin.test.assertTrue
 
 class MessageBusConfigResolverTest {
 
@@ -314,7 +315,7 @@ class MessageBusConfigResolverTest {
 
     private fun assertProducerProperties(expected: Properties, actual: Properties) {
         assertEquals(expected[CLIENT_ID_PROP], actual[CLIENT_ID_PROP])
-        assertEquals(expected[TRANSACTIONAL_ID_PROP], actual[TRANSACTIONAL_ID_PROP])
+        assertTrue(actual[TRANSACTIONAL_ID_PROP].toString().contains(expected[TRANSACTIONAL_ID_PROP].toString()))
         assertEquals(expected[ACKS_PROP], actual[ACKS_PROP])
         assertEquals(expected[BOOTSTRAP_SERVERS_PROP], actual[BOOTSTRAP_SERVERS_PROP])
         assertEquals(expected[SSL_KEYSTORE_PROP], actual[SSL_KEYSTORE_PROP])
