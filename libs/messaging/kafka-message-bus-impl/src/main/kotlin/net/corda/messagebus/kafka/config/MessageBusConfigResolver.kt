@@ -16,6 +16,7 @@ import org.apache.kafka.clients.producer.ProducerConfig.PARTITIONER_CLASS_CONFIG
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
 import java.util.Properties
+import java.util.UUID
 
 /**
  * Resolve a Kafka bus configuration against the enforced and default configurations provided by the library.
@@ -175,7 +176,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
 
     private fun ProducerConfig.toSmartConfig(): SmartConfig {
         val transactionalId = if (transactional) {
-            "$clientId-$instanceId"
+            "$clientId-$instanceId-${UUID.randomUUID()}"
         } else {
             null
         }

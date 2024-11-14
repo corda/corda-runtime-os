@@ -221,7 +221,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         return when {
             inSyncPartitions.isNotEmpty() -> {
                 eventConsumer.poll(EVENT_POLL_TIMEOUT).also {
-                    log.debug { "Received ${it.size} events on keys ${it.joinToString { it.key.toString() }}" }
+                    log.trace { "Received ${it.size} events on keys ${it.joinToString { it.key.toString() }}" }
                 }
             }
             partitionsToSync.isEmpty() -> {
