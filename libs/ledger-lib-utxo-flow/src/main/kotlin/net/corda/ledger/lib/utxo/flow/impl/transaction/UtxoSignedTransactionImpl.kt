@@ -28,13 +28,14 @@ data class UtxoSignedTransactionImpl(
     private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal,
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     override val wireTransaction: WireTransaction,
-    private val signatures: Set<DigitalSignatureAndMetadata>
+    private val signatures: Set<DigitalSignatureAndMetadata>,
+    private val utxoSignedTxSignatureVerificationService: UtxoSignedTransactionSignatureVerificationService
 ) : UtxoSignedTransactionInternal {
 
-    private val utxoSignedTxSignatureVerificationService = UtxoSignedTransactionSignatureVerificationServiceImpl(
-        notarySignatureVerificationService,
-        transactionSignatureServiceInternal
-    )
+//    private val utxoSignedTxSignatureVerificationService = UtxoSignedTransactionSignatureVerificationServiceImpl(
+//        notarySignatureVerificationService,
+//        transactionSignatureServiceInternal
+//    )
 
     init {
         require(signatures.isNotEmpty()) { "Tried to instantiate a ${javaClass.simpleName} without any signatures." }
@@ -94,7 +95,11 @@ data class UtxoSignedTransactionImpl(
             notarySignatureVerificationService,
             utxoLedgerTransactionFactory,
             wireTransaction,
-            signatures + signature
+            signatures + signature,
+            UtxoSignedTransactionSignatureVerificationServiceImpl(
+                notarySignatureVerificationService,
+                transactionSignatureServiceInternal
+            )
         )
 
     @Suspendable
@@ -111,7 +116,11 @@ data class UtxoSignedTransactionImpl(
                 notarySignatureVerificationService,
                 utxoLedgerTransactionFactory,
                 wireTransaction,
-                signatures + newSignatures
+                signatures + newSignatures,
+                UtxoSignedTransactionSignatureVerificationServiceImpl(
+                    notarySignatureVerificationService,
+                    transactionSignatureServiceInternal
+                )
             ),
             newSignatures
         )

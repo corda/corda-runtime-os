@@ -8,6 +8,7 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInter
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionSignatureVerificationServiceImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
@@ -42,8 +43,14 @@ class UtxoSignedTransactionFactoryImpl(
     private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal,
     private val privacySaltProviderService: PrivacySaltProviderService,
     private val getEvolvableTag: (klass: Class<*>) -> String,
-    private val getExtraMetadata: () -> Map<String, Any>
+    private val getExtraMetadata: () -> Map<String, Any>,
 ) : UtxoSignedTransactionFactory {
+
+//    private val utxoSignedTransactionSignatureVerificationServiceFactory =
+//        UtxoSignedTransactionSignatureVerificationServiceImpl(
+//            notarySignatureVerificationService,
+//            digitalSignatureVerificationService
+//        )
 
     @Suspendable
     override fun create(
@@ -74,7 +81,8 @@ class UtxoSignedTransactionFactoryImpl(
             notarySignatureVerificationService,
             utxoLedgerTransactionFactory,
             wireTransaction,
-            signaturesWithMetadata.toSet()
+            signaturesWithMetadata.toSet(),
+            UtxoSignedTransactionSignatureVerificationServiceImpl(notarySignatureVerificationService, transactionSignatureService)
         )
     }
 
@@ -87,7 +95,8 @@ class UtxoSignedTransactionFactoryImpl(
         notarySignatureVerificationService,
         utxoLedgerTransactionFactory,
         wireTransaction,
-        signaturesWithMetaData.toSet()
+        signaturesWithMetaData.toSet(),
+        UtxoSignedTransactionSignatureVerificationServiceImpl(notarySignatureVerificationService, transactionSignatureService)
     )
 
     @Suspendable

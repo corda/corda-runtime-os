@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionSignatureVerificationServiceImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
@@ -51,7 +52,11 @@ class UtxoSignedTransactionKryoSerializer @Activate constructor(
             notarySignatureVerificationService,
             utxoLedgerTransactionFactory,
             wireTransaction,
-            signatures.toSet()
+            signatures.toSet(),
+            UtxoSignedTransactionSignatureVerificationServiceImpl(
+                notarySignatureVerificationService,
+                transactionSignatureService
+            )
         )
     }
 }

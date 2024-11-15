@@ -16,6 +16,7 @@ import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionSignatureVerificationService
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
@@ -103,6 +104,8 @@ class UtxoLedgerPersistenceServiceImplTest {
     private val stateAndRefCache = mock<StateAndRefCache>()
     private val flowCheckpointService = mock<FlowCheckpointService>()
     private val flowCheckpoint = mock<FlowCheckpoint>()
+    private val signedTransactionSignatureVerificationServiceImpl =
+        mock<UtxoSignedTransactionSignatureVerificationService>()
 
     private val notaryServiceKey = mock<CompositeKey>()
     private val publicKeyNotaryVNode1 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
@@ -259,7 +262,8 @@ class UtxoLedgerPersistenceServiceImplTest {
             notarySignatureVerificationService,
             mock<UtxoLedgerTransactionFactory>(),
             wireTransaction,
-            signatures
+            signatures,
+            signedTransactionSignatureVerificationServiceImpl
         )
         val testId = parseSecureHash("SHA256:1234567890123456")
 

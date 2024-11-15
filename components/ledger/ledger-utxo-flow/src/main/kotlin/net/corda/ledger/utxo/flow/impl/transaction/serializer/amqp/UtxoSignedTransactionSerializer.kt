@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionSignatureVerificationServiceImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
@@ -31,8 +32,8 @@ class UtxoSignedTransactionSerializer @Activate constructor(
     @Reference(service = UtxoLedgerTransactionFactory::class)
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     @Reference(service = NotarySignatureVerificationServiceInternal::class)
-    private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal
-) : BaseProxySerializer<UtxoSignedTransactionInternal, UtxoSignedTransactionProxy>(), UsedByFlow {
+    private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal,
+    ) : BaseProxySerializer<UtxoSignedTransactionInternal, UtxoSignedTransactionProxy>(), UsedByFlow {
     private companion object {
         private const val VERSION_1 = 1
     }
@@ -64,7 +65,11 @@ class UtxoSignedTransactionSerializer @Activate constructor(
                     notarySignatureVerificationService,
                     utxoLedgerTransactionFactory,
                     proxy.wireTransaction,
-                    proxy.signatures.toSet()
+                    proxy.signatures.toSet(),
+                    UtxoSignedTransactionSignatureVerificationServiceImpl(
+                        notarySignatureVerificationService,
+                        transactionSignatureService
+                    )
                 )
             else ->
                 throw CordaRuntimeException("Unable to create UtxoSignedTransaction with Version='${proxy.version}'")
