@@ -9,7 +9,7 @@ caffeineVersion = "3.1.8"
 guavaVersion = "33.0.0-jre"
 hikariCpVersion = "5.1.0"
 jacksonVersion = "2.16.1"
-javalinVersion = "4.6.8"
+javalinVersion = "6.3.0"
 jcipAnnotationsVersion = "1.0_2"
 # This version of Jetty must be the same major version as used by Javalin, please see above.
 # Once Javalin version is upgraded to the latest, this override may be removed.
@@ -38,7 +38,7 @@ typeSafeConfigVersion = "1.4.3"
 okHttpVersion = { strictly = "4.9.2" }
 okioVersion = { strictly = "3.4.0" }
 pf4jVersion = "3.10.0"
-unirestVersion = "3.14.5"
+unirestVersion = "4.2.9"
 zipkinCoreVersion = "2.27.1"
 zipkinReporterVersion = "3.3.0"
 nettyVersion = "4.1.108.Final"
