@@ -35,16 +35,24 @@ class ExternalMessagingImpl(
 
     @Suspendable
     override fun send(channelName: String, message: String) {
+        validateSize(message)
+        send(channelName, idFactoryFunc(), message)
+    }
+
+    private fun validateSize(message: String) {
         val bytesSize = serializer.serialize(message)
         if (bytesSize != null && maxAllowedMessageSize < bytesSize.size) {
-            throw CordaRuntimeException("Cannot send external messaging content as " +
-                    "it exceeds the max message size allowed. Message Size: [${bytesSize.size}], Max Size: [$maxAllowedMessageSize}]")
+            throw CordaRuntimeException(
+                "Cannot send external messaging content as " +
+                        "it exceeds the max message size allowed. Message Size: [${bytesSize.size}], Max Size: [$maxAllowedMessageSize}]"
+            )
         }
-        send(channelName, idFactoryFunc(), message)
     }
 
     @Suspendable
     override fun send(channelName: String, messageId: String, message: String) {
+        validateSize(message)
+
         flowFiberService
             .getExecutingFiber()
             .suspend(FlowIORequest.SendExternalMessage(channelName, messageId, message))
