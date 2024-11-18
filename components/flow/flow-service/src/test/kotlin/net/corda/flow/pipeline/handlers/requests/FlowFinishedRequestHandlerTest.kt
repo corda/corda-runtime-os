@@ -56,7 +56,7 @@ class FlowFinishedRequestHandlerTest {
         whenever(testContext.flowCheckpoint.maxMessageSize).thenReturn(1)
         handler = FlowFinishedRequestHandler(testContext.flowMessageFactory, testContext.flowRecordFactory, avroSerializationFactory)
 
-        assertThrows<FlowFatalException> {  handler.getUpdatedWaitingFor(testContext.flowEventContext, ioRequest) }
+        assertThrows<FlowFatalException> {  handler.postProcess(testContext.flowEventContext, ioRequest) }
     }
 
     @Test
