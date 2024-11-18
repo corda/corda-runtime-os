@@ -22,7 +22,6 @@ class ExternalMessagingImpl(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : ExternalMessaging, UsedByFlow, SingletonSerializeAsToken {
 
-    private val maxAllowedMessageSize: Long = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.maxMessageSize
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any>()
 
     @Activate
@@ -41,6 +40,7 @@ class ExternalMessagingImpl(
 
     private fun validateSize(message: String) {
         val bytesSize = serializer.serialize(message)
+        val maxAllowedMessageSize = maxMessageSize()
         if (bytesSize != null && maxAllowedMessageSize < bytesSize.size) {
             throw CordaRuntimeException(
                 "Cannot send external messaging content as " +
@@ -57,5 +57,7 @@ class ExternalMessagingImpl(
             .getExecutingFiber()
             .suspend(FlowIORequest.SendExternalMessage(channelName, messageId, message))
     }
+
+    private fun maxMessageSize() = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.maxMessageSize
 }
 
