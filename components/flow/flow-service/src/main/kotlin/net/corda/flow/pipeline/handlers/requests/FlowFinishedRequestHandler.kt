@@ -23,7 +23,7 @@ class FlowFinishedRequestHandler @Activate constructor(
     @Reference(service = FlowRecordFactory::class)
     private val flowRecordFactory: FlowRecordFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : FlowRequestHandler<FlowIORequest.FlowFinished> {
 
     private companion object {
