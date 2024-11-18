@@ -208,7 +208,6 @@ class FlowRestResourceImpl @Activate constructor(
             if (startEventSize != null && startEventSize > maxAllowedMessageSize) {
                 log.warn(FlowRestExceptionConstants.MAX_FLOW_START_ARGS_SIZE, IllegalArgumentException("Flow start event of size " +
                         "[$startEventSize] exceeds maxAllowedMessageSize [$maxAllowedMessageSize]"))
-                onFatalError()
                 throw InvalidInputDataException(FlowRestExceptionConstants.FATAL_ERROR)
             }
             val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
