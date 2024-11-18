@@ -38,7 +38,7 @@ typeSafeConfigVersion = "1.4.3"
 okHttpVersion = { strictly = "4.9.2" }
 okioVersion = { strictly = "3.4.0" }
 pf4jVersion = "3.10.0"
-unirestVersion = "4.4.5"
+unirestVersion = "4.2.9"
 zipkinCoreVersion = "2.27.1"
 zipkinReporterVersion = "3.3.0"
 nettyVersion = "4.1.108.Final"
