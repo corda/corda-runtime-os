@@ -96,7 +96,7 @@ class FlowRestResourceImpl @Activate constructor(
         this.onFatalError = onFatalError
         this.messagingConfig = config
         publisher?.close()
-        publisher = publisherFactory.createPublisher(PublisherConfig("FlowRestResource", false), config)
+        publisher = publisherFactory.createPublisher(PublisherConfig("FlowRestResource"), config)
     }
 
     private fun regexMatch(input: String, regex: String): Boolean {
