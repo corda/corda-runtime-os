@@ -39,12 +39,12 @@ class ExternalMessagingImpl(
     }
 
     private fun validateSize(message: String) {
-        val bytesSize = serializer.serialize(message)
+        val bytesSize = serializer.serialize(message)?.size
         val maxAllowedMessageSize = maxMessageSize()
-        if (bytesSize != null && maxAllowedMessageSize < bytesSize.size) {
+        if (bytesSize != null && maxAllowedMessageSize < bytesSize) {
             throw CordaRuntimeException(
                 "Cannot send external messaging content as " +
-                        "it exceeds the max message size allowed. Message Size: [${bytesSize.size}], Max Size: [$maxAllowedMessageSize}]"
+                        "it exceeds the max message size allowed. Message Size: [$bytesSize], Max Size: [$maxAllowedMessageSize}]"
             )
         }
     }
