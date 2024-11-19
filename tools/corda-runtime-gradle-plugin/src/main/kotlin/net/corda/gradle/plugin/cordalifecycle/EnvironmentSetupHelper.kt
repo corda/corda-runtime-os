@@ -1,6 +1,6 @@
 package net.corda.gradle.plugin.cordalifecycle
 
-import kong.unirest.Unirest
+import kong.unirest.core.Unirest
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.gradle.plugin.retryAttempts
 import java.io.File

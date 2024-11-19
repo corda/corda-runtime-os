@@ -1,10 +1,10 @@
 package net.corda.rest.test.utils
 
-import kong.unirest.HttpRequest
-import kong.unirest.HttpRequestWithBody
-import kong.unirest.MultipartBody
-import kong.unirest.Unirest
-import kong.unirest.apache.ApacheClient
+import kong.unirest.core.HttpRequest
+import kong.unirest.core.HttpRequestWithBody
+import kong.unirest.core.MultipartBody
+import kong.unirest.core.Unirest
+import kong.unirest.core.apache.ApacheClient
 import net.corda.rest.tools.HttpVerb
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy

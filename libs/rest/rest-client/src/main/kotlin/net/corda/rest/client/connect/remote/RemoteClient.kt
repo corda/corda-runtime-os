@@ -1,16 +1,16 @@
 package net.corda.rest.client.connect.remote
 
-import kong.unirest.Config
-import kong.unirest.GenericType
-import kong.unirest.HttpRequest
-import kong.unirest.HttpRequestWithBody
-import kong.unirest.HttpResponse
-import kong.unirest.HttpStatus
-import kong.unirest.MultipartBody
-import kong.unirest.UnirestException
-import kong.unirest.UnirestInstance
-import kong.unirest.apache.ApacheClient
-import kong.unirest.jackson.JacksonObjectMapper
+import kong.unirest.core.Config
+import kong.unirest.core.GenericType
+import kong.unirest.core.HttpRequest
+import kong.unirest.core.HttpRequestWithBody
+import kong.unirest.core.HttpResponse
+import kong.unirest.core.HttpStatus
+import kong.unirest.core.MultipartBody
+import kong.unirest.core.UnirestException
+import kong.unirest.core.UnirestInstance
+import kong.unirest.core.apache.ApacheClient
+import kong.unirest.core.jackson.JacksonObjectMapper
 import net.corda.rest.client.auth.RequestContext
 import net.corda.rest.client.exceptions.ClientSslHandshakeException
 import net.corda.rest.client.exceptions.InternalErrorException

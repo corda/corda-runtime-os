@@ -1,6 +1,6 @@
 package net.corda.gradle.plugin.cordalifecycle
 
-import kong.unirest.Unirest
+import kong.unirest.core.Unirest
 import net.corda.gradle.plugin.configuration.PluginConfiguration
 import net.corda.gradle.plugin.configuration.ProjectContext
 import org.gradle.api.DefaultTask

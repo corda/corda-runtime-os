@@ -1,9 +1,9 @@
 package net.corda.e2etest.utilities
 
-import kong.unirest.Headers
-import kong.unirest.MultipartBody
-import kong.unirest.Unirest
-import kong.unirest.apache.ApacheClient
+import kong.unirest.core.Headers
+import kong.unirest.core.MultipartBody
+import kong.unirest.core.Unirest
+import kong.unirest.core.apache.ApacheClient
 import net.corda.tracing.addTraceContextToHttpRequest
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.conn.ssl.NoopHostnameVerifier

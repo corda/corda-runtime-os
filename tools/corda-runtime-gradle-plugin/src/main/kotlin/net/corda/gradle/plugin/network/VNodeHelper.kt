@@ -3,9 +3,9 @@ package net.corda.gradle.plugin.network
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
-import kong.unirest.HttpResponse
-import kong.unirest.JsonNode
-import kong.unirest.Unirest
+import kong.unirest.core.HttpResponse
+import kong.unirest.core.JsonNode
+import kong.unirest.core.Unirest
 import net.corda.gradle.plugin.dtos.CpiUploadStatus
 import net.corda.gradle.plugin.dtos.GetCPIsResponseDTO
 import net.corda.gradle.plugin.dtos.RegistrationRequestProgressDTO

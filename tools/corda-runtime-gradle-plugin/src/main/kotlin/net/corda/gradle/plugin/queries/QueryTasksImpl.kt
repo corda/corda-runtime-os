@@ -2,9 +2,9 @@ package net.corda.gradle.plugin.queries
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
-import kong.unirest.HttpResponse
-import kong.unirest.JsonNode
-import kong.unirest.Unirest
+import kong.unirest.core.HttpResponse
+import kong.unirest.core.JsonNode
+import kong.unirest.core.Unirest
 import net.corda.gradle.plugin.configuration.ProjectContext
 import net.corda.gradle.plugin.dtos.CpiMetadataDTO
 import net.corda.gradle.plugin.dtos.GetCPIsResponseDTO
