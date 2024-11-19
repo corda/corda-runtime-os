@@ -72,7 +72,7 @@ class InvalidRequestTest : RestServerTestBase() {
         )
         assertEquals(HttpStatus.BAD_REQUEST, pingResponse.responseStatus)
         assertNotNull(pingResponse.body)
-        assertEquals("application/json", pingResponse.headers["Content-Type"])
+        assertEquals("application/json", pingResponse.headers["content-type"])
         assertThat(pingResponse.body).contains("Duplicate field 'data'")
         assertThat(pingResponse.body).doesNotContain("\"type\":")
     }

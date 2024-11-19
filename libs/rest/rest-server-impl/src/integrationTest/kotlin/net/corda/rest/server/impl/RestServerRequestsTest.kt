@@ -104,9 +104,9 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
         assertEquals(HttpStatus.OK, getPathResponse.responseStatus)
-        assertEquals("localhost", getPathResponse.headers[ACCESS_CONTROL_ALLOW_ORIGIN])
-        assertEquals("true", getPathResponse.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS])
-        assertEquals("no-cache", getPathResponse.headers[CACHE_CONTROL])
+        assertEquals("localhost", getPathResponse.headers[ACCESS_CONTROL_ALLOW_ORIGIN.lowercase()])
+        assertEquals("true", getPathResponse.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS.lowercase()])
+        assertEquals("no-cache", getPathResponse.headers[CACHE_CONTROL.lowercase()])
     }
 
     @Test
@@ -125,7 +125,7 @@ class RestServerRequestsTest : RestServerTestBase() {
     fun `POST ping returns Pong with custom deserializer`() {
         fun WebResponse<String>.doAssert() {
             assertEquals(HttpStatus.OK, responseStatus)
-            assertEquals("application/json", headers["Content-Type"])
+            assertEquals("application/json", headers["content-type"])
             assertEquals("Pong for str = stringdata", body)
         }
 
@@ -183,7 +183,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
         assertEquals(HttpStatus.OK, plusOneResponse.responseStatus)
-        assertEquals("application/json", plusOneResponse.headers["Content-Type"])
+        assertEquals("application/json", plusOneResponse.headers["content-type"])
         assertEquals(listOf(2.0, 3.0), plusOneResponse.body)
     }
 
@@ -308,7 +308,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
         assertEquals(HttpStatus.OK, reverseTextResponse.responseStatus)
-        assertEquals("application/json", reverseTextResponse.headers["Content-Type"])
+        assertEquals("application/json", reverseTextResponse.headers["content-type"])
         assertEquals("3000000000", reverseTextResponse.body)
     }
 
@@ -321,7 +321,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
         assertEquals(HttpStatus.OK, negateIntResponse.responseStatus)
-        assertEquals("application/json", negateIntResponse.headers["Content-Type"])
+        assertEquals("application/json", negateIntResponse.headers["content-type"])
         assertEquals("-1", negateIntResponse.body)
     }
 
@@ -334,7 +334,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
         assertEquals(HttpStatus.OK, negateIntResponse.responseStatus)
-        assertEquals("application/json", negateIntResponse.headers["Content-Type"])
+        assertEquals("application/json", negateIntResponse.headers["content-type"])
         assertEquals("-1", negateIntResponse.body)
     }
 
@@ -392,7 +392,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             GET,
             WebRequest<Any>("health/sanity")
         )
-        val headerValue = getPathResponse.headers[WWW_AUTHENTICATE]
+        val headerValue = getPathResponse.headers[WWW_AUTHENTICATE.lowercase()]
         assertEquals("Basic realm=\"${UsernamePasswordAuthenticationProvider.REALM_VALUE}\"", headerValue)
     }
 

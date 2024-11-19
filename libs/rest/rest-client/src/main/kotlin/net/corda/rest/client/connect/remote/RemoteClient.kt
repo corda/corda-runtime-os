@@ -186,7 +186,6 @@ internal class RemoteUnirestClient(
                 // Use the default Unirest SSL handling for secure SSL (no changes required)
             } else {
                 log.debug { "Creating insecure SSL context" }
-                this.reset()
                 this.verifySsl(false)
             }
 

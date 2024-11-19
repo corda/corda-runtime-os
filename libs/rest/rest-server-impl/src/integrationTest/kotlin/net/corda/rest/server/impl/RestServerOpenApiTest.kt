@@ -82,7 +82,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
     fun `GET openapi should return the OpenApi spec json`() {
         val apiSpec = client.call(GET, WebRequest<Any>("swagger.json"))
         assertEquals(HttpStatus.OK, apiSpec.responseStatus)
-        assertEquals("application/json", apiSpec.headers["Content-Type"])
+        assertEquals("application/json", apiSpec.headers["content-type"])
         val body = apiSpec.body!!.compact()
         assertTrue(body.contains(""""openapi" : "3.0.1""""))
         assertFalse(body.contains("\"null\""))
@@ -231,7 +231,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
     fun `OpenApi spec json should include correctly formatted multipart file upload endpoints`() {
         val apiSpec = client.call(GET, WebRequest<Any>("swagger.json"))
         assertEquals(HttpStatus.OK, apiSpec.responseStatus)
-        assertEquals("application/json", apiSpec.headers["Content-Type"])
+        assertEquals("application/json", apiSpec.headers["content-type"])
         val body = apiSpec.body!!.compact()
         assertTrue(body.contains(""""openapi" : "3.0.1""""))
         assertFalse(body.contains("\"null\""))
@@ -497,7 +497,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
     fun `GET swagger UI should return html with reference to swagger json`() {
         val apiSpec = client.call(GET, WebRequest<Any>("swagger"))
         assertEquals(HttpStatus.OK, apiSpec.responseStatus)
-        assertEquals("text/html", apiSpec.headers["Content-Type"])
+        assertEquals("text/html", apiSpec.headers["content-type"])
         val expected = """url: "/${context.basePath}/${apiVersion.versionPath}/swagger.json""""
         assertTrue(apiSpec.body!!.contains(expected))
     }

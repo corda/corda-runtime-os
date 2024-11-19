@@ -84,7 +84,7 @@ class RestServerCaseSensitiveLoginTest : RestServerTestBase() {
         )
         assertEquals(
             "Basic realm=\"${UsernamePasswordAuthenticationProvider.REALM_VALUE}\"",
-            plusOneResponse.headers["WWW-Authenticate"]
+            plusOneResponse.headers["WWW-Authenticate".lowercase()]
         )
     }
 }

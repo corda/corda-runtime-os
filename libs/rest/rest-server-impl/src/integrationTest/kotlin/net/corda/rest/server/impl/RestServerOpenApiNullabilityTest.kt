@@ -63,7 +63,7 @@ class RestServerOpenApiNullabilityTest : RestServerTestBase() {
     fun `GET openapi should return the OpenApi spec json`() {
         val apiSpec = client.call(GET, WebRequest<Any>("swagger.json"))
         assertEquals(HttpStatus.OK, apiSpec.responseStatus)
-        assertEquals("application/json", apiSpec.headers["Content-Type"])
+        assertEquals("application/json", apiSpec.headers["content-type"])
         val body = apiSpec.body!!.compact()
         assertTrue(body.contains(""""openapi" : "3.0.1""""))
         assertFalse(body.contains("\"null\""))

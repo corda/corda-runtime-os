@@ -187,10 +187,8 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
     }
 
     private fun addSslParams() {
-        if (enableSsl) {
-            Unirest.config()
-                .reset()
-                .verifySsl(false)
+        if (!enableSsl) {
+            Unirest.config().verifySsl(false)
         }
     }
 }
