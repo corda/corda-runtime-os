@@ -9,8 +9,7 @@ import kong.unirest.core.HttpStatus
 import kong.unirest.core.MultipartBody
 import kong.unirest.core.UnirestException
 import kong.unirest.core.UnirestInstance
-import kong.unirest.core.apache.ApacheClient
-import kong.unirest.core.jackson.JacksonObjectMapper
+import kong.unirest.modules.jackson.JacksonObjectMapper
 import net.corda.rest.client.auth.RequestContext
 import net.corda.rest.client.exceptions.ClientSslHandshakeException
 import net.corda.rest.client.exceptions.InternalErrorException
@@ -23,10 +22,6 @@ import net.corda.rest.client.processing.WebResponse
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.tools.HttpVerb
 import net.corda.utilities.debug
-import org.apache.http.conn.ssl.NoopHostnameVerifier
-import org.apache.http.conn.ssl.TrustAllStrategy
-import org.apache.http.impl.client.HttpClients
-import org.apache.http.ssl.SSLContexts
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Type
 import javax.net.ssl.SSLContext
@@ -187,23 +182,18 @@ internal class RemoteUnirestClient(
         if (enableSsl) {
             log.debug { "Add Ssl params." }
 
-            val apacheClient = if (secureSsl) {
+            if (secureSsl) {
                 log.debug { "Creating secure SSL context" }
-                ApacheClient.builder().apply(this)
+                // Use the default Unirest SSL handling for secure SSL (no changes required)
             } else {
                 log.debug { "Creating insecure SSL context" }
-                val sslContext: SSLContext = SSLContexts.custom()
-                    .loadTrustMaterial(TrustAllStrategy())
-                    .build()
+                val sslContext: SSLContext = SSLContext.getInstance("TLS").apply {
+                    init(null, arrayOf(TrustAllTrustManager()), java.security.SecureRandom())
+                }
 
-                val httpClient = HttpClients.custom()
-                    .setSSLContext(sslContext)
-                    .setSSLHostnameVerifier(NoopHostnameVerifier())
-                    .build()
-
-                ApacheClient.builder(httpClient).apply(this)
+                // Directly set the SSL context without using ApacheClient
+                this.sslContext(sslContext)
             }
-            this.httpClient(apacheClient)
 
             log.debug { "Add Ssl params completed." }
         }
@@ -223,4 +213,10 @@ internal class RemoteUnirestClient(
         }
         return requestBuilder
     }
+}
+
+private class TrustAllTrustManager : javax.net.ssl.X509TrustManager {
+    override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>?, authType: String?) {}
+    override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>?, authType: String?) {}
+    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate>? = null
 }

@@ -4,7 +4,7 @@ import io.javalin.core.util.Header
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.tools.HttpVerb
-import org.apache.http.HttpStatus
+import kong.unirest.core.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.eclipse.jetty.io.EofException
 import org.eclipse.jetty.websocket.api.CloseStatus
@@ -49,7 +49,7 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
     @Test
     fun `valid path returns 200 OK`() {
         val getPathResponse = client.call(HttpVerb.GET, WebRequest<Any>("health/sanity"), userName, password)
-        assertEquals(HttpStatus.SC_OK, getPathResponse.responseStatus)
+        assertEquals(HttpStatus.OK, getPathResponse.responseStatus)
         assertEquals("localhost", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_ORIGIN])
         assertEquals("true", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_CREDENTIALS])
         assertEquals("no-cache", getPathResponse.headers[Header.CACHE_CONTROL])

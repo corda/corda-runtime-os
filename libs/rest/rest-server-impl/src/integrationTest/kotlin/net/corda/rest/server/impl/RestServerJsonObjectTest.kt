@@ -9,7 +9,7 @@ import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb.POST
 import net.corda.utilities.NetworkHostAndPort
-import org.apache.http.HttpStatus
+import kong.unirest.core.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
@@ -147,7 +147,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
         assertEquals(expectedObjectResponse, response.body)
     }
 
@@ -162,7 +162,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
         assertEquals(expectedObjectResponse, response.body)
     }
 
@@ -177,7 +177,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
         assertEquals(expectedObjectResponse, response.body)
     }
 
@@ -192,7 +192,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
         assertEquals(expectedObjectResponse, response.body)
     }
 
@@ -207,7 +207,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
         assertEquals(expectedMapResponse, response.body)
     }
 
@@ -222,7 +222,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
         assertEquals(expectedMapResponse, response.body)
     }
 
@@ -237,7 +237,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
         assertEquals(expectedMapResponse, response.body)
     }
 
@@ -252,7 +252,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
         assertEquals(expectedMapResponse, response.body)
     }
 
@@ -267,7 +267,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
         assertEquals(expectedArrayResponse, response.body)
     }
 
@@ -282,7 +282,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
         assertEquals(expectedArrayResponse, response.body)
     }
 
@@ -297,7 +297,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
         assertEquals(expectedArrayResponse, response.body)
     }
 
@@ -312,7 +312,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
         assertEquals(expectedArrayResponse, response.body)
     }
 }

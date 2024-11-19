@@ -10,6 +10,7 @@ import io.swagger.v3.oas.models.media.NumberSchema
 import io.swagger.v3.oas.models.media.ObjectSchema
 import io.swagger.v3.oas.models.media.Schema
 import io.swagger.v3.oas.models.media.StringSchema
+import kong.unirest.core.HttpStatus
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.internal.OptionalDependency
 import net.corda.rest.server.impl.utils.compact
@@ -23,7 +24,6 @@ import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb.GET
 import net.corda.utilities.NetworkHostAndPort
-import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -81,7 +81,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
     @Test
     fun `GET openapi should return the OpenApi spec json`() {
         val apiSpec = client.call(GET, WebRequest<Any>("swagger.json"))
-        assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
+        assertEquals(HttpStatus.OK, apiSpec.responseStatus)
         assertEquals("application/json", apiSpec.headers["Content-Type"])
         val body = apiSpec.body!!.compact()
         assertTrue(body.contains(""""openapi" : "3.0.1""""))
@@ -230,7 +230,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
     @Test
     fun `OpenApi spec json should include correctly formatted multipart file upload endpoints`() {
         val apiSpec = client.call(GET, WebRequest<Any>("swagger.json"))
-        assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
+        assertEquals(HttpStatus.OK, apiSpec.responseStatus)
         assertEquals("application/json", apiSpec.headers["Content-Type"])
         val body = apiSpec.body!!.compact()
         assertTrue(body.contains(""""openapi" : "3.0.1""""))
@@ -496,7 +496,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
     @Test
     fun `GET swagger UI should return html with reference to swagger json`() {
         val apiSpec = client.call(GET, WebRequest<Any>("swagger"))
-        assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
+        assertEquals(HttpStatus.OK, apiSpec.responseStatus)
         assertEquals("text/html", apiSpec.headers["Content-Type"])
         val expected = """url: "/${context.basePath}/${apiVersion.versionPath}/swagger.json""""
         assertTrue(apiSpec.body!!.contains(expected))
@@ -510,9 +510,9 @@ class RestServerOpenApiTest : RestServerTestBase() {
         val swaggerUIBundleJS = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
         val swaggerUIcss = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
 
-        assertEquals(HttpStatus.SC_OK, swagger.responseStatus)
-        assertEquals(HttpStatus.SC_OK, swaggerUIBundleJS.responseStatus)
-        assertEquals(HttpStatus.SC_OK, swaggerUIcss.responseStatus)
+        assertEquals(HttpStatus.OK, swagger.responseStatus)
+        assertEquals(HttpStatus.OK, swaggerUIBundleJS.responseStatus)
+        assertEquals(HttpStatus.OK, swaggerUIcss.responseStatus)
         assertNotNull(swaggerUIBundleJS.body)
         assertNotNull(swaggerUIcss.body)
     }

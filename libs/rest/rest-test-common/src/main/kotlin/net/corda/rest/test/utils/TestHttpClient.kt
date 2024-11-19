@@ -4,12 +4,7 @@ import kong.unirest.core.HttpRequest
 import kong.unirest.core.HttpRequestWithBody
 import kong.unirest.core.MultipartBody
 import kong.unirest.core.Unirest
-import kong.unirest.core.apache.ApacheClient
 import net.corda.rest.tools.HttpVerb
-import org.apache.http.conn.ssl.NoopHostnameVerifier
-import org.apache.http.conn.ssl.TrustAllStrategy
-import org.apache.http.impl.client.HttpClients
-import org.apache.http.ssl.SSLContexts
 import java.io.InputStream
 import javax.net.ssl.SSLContext
 
@@ -195,18 +190,18 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
 
     private fun addSslParams() {
         if (enableSsl) {
-            val sslContext: SSLContext = SSLContexts.custom()
-                .loadTrustMaterial(TrustAllStrategy())
-                .build()
-
-            val httpClient = HttpClients.custom()
-                .setSSLContext(sslContext)
-                .setSSLHostnameVerifier(NoopHostnameVerifier())
-                .build()
-
-            Unirest.config().let { config ->
-                config.httpClient(ApacheClient.builder(httpClient).apply(config))
+            // Custom TrustManager to accept all certificates
+            val sslContext: SSLContext = SSLContext.getInstance("TLS").apply {
+                init(null, arrayOf(TrustAllTrustManager()), java.security.SecureRandom())
             }
+
+            Unirest.config().sslContext(sslContext)
         }
+    }
+
+    private class TrustAllTrustManager : javax.net.ssl.X509TrustManager {
+        override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>?, authType: String?) {}
+        override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>?, authType: String?) {}
+        override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate>? = null
     }
 }

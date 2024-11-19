@@ -11,7 +11,7 @@ import net.corda.rest.test.utils.TestHttpClientUnirestImpl
 import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.test.utils.multipartDir
 import net.corda.utilities.NetworkHostAndPort
-import org.apache.http.HttpStatus
+import kong.unirest.core.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -77,7 +77,7 @@ class RestServerDurableStreamsRequestsTest : RestServerTestBase() {
             password
         )
 
-        assertEquals(HttpStatus.SC_OK, response.responseStatus, response.toString())
+        assertEquals(HttpStatus.OK, response.responseStatus, response.toString())
         assertEquals(responseBody, response.body)
     }
 
@@ -98,7 +98,7 @@ class RestServerDurableStreamsRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, secondResponse.responseStatus)
+        assertEquals(HttpStatus.OK, secondResponse.responseStatus)
         assertEquals(responseBodyNewPosition, secondResponse.body)
     }
 
@@ -119,7 +119,7 @@ class RestServerDurableStreamsRequestsTest : RestServerTestBase() {
             password
         )
 
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
         assertEquals(responseBody, response.body)
     }
 
@@ -140,7 +140,7 @@ class RestServerDurableStreamsRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, secondResponse.responseStatus)
+        assertEquals(HttpStatus.OK, secondResponse.responseStatus)
         assertEquals(responseBodyNewPosition, secondResponse.body)
     }
 }

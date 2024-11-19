@@ -8,7 +8,7 @@ import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb.GET
 import net.corda.rest.tools.HttpVerb.POST
 import net.corda.utilities.NetworkHostAndPort
-import org.apache.http.HttpStatus
+import kong.unirest.core.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -62,7 +62,7 @@ class RestServerCaseSensitiveUrlTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
+        assertEquals(HttpStatus.OK, plusOneResponse.responseStatus)
         assertEquals(listOf(2.0, 3.0), plusOneResponse.body)
     }
 
@@ -77,7 +77,7 @@ class RestServerCaseSensitiveUrlTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_MOVED_PERMANENTLY, pingResponse.responseStatus)
+        assertEquals(HttpStatus.MOVED_PERMANENTLY, pingResponse.responseStatus)
     }
 
     @Test
@@ -93,7 +93,7 @@ class RestServerCaseSensitiveUrlTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
+        assertEquals(HttpStatus.OK, plusOneResponse.responseStatus)
         assertEquals(requestStringValue, plusOneResponse.body)
     }
 
@@ -107,7 +107,7 @@ class RestServerCaseSensitiveUrlTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
+        assertEquals(HttpStatus.OK, plusOneResponse.responseStatus)
         assertEquals(requestStringValue, plusOneResponse.body)
     }
 }

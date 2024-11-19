@@ -7,7 +7,7 @@ import net.corda.rest.test.utils.TestHttpClientUnirestImpl
 import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.test.utils.multipartDir
 import net.corda.utilities.NetworkHostAndPort
-import org.apache.http.HttpStatus
+import kong.unirest.core.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -57,7 +57,7 @@ class RestServerCaseSensitiveLoginTest : RestServerTestBase() {
             "aDmIn",
             password
         )
-        assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
+        assertEquals(HttpStatus.OK, plusOneResponse.responseStatus)
         assertEquals(listOf(2.0, 3.0), plusOneResponse.body)
     }
 
@@ -70,7 +70,7 @@ class RestServerCaseSensitiveLoginTest : RestServerTestBase() {
             userName,
             "aDmIn"
         )
-        assertEquals(HttpStatus.SC_UNAUTHORIZED, plusOneResponse.responseStatus)
+        assertEquals(HttpStatus.UNAUTHORIZED, plusOneResponse.responseStatus)
     }
 
     @Test
