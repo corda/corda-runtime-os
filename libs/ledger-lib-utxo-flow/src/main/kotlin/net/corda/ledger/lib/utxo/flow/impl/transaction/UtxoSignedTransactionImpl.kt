@@ -128,7 +128,7 @@ data class UtxoSignedTransactionImpl(
 
     // Notary/unknown signatures are ignored
     override fun verifySignatorySignatures() {
-      utxoSignedTxSignatureVerificationService.verifySignatorySignatures(this)
+        utxoSignedTxSignatureVerificationService.verifySignatorySignatures(this)
     }
 
     override fun verifyAttachedNotarySignature() {

@@ -18,7 +18,7 @@ class UtxoSignedTransactionSignatureVerificationServiceImpl(
     private val keyIdToSignatories: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
     private val keyIdToNotaryKeys: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
 
-     private fun getSignatoryKeyFromKeyId(transaction: UtxoSignedTransaction, keyId: SecureHash): PublicKey? {
+    private fun getSignatoryKeyFromKeyId(transaction: UtxoSignedTransaction, keyId: SecureHash): PublicKey? {
         val keyIdToPublicKey = keyIdToSignatories.getOrPut(keyId.algorithm) {
             // Prepare keyIds for all public keys related to signatories for the relevant algorithm
             transaction.signatories.flatMap { signatory ->
@@ -98,14 +98,13 @@ class UtxoSignedTransactionSignatureVerificationServiceImpl(
             ?: throw TransactionSignatureException(
                 transaction.id,
                 "Notary signature has not been created by the notary for this transaction. " +
-                        "Notary public key: $transaction.notaryKey " +
-                        "Notary signature key Id: ${signature.by}",
+                    "Notary public key: $transaction.notaryKey " +
+                    "Notary signature key Id: ${signature.by}",
                 null
             )
 
         try {
             transactionSignatureServiceInternal.verifySignature(transaction, signature, publicKey)
-
         } catch (e: Exception) {
             throw TransactionSignatureException(
                 transaction.id,
@@ -114,7 +113,6 @@ class UtxoSignedTransactionSignatureVerificationServiceImpl(
             )
         }
     }
-
 
     override fun verifySignatorySignature(transaction: UtxoSignedTransaction, signature: DigitalSignatureAndMetadata) {
         val publicKey = getSignatoryKeyFromKeyId(transaction, signature.by)

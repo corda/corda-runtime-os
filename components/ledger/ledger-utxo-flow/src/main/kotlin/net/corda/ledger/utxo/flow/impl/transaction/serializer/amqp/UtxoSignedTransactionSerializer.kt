@@ -33,7 +33,7 @@ class UtxoSignedTransactionSerializer @Activate constructor(
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     @Reference(service = NotarySignatureVerificationServiceInternal::class)
     private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal,
-    ) : BaseProxySerializer<UtxoSignedTransactionInternal, UtxoSignedTransactionProxy>(), UsedByFlow {
+) : BaseProxySerializer<UtxoSignedTransactionInternal, UtxoSignedTransactionProxy>(), UsedByFlow {
     private companion object {
         private const val VERSION_1 = 1
     }
