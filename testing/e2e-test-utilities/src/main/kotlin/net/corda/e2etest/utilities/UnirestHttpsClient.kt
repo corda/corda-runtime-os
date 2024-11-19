@@ -93,6 +93,7 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
 
     private fun configureUnirest() {
         Unirest.config()
+            .reset()
             .verifySsl(false)
             .requestTimeout(60000)
             .connectTimeout(60000)
