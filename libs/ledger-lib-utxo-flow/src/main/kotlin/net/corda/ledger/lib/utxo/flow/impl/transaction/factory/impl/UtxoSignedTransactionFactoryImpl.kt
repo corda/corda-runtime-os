@@ -46,12 +46,6 @@ class UtxoSignedTransactionFactoryImpl(
     private val getExtraMetadata: () -> Map<String, Any>,
 ) : UtxoSignedTransactionFactory {
 
-//    private val utxoSignedTransactionSignatureVerificationServiceFactory =
-//        UtxoSignedTransactionSignatureVerificationServiceImpl(
-//            notarySignatureVerificationService,
-//            digitalSignatureVerificationService
-//        )
-
     @Suspendable
     override fun create(
         utxoTransactionBuilder: UtxoTransactionBuilderInternal,
