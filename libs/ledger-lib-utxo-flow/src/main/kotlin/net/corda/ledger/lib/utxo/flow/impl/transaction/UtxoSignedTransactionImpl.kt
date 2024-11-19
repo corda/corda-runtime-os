@@ -32,11 +32,6 @@ data class UtxoSignedTransactionImpl(
     private val utxoSignedTxSignatureVerificationService: UtxoSignedTransactionSignatureVerificationService
 ) : UtxoSignedTransactionInternal {
 
-//    private val utxoSignedTxSignatureVerificationService = UtxoSignedTransactionSignatureVerificationServiceImpl(
-//        notarySignatureVerificationService,
-//        transactionSignatureServiceInternal
-//    )
-
     init {
         require(signatures.isNotEmpty()) { "Tried to instantiate a ${javaClass.simpleName} without any signatures." }
         verifyMetadata(wireTransaction.metadata)
