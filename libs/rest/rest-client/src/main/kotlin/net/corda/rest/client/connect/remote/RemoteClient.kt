@@ -7,7 +7,6 @@ import kong.unirest.core.HttpRequestWithBody
 import kong.unirest.core.HttpResponse
 import kong.unirest.core.HttpStatus
 import kong.unirest.core.MultipartBody
-import kong.unirest.core.Unirest
 import kong.unirest.core.UnirestException
 import kong.unirest.core.UnirestInstance
 import kong.unirest.modules.jackson.JacksonObjectMapper
@@ -25,7 +24,6 @@ import net.corda.rest.tools.HttpVerb
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Type
-import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLHandshakeException
 
 /**
@@ -187,14 +185,9 @@ internal class RemoteUnirestClient(
                 log.debug { "Creating secure SSL context" }
                 // Use the default Unirest SSL handling for secure SSL (no changes required)
             } else {
-                Unirest.config().reset()
                 log.debug { "Creating insecure SSL context" }
-                val sslContext: SSLContext = SSLContext.getInstance("TLS").apply {
-                    init(null, arrayOf(TrustAllTrustManager()), java.security.SecureRandom())
-                }
-
-                // Directly set the SSL context without using ApacheClient
-                this.sslContext(sslContext)
+                this.reset()
+                this.verifySsl(false)
             }
 
             log.debug { "Add Ssl params completed." }
@@ -215,10 +208,4 @@ internal class RemoteUnirestClient(
         }
         return requestBuilder
     }
-}
-
-private class TrustAllTrustManager : javax.net.ssl.X509TrustManager {
-    override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>?, authType: String?) {}
-    override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>?, authType: String?) {}
-    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate>? = null
 }

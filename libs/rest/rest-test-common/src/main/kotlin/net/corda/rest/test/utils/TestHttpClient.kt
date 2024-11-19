@@ -6,7 +6,6 @@ import kong.unirest.core.MultipartBody
 import kong.unirest.core.Unirest
 import net.corda.rest.tools.HttpVerb
 import java.io.InputStream
-import javax.net.ssl.SSLContext
 
 data class TestClientFileUpload(val fileContent: InputStream, val fileName: String)
 
@@ -189,19 +188,9 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
 
     private fun addSslParams() {
         if (enableSsl) {
-            Unirest.config().reset()
-            // Custom TrustManager to accept all certificates
-            val sslContext: SSLContext = SSLContext.getInstance("TLS").apply {
-                init(null, arrayOf(TrustAllTrustManager()), java.security.SecureRandom())
-            }
-
-            Unirest.config().sslContext(sslContext)
+            Unirest.config()
+                .reset()
+                .verifySsl(false)
         }
-    }
-
-    private class TrustAllTrustManager : javax.net.ssl.X509TrustManager {
-        override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>?, authType: String?) {}
-        override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>?, authType: String?) {}
-        override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate>? = null
     }
 }

@@ -6,7 +6,6 @@ import kong.unirest.core.Unirest
 import net.corda.tracing.addTraceContextToHttpRequest
 import java.net.URI
 import java.net.http.HttpRequest
-import javax.net.ssl.SSLContext
 
 class UnirestHttpsClient(private val endpoint: URI, private val username: String, private val password: String)  :
     HttpsClient {
@@ -93,12 +92,9 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
     }
 
     private fun configureUnirest() {
-        Unirest.config().reset()
-        val sslContext: SSLContext = SSLContext.getInstance("TLS")
-        sslContext.init(null, arrayOf(TrustAllTrustManager()), java.security.SecureRandom())
-
         Unirest.config()
-            .sslContext(sslContext)
+            .reset()
+            .verifySsl(false)
             .requestTimeout(60000)
             .connectTimeout(60000)
     }
@@ -112,14 +108,4 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
         files.entries.forEach { (name, file) -> field(name, file.content, file.filename) }
         return this
     }
-}
-
-/**
- * Replaces org.apache.http.conn.ssl.TrustAllStrategy after upgrade of unirest.
- * Using a trust-all approach disables SSL/TLS certificate validation.
- */
-class TrustAllTrustManager : javax.net.ssl.X509TrustManager {
-    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate>? = null
-    override fun checkClientTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
-    override fun checkServerTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
 }
