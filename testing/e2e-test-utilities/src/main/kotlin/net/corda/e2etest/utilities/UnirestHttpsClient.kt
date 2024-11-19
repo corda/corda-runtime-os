@@ -93,6 +93,7 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
     }
 
     private fun configureUnirest() {
+        Unirest.config().reset()
         val sslContext: SSLContext = SSLContext.getInstance("TLS")
         sslContext.init(null, arrayOf(TrustAllTrustManager()), java.security.SecureRandom())
 

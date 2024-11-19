@@ -7,6 +7,7 @@ import kong.unirest.core.HttpRequestWithBody
 import kong.unirest.core.HttpResponse
 import kong.unirest.core.HttpStatus
 import kong.unirest.core.MultipartBody
+import kong.unirest.core.Unirest
 import kong.unirest.core.UnirestException
 import kong.unirest.core.UnirestInstance
 import kong.unirest.modules.jackson.JacksonObjectMapper
@@ -186,6 +187,7 @@ internal class RemoteUnirestClient(
                 log.debug { "Creating secure SSL context" }
                 // Use the default Unirest SSL handling for secure SSL (no changes required)
             } else {
+                Unirest.config().reset()
                 log.debug { "Creating insecure SSL context" }
                 val sslContext: SSLContext = SSLContext.getInstance("TLS").apply {
                     init(null, arrayOf(TrustAllTrustManager()), java.security.SecureRandom())

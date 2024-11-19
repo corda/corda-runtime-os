@@ -30,10 +30,12 @@ interface TestHttpClient {
 }
 
 class TestHttpClientUnirestImpl(override val baseAddress: String, private val enableSsl: Boolean = false) : TestHttpClient {
+    init {
+        addSslParams()
+    }
 
     override fun <T, R> call(verb: HttpVerb, webRequest: WebRequest<T>, responseClass: Class<R>, userName: String, password: String):
         WebResponse<R> where R : Any {
-        addSslParams()
 
         var request = when (verb) {
             HttpVerb.GET -> Unirest.get(baseAddress + webRequest.path).basicAuth(userName, password)
@@ -71,8 +73,6 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
     }
 
     private fun <T> doCall(verb: HttpVerb, webRequest: WebRequest<T>, encodeAuth: HttpRequest<*>.() -> Unit): WebResponse<String> {
-        addSslParams()
-
         val path = baseAddress + webRequest.path
         var request: HttpRequest<*> = when (verb) {
             HttpVerb.GET -> Unirest.get(path)
@@ -190,6 +190,7 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
 
     private fun addSslParams() {
         if (enableSsl) {
+            Unirest.config().reset()
             // Custom TrustManager to accept all certificates
             val sslContext: SSLContext = SSLContext.getInstance("TLS").apply {
                 init(null, arrayOf(TrustAllTrustManager()), java.security.SecureRandom())
