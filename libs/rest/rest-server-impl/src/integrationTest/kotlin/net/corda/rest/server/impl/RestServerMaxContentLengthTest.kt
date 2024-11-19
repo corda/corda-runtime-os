@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl
 
+import kong.unirest.core.HttpStatus
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.TestHealthCheckAPIImpl
 import net.corda.rest.test.utils.TestHttpClientUnirestImpl
@@ -8,7 +9,6 @@ import net.corda.rest.test.utils.WebResponse
 import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb
 import net.corda.utilities.NetworkHostAndPort
-import kong.unirest.core.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test

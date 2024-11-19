@@ -2,6 +2,7 @@ package net.corda.rest.server.impl
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
+import kong.unirest.core.HttpStatus
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.utils.compact
 import net.corda.rest.test.NullabilityRestResourceImpl
@@ -10,7 +11,6 @@ import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb.GET
 import net.corda.utilities.NetworkHostAndPort
-import kong.unirest.core.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll

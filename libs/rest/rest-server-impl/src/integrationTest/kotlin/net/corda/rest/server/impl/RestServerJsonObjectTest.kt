@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl
 
+import kong.unirest.core.HttpStatus
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.CustomNonSerializableString
 import net.corda.rest.test.CustomUnsafeString
@@ -9,7 +10,6 @@ import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb.POST
 import net.corda.utilities.NetworkHostAndPort
-import kong.unirest.core.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll

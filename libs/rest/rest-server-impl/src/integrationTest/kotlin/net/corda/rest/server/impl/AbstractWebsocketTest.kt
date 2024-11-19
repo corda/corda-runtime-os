@@ -1,10 +1,10 @@
 package net.corda.rest.server.impl
 
 import io.javalin.core.util.Header
+import kong.unirest.core.HttpStatus
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.tools.HttpVerb
-import kong.unirest.core.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.eclipse.jetty.io.EofException
 import org.eclipse.jetty.websocket.api.CloseStatus
