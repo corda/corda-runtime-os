@@ -36,7 +36,6 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
 
     override fun <T, R> call(verb: HttpVerb, webRequest: WebRequest<T>, responseClass: Class<R>, userName: String, password: String):
         WebResponse<R> where R : Any {
-
         var request = when (verb) {
             HttpVerb.GET -> Unirest.get(baseAddress + webRequest.path).basicAuth(userName, password)
             HttpVerb.POST -> Unirest.post(baseAddress + webRequest.path).basicAuth(userName, password)
