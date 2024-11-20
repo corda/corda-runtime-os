@@ -17,20 +17,6 @@ class UtxoSignedTransactionSignatureVerificationServiceImpl(
     private val keyIdToSignatories: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
     private val keyIdToNotaryKeys: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
 
-    private fun getSignatoryKeyFromKeyId(transaction: UtxoSignedTransaction, keyId: SecureHash): PublicKey? {
-        val keyIdToPublicKey = keyIdToSignatories.getOrPut(keyId.algorithm) {
-            // Prepare keyIds for all public keys related to signatories for the relevant algorithm
-            transaction.signatories.flatMap { signatory ->
-                notarySignatureVerificationService.getKeyOrLeafKeys(signatory).map {
-                    transactionSignatureServiceInternal.getIdOfPublicKey(
-                        it, keyId.algorithm
-                    ) to it
-                }
-            }.toMap()
-        }
-        return keyIdToPublicKey[keyId]
-    }
-
     // Notary/unknown signatures are ignored.
     override fun getMissingSignatories(transaction: UtxoSignedTransaction): Set<PublicKey> {
         return getMissingSignatories(transaction, getPublicKeysToSignatorySignatures(transaction))
@@ -62,6 +48,20 @@ class UtxoSignedTransactionSignatureVerificationServiceImpl(
                 )
             }
         }
+    }
+
+    private fun getSignatoryKeyFromKeyId(transaction: UtxoSignedTransaction, keyId: SecureHash): PublicKey? {
+        val keyIdToPublicKey = keyIdToSignatories.getOrPut(keyId.algorithm) {
+            // Prepare keyIds for all public keys related to signatories for the relevant algorithm
+            transaction.signatories.flatMap { signatory ->
+                notarySignatureVerificationService.getKeyOrLeafKeys(signatory).map {
+                    transactionSignatureServiceInternal.getIdOfPublicKey(
+                        it, keyId.algorithm
+                    ) to it
+                }
+            }.toMap()
+        }
+        return keyIdToPublicKey[keyId]
     }
 
     private fun getMissingSignatories(

@@ -30,7 +30,7 @@ data class UtxoSignedTransactionImpl(
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     override val wireTransaction: WireTransaction,
     private val signatures: Set<DigitalSignatureAndMetadata>,
-    private val utxoSignedTxSignatureVerificationService: UtxoSignedTransactionSignatureVerificationService
+    private val utxoSignedTransactionSignatureVerificationService: UtxoSignedTransactionSignatureVerificationService
 ) : UtxoSignedTransactionInternal {
 
     init {
@@ -92,7 +92,7 @@ data class UtxoSignedTransactionImpl(
             utxoLedgerTransactionFactory,
             wireTransaction,
             signatures + signature,
-            utxoSignedTxSignatureVerificationService
+            utxoSignedTransactionSignatureVerificationService
         )
 
     @Suspendable
@@ -110,7 +110,7 @@ data class UtxoSignedTransactionImpl(
                 utxoLedgerTransactionFactory,
                 wireTransaction,
                 signatures + newSignatures,
-                utxoSignedTxSignatureVerificationService
+                utxoSignedTransactionSignatureVerificationService
             ),
             newSignatures
         )
@@ -118,24 +118,24 @@ data class UtxoSignedTransactionImpl(
 
     // Notary/unknown signatures are ignored.
     override fun getMissingSignatories(): Set<PublicKey> {
-        return utxoSignedTxSignatureVerificationService.getMissingSignatories(this)
+        return utxoSignedTransactionSignatureVerificationService.getMissingSignatories(this)
     }
 
     // Notary/unknown signatures are ignored
     override fun verifySignatorySignatures() {
-        utxoSignedTxSignatureVerificationService.verifySignatorySignatures(this)
+        utxoSignedTransactionSignatureVerificationService.verifySignatorySignatures(this)
     }
 
     override fun verifyAttachedNotarySignature() {
-        utxoSignedTxSignatureVerificationService.verifyAttachedNotarySignature(this)
+        utxoSignedTransactionSignatureVerificationService.verifyAttachedNotarySignature(this)
     }
 
     override fun verifyNotarySignature(signature: DigitalSignatureAndMetadata) {
-        utxoSignedTxSignatureVerificationService.verifyNotarySignature(this, signature)
+        utxoSignedTransactionSignatureVerificationService.verifyNotarySignature(this, signature)
     }
 
     override fun verifySignatorySignature(signature: DigitalSignatureAndMetadata) {
-        utxoSignedTxSignatureVerificationService.verifySignatorySignature(this, signature)
+        utxoSignedTransactionSignatureVerificationService.verifySignatorySignature(this, signature)
     }
 
     @Suspendable
