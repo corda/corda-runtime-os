@@ -91,6 +91,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         utxoLedgerTransactionFactory,
         mockUtxoLedgerTransactionVerificationService,
         mockUtxoLedgerGroupParametersPersistenceService,
+        mockSignedTransactionSignatureVerificationService,
         mockGroupParametersLookup,
         mockSignedGroupParametersVerifier,
         mockNotarySignatureVerificationService,
