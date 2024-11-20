@@ -1,5 +1,6 @@
 package net.corda.flow.rest.impl.v1
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
@@ -41,6 +42,7 @@ import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_START
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.tracing.TraceTag
 import net.corda.tracing.addTraceContextToRecord
 import net.corda.tracing.trace
@@ -71,6 +73,8 @@ class FlowRestResourceImpl @Activate constructor(
     private val permissionValidationService: PermissionValidationService,
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : FlowRestResource, PluggableRestResource<FlowRestResource>, Lifecycle {
 
     private companion object {
@@ -82,12 +86,15 @@ class FlowRestResourceImpl @Activate constructor(
     override val targetInterface: Class<FlowRestResource> = FlowRestResource::class.java
     override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
+    private val serializer  = cordaAvroSerializationFactory.createAvroSerializer<Any>()
     private var publisher: Publisher? = null
     private var fatalErrorOccurred = false
     private lateinit var onFatalError: () -> Unit
+    private lateinit var messagingConfig: SmartConfig
 
     override fun initialise(config: SmartConfig, onFatalError: () -> Unit) {
         this.onFatalError = onFatalError
+        this.messagingConfig = config
         publisher?.close()
         publisher = publisherFactory.createPublisher(PublisherConfig("FlowRestResource"), config)
     }
@@ -196,6 +203,13 @@ class FlowRestResourceImpl @Activate constructor(
                     startFlow.requestBody.escapedJson,
                     flowContextPlatformProperties
                 )
+            val startEventSize = serializer.serialize(startEvent)?.size
+            val maxAllowedMessageSize =  getMaxAllowedMessageSize(messagingConfig)
+            if (startEventSize != null && startEventSize > maxAllowedMessageSize) {
+                log.warn(FlowRestExceptionConstants.MAX_FLOW_START_ARGS_SIZE, IllegalArgumentException("Flow start event of size " +
+                        "[$startEventSize] exceeds maxAllowedMessageSize [$maxAllowedMessageSize]"))
+                throw InvalidInputDataException(FlowRestExceptionConstants.FATAL_ERROR)
+            }
             val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
             val records = listOf(
@@ -320,4 +334,6 @@ class FlowRestResourceImpl @Activate constructor(
     private fun getVirtualNode(holdingIdentityShortHash: String): VirtualNodeInfo {
         return virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(holdingIdentityShortHash).toAvro()
     }
+
+    private fun getMaxAllowedMessageSize(messagingConfig: SmartConfig) = messagingConfig.getLong(MessagingConfig.MAX_ALLOWED_MSG_SIZE)
 }
