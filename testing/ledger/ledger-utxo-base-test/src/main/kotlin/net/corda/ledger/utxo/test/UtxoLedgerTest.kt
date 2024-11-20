@@ -63,7 +63,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         whenever(it.lookup(anotherNotaryX500Name)).thenReturn(anotherNotaryExampleInfo)
     }
 
-    val mockPluggableNotaryService = mock<PluggableNotaryService>()
+    private val mockPluggableNotaryService = mock<PluggableNotaryService>()
 
     private val utxoFilteredTransactionFactory = UtxoFilteredTransactionFactoryImpl(
         FilteredTransactionFactoryImpl(
@@ -123,7 +123,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
             serializationServiceNullCfg,
             transactionSignatureService,
             utxoLedgerTransactionFactory,
-            mockNotarySignatureVerificationService
+            mockNotarySignatureVerificationService,
+            mockSignedTransactionSignatureVerificationService
         )
     val utxoSignedTransactionExample = getUtxoSignedTransactionExample(
         digestService,
