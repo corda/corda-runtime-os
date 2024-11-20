@@ -25,7 +25,6 @@ dependencies {
     implementation libs.jackson.datatype.jsr310
     implementation libs.snakeyaml
     implementation libs.unirest.java
-    implementation libs.unirest.objectmapper.jackson
     implementation project(":libs:crypto:certificate-generation")
     implementation project(':libs:crypto:cipher-suite')
     implementation libs.pf4j

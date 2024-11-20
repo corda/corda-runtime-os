@@ -16,7 +16,8 @@ dependencies {
     implementation libs.jackson.module.kotlin
     implementation libs.nimbus.sdk
     implementation libs.unirest.java
-    implementation libs.unirest.objectmapper.jackson
+    // Add Gson as this was the default in 3.X, but not packed in 4.X. Gson would have been chosen by default in TestHttpClientUnirestImpl
+    implementation libs.unirest.objectmapper.gson
 
     implementation libs.mockito.kotlin
 

@@ -57,7 +57,8 @@ dependencies {
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
     integrationTestImplementation libs.unirest.java
-    integrationTestImplementation libs.unirest.objectmapper.jackson
+    // some tests expect Gson as this was the default in 3.X and it was not overridden previously in TestHttpClientUnirestImpl
+    integrationTestImplementation libs.unirest.objectmapper.gson
 
     integrationTestImplementation project(':libs:rest:ssl-cert-read-impl')
     integrationTestImplementation project(":testing:test-utilities")

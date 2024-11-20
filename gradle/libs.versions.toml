@@ -120,6 +120,7 @@ snakeyaml = { group = "org.yaml", name = "snakeyaml", version.ref = "snakeyamlVe
 typesafe-config = { group = "com.typesafe", name = "config", version.ref = "typeSafeConfigVersion" }
 unirest-java = { group = "com.konghq", name = "unirest-java-core", version.ref = "unirestVersion"}
 unirest-objectmapper-jackson = { group = "com.konghq", name = "unirest-modules-jackson", version.ref = "unirestVersion" }
+unirest-objectmapper-gson = { group = "com.konghq", name = "unirest-modules-gson", version.ref = "unirestVersion" }
 okio = { group = "com.squareup.okio", name = "okio", version.ref = "okioVersion" }
 okHttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okHttpVersion" }
 swagger-core = { group = "io.swagger.core.v3", name = "swagger-core", version.ref = "swaggerVersion" }
