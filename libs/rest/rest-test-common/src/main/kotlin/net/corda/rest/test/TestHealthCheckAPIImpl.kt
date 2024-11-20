@@ -51,7 +51,9 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRestResource<TestHea
 
     override fun ping(pingPongData: TestHealthCheckAPI.PingPongData?) = "Pong for ${pingPongData?.str}"
 
-    override fun plusOne(numbers: List<String>) = numbers.map { it.toDouble() + 1.0 }
+    override fun plusOne(numbers: List<String>): List<Double> {
+       return numbers.map { it.toDouble() + 1.0 }
+    }
 
     override fun plus(number: Long): Long = number + 1
 

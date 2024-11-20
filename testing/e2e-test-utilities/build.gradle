@@ -17,6 +17,7 @@ dependencies {
     implementation libs.jackson.module.kotlin
     implementation libs.jackson.datatype.jsr310
     implementation libs.unirest.java
+    implementation libs.unirest.objectmapper.jackson
     implementation libs.typesafe.config
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
     implementation libs.assertj.core

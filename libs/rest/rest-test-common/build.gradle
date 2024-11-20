@@ -16,6 +16,7 @@ dependencies {
     implementation libs.jackson.module.kotlin
     implementation libs.nimbus.sdk
     implementation libs.unirest.java
+    implementation libs.unirest.objectmapper.jackson
 
     implementation libs.mockito.kotlin
 

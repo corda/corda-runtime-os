@@ -26,6 +26,7 @@ dependencies {
     implementation libs.kafka.client
     implementation libs.snakeyaml
     implementation libs.unirest.java
+    implementation libs.unirest.objectmapper.jackson
     implementation libs.pf4j
 
     kapt libs.pf4j
