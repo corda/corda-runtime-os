@@ -104,7 +104,7 @@ class UtxoLedgerPersistenceServiceImplTest {
     private val stateAndRefCache = mock<StateAndRefCache>()
     private val flowCheckpointService = mock<FlowCheckpointService>()
     private val flowCheckpoint = mock<FlowCheckpoint>()
-    private val signedTransactionSignatureVerificationServiceImpl =
+    private val signedTransactionSignatureVerificationService =
         mock<UtxoSignedTransactionSignatureVerificationService>()
 
     private val notaryServiceKey = mock<CompositeKey>()
@@ -263,7 +263,7 @@ class UtxoLedgerPersistenceServiceImplTest {
             mock<UtxoLedgerTransactionFactory>(),
             wireTransaction,
             signatures,
-            signedTransactionSignatureVerificationServiceImpl
+            signedTransactionSignatureVerificationService
         )
         val testId = parseSecureHash("SHA256:1234567890123456")
 

@@ -6,6 +6,7 @@ import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoSignedTransactionSignatureVerificationService
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoSignedTransactionSignatureVerificationServiceImpl
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
@@ -32,7 +33,9 @@ class UtxoSignedTransactionKryoSerializer @Activate constructor(
     @Reference(service = UtxoLedgerTransactionFactory::class)
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     @Reference(service = NotarySignatureVerificationServiceInternal::class)
-    private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal
+    private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal,
+    @Reference(service = UtxoSignedTransactionSignatureVerificationService::class)
+    private val utxoSignedTransactionSignatureVerificationService: UtxoSignedTransactionSignatureVerificationService
 ) : CheckpointInternalCustomSerializer<UtxoSignedTransactionInternal>, UsedByFlow {
     override val type: Class<UtxoSignedTransactionInternal> get() = UtxoSignedTransactionInternal::class.java
 
@@ -53,10 +56,7 @@ class UtxoSignedTransactionKryoSerializer @Activate constructor(
             utxoLedgerTransactionFactory,
             wireTransaction,
             signatures.toSet(),
-            UtxoSignedTransactionSignatureVerificationServiceImpl(
-                notarySignatureVerificationService,
-                transactionSignatureService
-            )
+            utxoSignedTransactionSignatureVerificationService
         )
     }
 }
