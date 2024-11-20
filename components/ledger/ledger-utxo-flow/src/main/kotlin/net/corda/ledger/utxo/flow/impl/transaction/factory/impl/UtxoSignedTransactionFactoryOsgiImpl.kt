@@ -6,6 +6,7 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.PrivacySaltProviderService
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
+import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoSignedTransactionSignatureVerificationService
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.impl.UtxoSignedTransactionFactoryImpl
@@ -56,6 +57,8 @@ class UtxoSignedTransactionFactoryOsgiImpl(
         utxoLedgerTransactionVerificationService: UtxoLedgerTransactionVerificationService,
         @Reference(service = UtxoLedgerGroupParametersPersistenceService::class)
         utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,
+        @Reference(service = UtxoSignedTransactionSignatureVerificationService::class)
+        utxoSignedTransactionSignatureVerificationService: UtxoSignedTransactionSignatureVerificationService,
         @Reference(service = GroupParametersLookupInternal::class)
         groupParametersLookup: GroupParametersLookupInternal,
         @Reference(service = SignedGroupParametersVerifier::class)
@@ -84,7 +87,8 @@ class UtxoSignedTransactionFactoryOsgiImpl(
                 mapOf<String, Any>(
                     TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to signedGroupParameters.hash.toString()
                 )
-            }
+            },
+            utxoSignedTransactionSignatureVerificationService
         )
     )
 }

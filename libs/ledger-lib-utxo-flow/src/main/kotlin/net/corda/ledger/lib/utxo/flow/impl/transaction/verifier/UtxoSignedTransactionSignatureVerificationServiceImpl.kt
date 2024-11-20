@@ -1,8 +1,7 @@
-package net.corda.ledger.lib.utxo.flow.impl.transaction
+package net.corda.ledger.lib.utxo.flow.impl.transaction.verifier
 
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
-import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash

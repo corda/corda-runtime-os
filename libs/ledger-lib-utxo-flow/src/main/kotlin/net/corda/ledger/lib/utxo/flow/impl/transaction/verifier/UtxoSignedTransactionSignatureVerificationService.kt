@@ -1,4 +1,4 @@
-package net.corda.ledger.lib.utxo.flow.impl.transaction
+package net.corda.ledger.lib.utxo.flow.impl.transaction.verifier
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
