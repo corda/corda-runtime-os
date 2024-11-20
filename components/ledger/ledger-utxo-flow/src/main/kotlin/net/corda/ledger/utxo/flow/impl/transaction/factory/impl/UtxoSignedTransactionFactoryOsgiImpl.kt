@@ -6,12 +6,12 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.PrivacySaltProviderService
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
-import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoSignedTransactionSignatureVerificationService
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.impl.UtxoSignedTransactionFactoryImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
+import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoSignedTransactionSignatureVerificationService
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.libs.json.validator.JsonValidator
