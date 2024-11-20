@@ -8,6 +8,7 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInter
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionSignatureVerificationService
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionSignatureVerificationServiceImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
@@ -44,6 +45,7 @@ class UtxoSignedTransactionFactoryImpl(
     private val privacySaltProviderService: PrivacySaltProviderService,
     private val getEvolvableTag: (klass: Class<*>) -> String,
     private val getExtraMetadata: () -> Map<String, Any>,
+    private val utxoSignedTransactionSignatureVerificationService : UtxoSignedTransactionSignatureVerificationService
 ) : UtxoSignedTransactionFactory {
 
     @Suspendable
@@ -76,7 +78,7 @@ class UtxoSignedTransactionFactoryImpl(
             utxoLedgerTransactionFactory,
             wireTransaction,
             signaturesWithMetadata.toSet(),
-            UtxoSignedTransactionSignatureVerificationServiceImpl(notarySignatureVerificationService, transactionSignatureService)
+            utxoSignedTransactionSignatureVerificationService
         )
     }
 
