@@ -67,7 +67,7 @@ class RestServerCaseSensitiveUrlTest : RestServerTestBase() {
     }
 
     @Test
-    fun `Uppercase POST will return 301 Moved Permanently`() {
+    fun `Uppercase POST will return 404 Not Found`() {
         val pingResponse = client.call(
             POST,
             WebRequest(
@@ -77,7 +77,7 @@ class RestServerCaseSensitiveUrlTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.MOVED_PERMANENTLY, pingResponse.responseStatus)
+        assertEquals(HttpStatus.NOT_FOUND, pingResponse.responseStatus)
     }
 
     @Test
