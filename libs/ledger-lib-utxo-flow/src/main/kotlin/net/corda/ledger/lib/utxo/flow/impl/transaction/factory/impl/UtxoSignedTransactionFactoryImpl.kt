@@ -92,7 +92,7 @@ class UtxoSignedTransactionFactoryImpl(
         utxoLedgerTransactionFactory,
         wireTransaction,
         signaturesWithMetaData.toSet(),
-        UtxoSignedTransactionSignatureVerificationServiceImpl(notarySignatureVerificationService, transactionSignatureService)
+        utxoSignedTransactionSignatureVerificationService
     )
 
     @Suspendable
