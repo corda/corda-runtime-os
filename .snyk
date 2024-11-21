@@ -17,4 +17,16 @@ ignore:
           only for static code analysis and not shipped in any of our releasable artifacts.
         expires: 2025-11-20T14:30:31.735Z
         created: 2024-11-20T14:30:31.735Z
+  SNYK-JAVA-ORGJETBRAINSKOTLIN-2393744:
+    - '*':
+        reason: >-
+          This project acknowledges the presence of CVE-2024-6763 in the version of Jetty currently used by Javalin.
+          The vulnerability affects users of Jetty's HttpURI class, which our project does not directly utilize,
+          nor is it exposed through Javalin in our application context.
+          The Javalin team has indicated that they do not use HttpURI, and we have verified that our dependency tree presents no indirect
+          exposure. We will monitor Javalin updates and adopt a release upgrading Jetty to a patched version (≥12.0.12) when feasible.
+          Given the limited risk, no immediate action is required beyond ongoing dependency monitoring.
+          Note: there are currently no versions of Javalin released without this issue.
+        expires: 2025-11-21T14:30:31.735Z
+        created: 2024-11-21T14:30:31.735Z
 patch: {}
