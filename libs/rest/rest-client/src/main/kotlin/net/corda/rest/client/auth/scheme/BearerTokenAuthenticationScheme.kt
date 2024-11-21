@@ -1,7 +1,7 @@
 package net.corda.rest.client.auth.scheme
 
-import kong.unirest.HeaderNames.AUTHORIZATION
-import kong.unirest.HttpRequest
+import kong.unirest.core.HeaderNames.AUTHORIZATION
+import kong.unirest.core.HttpRequest
 import net.corda.rest.client.auth.RequestContext
 import net.corda.rest.client.auth.credentials.BearerTokenCredentials
 

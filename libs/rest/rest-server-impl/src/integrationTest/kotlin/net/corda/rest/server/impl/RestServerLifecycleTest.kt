@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl
 
+import kong.unirest.core.HttpStatus
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.LifecycleRestResourceImpl
 import net.corda.rest.test.utils.TestHttpClientUnirestImpl
@@ -8,7 +9,6 @@ import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb.GET
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.NetworkHostAndPort
-import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -58,7 +58,7 @@ class RestServerLifecycleTest : RestServerTestBase() {
         // Should report unavailable when REST implementation is not started
         with(client.call(GET, WebRequest<Any>("lifecycle/hello/world?id=1"), userName, password)) {
             println("### $responseStatus")
-            assertEquals(HttpStatus.SC_SERVICE_UNAVAILABLE, responseStatus)
+            assertEquals(HttpStatus.SERVICE_UNAVAILABLE, responseStatus)
         }
 
         // Do start
@@ -67,7 +67,7 @@ class RestServerLifecycleTest : RestServerTestBase() {
         // Assert functions normally
         lifecycleRestResourceImpl.usingLifecycle {
             with(client.call(GET, WebRequest<Any>("lifecycle/hello/world?id=1"), userName, password)) {
-                assertEquals(HttpStatus.SC_OK, responseStatus)
+                assertEquals(HttpStatus.OK, responseStatus)
                 assertEquals("Hello 1 : world", body)
             }
             lifecycleRestResourceImpl.stop()
@@ -75,7 +75,7 @@ class RestServerLifecycleTest : RestServerTestBase() {
 
         // Assert back to unavailable after stop/close
         with(client.call(GET, WebRequest<Any>("lifecycle/hello/world?id=1"), userName, password)) {
-            assertEquals(HttpStatus.SC_SERVICE_UNAVAILABLE, responseStatus)
+            assertEquals(HttpStatus.SERVICE_UNAVAILABLE, responseStatus)
         }
     }
 }

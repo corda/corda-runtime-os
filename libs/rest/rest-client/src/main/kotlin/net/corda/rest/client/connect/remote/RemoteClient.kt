@@ -1,16 +1,15 @@
 package net.corda.rest.client.connect.remote
 
-import kong.unirest.Config
-import kong.unirest.GenericType
-import kong.unirest.HttpRequest
-import kong.unirest.HttpRequestWithBody
-import kong.unirest.HttpResponse
-import kong.unirest.HttpStatus
-import kong.unirest.MultipartBody
-import kong.unirest.UnirestException
-import kong.unirest.UnirestInstance
-import kong.unirest.apache.ApacheClient
-import kong.unirest.jackson.JacksonObjectMapper
+import kong.unirest.core.Config
+import kong.unirest.core.GenericType
+import kong.unirest.core.HttpRequest
+import kong.unirest.core.HttpRequestWithBody
+import kong.unirest.core.HttpResponse
+import kong.unirest.core.HttpStatus
+import kong.unirest.core.MultipartBody
+import kong.unirest.core.UnirestException
+import kong.unirest.core.UnirestInstance
+import kong.unirest.modules.jackson.JacksonObjectMapper
 import net.corda.rest.client.auth.RequestContext
 import net.corda.rest.client.exceptions.ClientSslHandshakeException
 import net.corda.rest.client.exceptions.InternalErrorException
@@ -23,13 +22,8 @@ import net.corda.rest.client.processing.WebResponse
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.tools.HttpVerb
 import net.corda.utilities.debug
-import org.apache.http.conn.ssl.NoopHostnameVerifier
-import org.apache.http.conn.ssl.TrustAllStrategy
-import org.apache.http.impl.client.HttpClients
-import org.apache.http.ssl.SSLContexts
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Type
-import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLHandshakeException
 
 /**
@@ -187,23 +181,13 @@ internal class RemoteUnirestClient(
         if (enableSsl) {
             log.debug { "Add Ssl params." }
 
-            val apacheClient = if (secureSsl) {
+            if (secureSsl) {
                 log.debug { "Creating secure SSL context" }
-                ApacheClient.builder().apply(this)
+                // Use the default Unirest SSL handling for secure SSL (no changes required)
             } else {
                 log.debug { "Creating insecure SSL context" }
-                val sslContext: SSLContext = SSLContexts.custom()
-                    .loadTrustMaterial(TrustAllStrategy())
-                    .build()
-
-                val httpClient = HttpClients.custom()
-                    .setSSLContext(sslContext)
-                    .setSSLHostnameVerifier(NoopHostnameVerifier())
-                    .build()
-
-                ApacheClient.builder(httpClient).apply(this)
+                this.verifySsl(false)
             }
-            this.httpClient(apacheClient)
 
             log.debug { "Add Ssl params completed." }
         }

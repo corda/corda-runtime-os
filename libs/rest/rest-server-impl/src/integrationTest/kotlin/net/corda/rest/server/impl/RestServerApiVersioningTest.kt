@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl
 
+import kong.unirest.core.HttpStatus
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.TestEndpointVersioningRestResourceImpl
@@ -10,7 +11,6 @@ import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb
 import net.corda.utilities.NetworkHostAndPort
-import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -71,8 +71,8 @@ class RestServerApiVersioningTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
-        assertEquals(HttpStatus.SC_OK, response2.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response2.responseStatus)
     }
 
     @Test
@@ -83,7 +83,7 @@ class RestServerApiVersioningTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_NOT_FOUND, response.responseStatus)
+        assertEquals(HttpStatus.NOT_FOUND, response.responseStatus)
 
         val response2 = client.call(
             HttpVerb.GET,
@@ -91,7 +91,7 @@ class RestServerApiVersioningTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response2.responseStatus)
+        assertEquals(HttpStatus.OK, response2.responseStatus)
     }
 
     @Test
@@ -102,7 +102,7 @@ class RestServerApiVersioningTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
 
         val response2 = client.call(
             HttpVerb.GET,
@@ -110,7 +110,7 @@ class RestServerApiVersioningTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_NOT_FOUND, response2.responseStatus)
+        assertEquals(HttpStatus.NOT_FOUND, response2.responseStatus)
     }
 
     @Test
@@ -121,7 +121,7 @@ class RestServerApiVersioningTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
     }
 
     @Test
@@ -132,7 +132,7 @@ class RestServerApiVersioningTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_NOT_FOUND, response.responseStatus)
+        assertEquals(HttpStatus.NOT_FOUND, response.responseStatus)
     }
 
     @Test
@@ -143,7 +143,7 @@ class RestServerApiVersioningTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.OK, response.responseStatus)
 
         val response2 = client.call(
             HttpVerb.GET,
@@ -151,6 +151,6 @@ class RestServerApiVersioningTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, response2.responseStatus)
+        assertEquals(HttpStatus.OK, response2.responseStatus)
     }
 }

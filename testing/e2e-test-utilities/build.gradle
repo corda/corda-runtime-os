@@ -17,6 +17,9 @@ dependencies {
     implementation libs.jackson.module.kotlin
     implementation libs.jackson.datatype.jsr310
     implementation libs.unirest.java
+    // Add Gson as this was the default in 3.X, but not packed in 4.X.
+    // Object mapper was never overridden previous to jackson OnjectMapper UnirestHttpsClient in this module
+    implementation libs.unirest.objectmapper.gson
     implementation libs.typesafe.config
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
     implementation libs.assertj.core

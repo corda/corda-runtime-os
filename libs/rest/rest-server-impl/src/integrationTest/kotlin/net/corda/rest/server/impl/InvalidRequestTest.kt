@@ -2,6 +2,7 @@ package net.corda.rest.server.impl
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import kong.unirest.core.HttpStatus
 import net.corda.rest.server.apigen.test.TestJavaPrimitivesRestResourceImpl
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.TestHealthCheckAPIImpl
@@ -11,7 +12,6 @@ import net.corda.rest.test.utils.WebResponse
 import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb
 import net.corda.utilities.NetworkHostAndPort
-import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -70,9 +70,9 @@ class InvalidRequestTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_BAD_REQUEST, pingResponse.responseStatus)
+        assertEquals(HttpStatus.BAD_REQUEST, pingResponse.responseStatus)
         assertNotNull(pingResponse.body)
-        assertEquals("application/json", pingResponse.headers["Content-Type"])
+        assertEquals("application/json", pingResponse.headers["content-type"])
         assertThat(pingResponse.body).contains("Duplicate field 'data'")
         assertThat(pingResponse.body).doesNotContain("\"type\":")
     }
@@ -85,7 +85,7 @@ class InvalidRequestTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_BAD_REQUEST, plusDoubleResponse.responseStatus)
+        assertEquals(HttpStatus.BAD_REQUEST, plusDoubleResponse.responseStatus)
         assertNotNull(plusDoubleResponse.body)
         assertThat(plusDoubleResponse.body).contains("Unexpected character ('0' (code 48))")
         assertThat(plusDoubleResponse.body).doesNotContain("\"type\":")
@@ -99,7 +99,7 @@ class InvalidRequestTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_BAD_REQUEST, negateIntResponse.responseStatus)
+        assertEquals(HttpStatus.BAD_REQUEST, negateIntResponse.responseStatus)
         val responseBody = negateIntResponse.body
         assertNotNull(responseBody)
         assertTrue(responseBody.contains("Numeric value (3147483647) out of range of int (-2147483648 - 2147483647)"))
@@ -109,7 +109,7 @@ class InvalidRequestTest : RestServerTestBase() {
     @Test
     fun `POST ping null value for non-nullable String should return 400 BAD REQUEST`() {
         fun WebResponse<String>.doAssert() {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
+            assertEquals(HttpStatus.BAD_REQUEST, responseStatus)
             val responseBody = body
             assertNotNull(responseBody)
             assertThat(responseBody).contains(MISSING_VALUE_ERROR)
@@ -135,7 +135,7 @@ class InvalidRequestTest : RestServerTestBase() {
     @Test
     fun `POST ping missing value for non-nullable String should return 400 BAD REQUEST`() {
         fun WebResponse<String>.doAssert() {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
+            assertEquals(HttpStatus.BAD_REQUEST, responseStatus)
             val responseBody = body
             assertNotNull(responseBody)
             assertThat(responseBody).contains(MISSING_VALUE_ERROR)
@@ -161,7 +161,7 @@ class InvalidRequestTest : RestServerTestBase() {
     @Test
     fun `Timezone specified in date should return 400 BAD REQUEST`() {
         fun WebResponse<String>.doAssert() {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
+            assertEquals(HttpStatus.BAD_REQUEST, responseStatus)
             val responseBody = body
             assertNotNull(responseBody)
             assertThat(responseBody).contains(WRONG_PARAMETER)
@@ -187,7 +187,7 @@ class InvalidRequestTest : RestServerTestBase() {
     @Test
     fun `Wrong date format should return 400 BAD REQUEST`() {
         fun WebResponse<String>.doAssert() {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
+            assertEquals(HttpStatus.BAD_REQUEST, responseStatus)
             val responseBody = body
             assertNotNull(responseBody)
             assertThat(responseBody).contains(WRONG_PARAMETER)
@@ -219,7 +219,7 @@ class InvalidRequestTest : RestServerTestBase() {
     fun `passing 3 backslashes as UUID should be handled properly`() {
         val parseUuidResponse =
             client.call(HttpVerb.POST, WebRequest<String>("health/parseuuid/%5C%5C%5C"), userName, password)
-        assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, parseUuidResponse.responseStatus)
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, parseUuidResponse.responseStatus)
         val responseBody = parseUuidResponse.body
         assertNotNull(responseBody)
         assertDoesNotThrow(responseBody) { JsonParser.parseString(responseBody) }
@@ -228,7 +228,7 @@ class InvalidRequestTest : RestServerTestBase() {
     @Test
     fun `pass integer in query that cannot be parsed`() {
         fun WebResponse<String>.doAssert() {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
+            assertEquals(HttpStatus.BAD_REQUEST, responseStatus)
             val responseBody = body
             assertNotNull(responseBody)
 
@@ -243,7 +243,7 @@ class InvalidRequestTest : RestServerTestBase() {
     @Test
     fun `pass integer in path that cannot be parsed`() {
         fun WebResponse<String>.doAssert() {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
+            assertEquals(HttpStatus.BAD_REQUEST, responseStatus)
             val responseBody = body
             assertNotNull(responseBody)
 

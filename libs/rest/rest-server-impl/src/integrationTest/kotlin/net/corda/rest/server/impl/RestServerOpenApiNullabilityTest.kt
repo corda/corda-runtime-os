@@ -2,6 +2,7 @@ package net.corda.rest.server.impl
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
+import kong.unirest.core.HttpStatus
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.utils.compact
 import net.corda.rest.test.NullabilityRestResourceImpl
@@ -10,7 +11,6 @@ import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb.GET
 import net.corda.utilities.NetworkHostAndPort
-import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -62,8 +62,8 @@ class RestServerOpenApiNullabilityTest : RestServerTestBase() {
     @Test
     fun `GET openapi should return the OpenApi spec json`() {
         val apiSpec = client.call(GET, WebRequest<Any>("swagger.json"))
-        assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
-        assertEquals("application/json", apiSpec.headers["Content-Type"])
+        assertEquals(HttpStatus.OK, apiSpec.responseStatus)
+        assertEquals("application/json", apiSpec.headers["content-type"])
         val body = apiSpec.body!!.compact()
         assertTrue(body.contains(""""openapi" : "3.0.1""""))
         assertFalse(body.contains("\"null\""))

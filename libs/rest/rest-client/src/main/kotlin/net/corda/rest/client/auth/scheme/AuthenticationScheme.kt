@@ -1,6 +1,6 @@
 package net.corda.rest.client.auth.scheme
 
-import kong.unirest.HttpRequest
+import kong.unirest.core.HttpRequest
 import net.corda.rest.client.auth.RequestContext
 
 /**
