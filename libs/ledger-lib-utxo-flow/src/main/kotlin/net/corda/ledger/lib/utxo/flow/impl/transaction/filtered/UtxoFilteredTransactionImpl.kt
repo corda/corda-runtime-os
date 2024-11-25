@@ -154,7 +154,7 @@ class UtxoFilteredTransactionImpl(
                         FilteredDataAuditImpl<T>(
                             group.merkleProof.treeSize,
                             group.merkleProof.leaves.associateBy({ leaf -> leaf.index }, { leaf ->
-                                serializationService.deserialize<T>(leaf.leafData, T::class.java)
+                                serializationService.deserialize(leaf.leafData, T::class.java)
                             })
                         )
                     }
