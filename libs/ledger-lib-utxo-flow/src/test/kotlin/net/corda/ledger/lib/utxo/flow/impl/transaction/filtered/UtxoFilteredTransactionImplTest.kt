@@ -1,12 +1,14 @@
-package net.corda.ledger.utxo.flow.impl.transaction.filtered
+package net.corda.ledger.lib.utxo.flow.impl.transaction.filtered
 
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.lib.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
+import net.corda.ledger.utxo.test.OutputState1
+import net.corda.ledger.utxo.test.OutputState2
+import net.corda.ledger.utxo.test.UtxoFilteredTransactionTestBase
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -253,17 +255,5 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
 
         assertThat(utxoFilteredTransaction.referenceStateRefs)
             .isInstanceOf(UtxoFilteredData.Removed::class.java)
-    }
-}
-
-class OutputState1 : ContractState {
-    override fun getParticipants(): MutableList<PublicKey> {
-        TODO("Not yet implemented")
-    }
-}
-
-class OutputState2 : ContractState {
-    override fun getParticipants(): MutableList<PublicKey> {
-        TODO("Not yet implemented")
     }
 }

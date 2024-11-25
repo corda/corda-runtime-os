@@ -11,6 +11,7 @@ dependencies {
     api project(':testing:ledger:ledger-utxo-testkit')
 
     implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
+    implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':components:ledger:ledger-utxo-flow')
     implementation project(':libs:ledger-lib-utxo-flow')
     implementation project(':libs:membership:membership-common')

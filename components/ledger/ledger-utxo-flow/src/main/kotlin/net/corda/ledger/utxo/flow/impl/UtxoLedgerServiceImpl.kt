@@ -5,12 +5,12 @@ import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.lib.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
-import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoFilteredTransactionBuilderImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
-import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoFilteredTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.ledger.lib.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderImpl
+import net.corda.ledger.lib.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoSignedTransactionWithDependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow

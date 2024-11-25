@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.transaction.filtered
+package net.corda.ledger.utxo.test
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
@@ -150,5 +150,18 @@ open class UtxoFilteredTransactionTestBase {
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS.ordinal),
             )
         )
+    }
+}
+
+
+class OutputState1 : ContractState {
+    override fun getParticipants(): MutableList<PublicKey> {
+        TODO("Not yet implemented")
+    }
+}
+
+class OutputState2 : ContractState {
+    override fun getParticipants(): MutableList<PublicKey> {
+        TODO("Not yet implemented")
     }
 }

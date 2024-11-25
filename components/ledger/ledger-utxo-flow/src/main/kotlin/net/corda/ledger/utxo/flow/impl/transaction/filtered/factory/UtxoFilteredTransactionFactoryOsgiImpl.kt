@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered.factory
 
 import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
-import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoFilteredTransactionFactory
+import net.corda.ledger.lib.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactoryImpl
 import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByFlow

@@ -11,10 +11,10 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTr
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedLedgerTransaction
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
-import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoFilteredTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
+import net.corda.ledger.lib.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoSignedLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionAndSignaturesImpl

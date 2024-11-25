@@ -1,8 +1,8 @@
-package net.corda.ledger.lib.utxo.flow.impl.transaction.factory
+package net.corda.ledger.lib.utxo.flow.impl.transaction.filtered.factory
 
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
-import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoFilteredTransactionBuilderInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderInternal
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder
