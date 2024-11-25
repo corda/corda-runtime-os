@@ -5,9 +5,11 @@ import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.lib.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoFilteredTransactionBuilderImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoFilteredTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoSignedTransactionWithDependencies
@@ -22,8 +24,6 @@ import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendWireTra
 import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.VaultNamedParameterizedQueryImpl
-import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoFilteredTransactionBuilderImpl
-import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoFilteredTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoBaselinedTransactionBuilder
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext

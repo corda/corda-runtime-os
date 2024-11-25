@@ -4,10 +4,10 @@ import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterPar
 import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.lib.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
-import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
-import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoFilteredTransactionBuilderImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoFilteredTransactionBuilderInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
@@ -23,10 +23,10 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.util.function.Predicate
 
-class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
+class UtxoFilteredTransactionFactoryOsgiImplTest : UtxoLedgerTest() {
 
     private val filteredTransactionFactory = mock<FilteredTransactionFactory>()
-    private val utxoFilteredTransactionFactory = UtxoFilteredTransactionFactoryImpl(filteredTransactionFactory, mock())
+    private val utxoFilteredTransactionFactory = UtxoFilteredTransactionFactoryOsgiImpl(filteredTransactionFactory, mock())
 
     private val signedTransaction = mock<UtxoSignedTransactionInternal>()
     private val argumentCaptor = argumentCaptor<List<ComponentGroupFilterParameters>>()

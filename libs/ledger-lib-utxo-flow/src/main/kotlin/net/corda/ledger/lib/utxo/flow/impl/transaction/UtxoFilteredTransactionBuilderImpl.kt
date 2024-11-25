@@ -2,8 +2,8 @@ package net.corda.ledger.lib.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
-import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoFilteredTransactionFactory
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState

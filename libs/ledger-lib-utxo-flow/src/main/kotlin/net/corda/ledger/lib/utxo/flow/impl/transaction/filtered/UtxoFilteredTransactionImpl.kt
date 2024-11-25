@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.transaction.filtered
+package net.corda.ledger.lib.utxo.flow.impl.transaction.filtered
 
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
@@ -7,7 +7,6 @@ import net.corda.ledger.utxo.data.state.getEncumbranceGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
-import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -152,10 +151,10 @@ class UtxoFilteredTransactionImpl(
                     ) {
                         FilteredDataAuditImpl(0, emptyMap())
                     } else {
-                        FilteredDataAuditImpl(
+                        FilteredDataAuditImpl<T>(
                             group.merkleProof.treeSize,
                             group.merkleProof.leaves.associateBy({ leaf -> leaf.index }, { leaf ->
-                                serializationService.deserialize(leaf.leafData)
+                                serializationService.deserialize<T>(leaf.leafData, T::class.java)
                             })
                         )
                     }
