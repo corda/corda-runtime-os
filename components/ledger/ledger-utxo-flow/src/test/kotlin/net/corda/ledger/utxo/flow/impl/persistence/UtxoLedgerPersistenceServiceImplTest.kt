@@ -37,7 +37,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilter
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
-import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
+import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoFilteredTransactionFactory
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext

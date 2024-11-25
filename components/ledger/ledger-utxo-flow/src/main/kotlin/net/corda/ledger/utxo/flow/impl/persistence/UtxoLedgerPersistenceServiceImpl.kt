@@ -48,7 +48,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransa
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransactionStatusExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransactionStatusParameters
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
-import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
+import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoFilteredTransactionFactory
 import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
@@ -194,7 +194,8 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
             if (stateRefs.isEmpty()) {
                 emptyMap<SecureHash, UtxoFilteredTransactionAndSignatures>()
             }
-            wrapWithPersistenceException {
+            // here returns byte array
+           wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindFilteredTransactionsAndSignaturesExternalEventFactory::class.java,
                     FindFilteredTransactionsAndSignaturesParameters(stateRefs)
