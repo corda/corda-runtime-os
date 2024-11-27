@@ -194,7 +194,6 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
             if (stateRefs.isEmpty()) {
                 emptyMap<SecureHash, UtxoFilteredTransactionAndSignatures>()
             }
-            // here returns byte array
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindFilteredTransactionsAndSignaturesExternalEventFactory::class.java,
