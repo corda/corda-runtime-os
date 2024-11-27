@@ -25,7 +25,5 @@ class UtxoFilteredTransactionFactoryOsgiImpl(
         filteredTransactionFactory: FilteredTransactionFactory,
         @Reference(service = SerializationService::class)
         serializationService: SerializationService
-    ) : this(
-        UtxoFilteredTransactionFactoryImpl(filteredTransactionFactory, serializationService)
-    )
+    ) : this(UtxoFilteredTransactionFactoryImpl(filteredTransactionFactory, serializationService))
 }
