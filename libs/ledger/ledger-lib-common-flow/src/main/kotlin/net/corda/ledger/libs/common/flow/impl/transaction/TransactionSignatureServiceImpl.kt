@@ -113,7 +113,7 @@ class TransactionSignatureServiceImpl(
                 "cpiName" to cpiSummary.name,
                 "cpiVersion" to cpiSummary.version,
                 "cpiSignerSummaryHash" to cpiSummary.signerSummaryHash.toString(),
-                "cpiFileChecksum" to cpiSummary.fileChecksum.toString()
+                "cpiFileChecksum" to cpiSummary.fileChecksum
             ) + batchSettings
         )
     }

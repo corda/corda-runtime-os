@@ -3,6 +3,7 @@ package net.corda.ledger.lib.utxo.flow.impl.transaction
 import net.corda.crypto.impl.CompositeKeyProviderImpl
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
+import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoSignedTransactionSignatureVerificationService
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
@@ -28,6 +29,7 @@ internal class UtxoSignedTransactionImplTest : UtxoLedgerTest() {
         CompositeKeyProviderImpl().createFromKeys(listOf(notaryNode1PublicKey, notaryNode2PublicKey), 1).also { println(it) }
     private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
     private val notary = notaryX500Name
+    private val utxoSignedTxSignatureVerificationService = mock<UtxoSignedTransactionSignatureVerificationService>()
 
     @BeforeEach
     fun beforeEach() {
@@ -52,8 +54,11 @@ internal class UtxoSignedTransactionImplTest : UtxoLedgerTest() {
     fun `receiving notary signature with key id not matching notary key throws`() {
         val notExistingNotaryKey = kpg.generateKeyPair().public
         val notMatchingSignatureKeyId = getSignatureWithMetadataExample(notExistingNotaryKey)
+        whenever(
+            utxoSignedTxSignatureVerificationService.verifyNotarySignature(signedTransaction, notMatchingSignatureKeyId)
+        ).thenThrow(CordaRuntimeException("Notary signature verification failed"))
         assertThrows<CordaRuntimeException> {
-            signedTransaction.verifyNotarySignature(notMatchingSignatureKeyId)
+            utxoSignedTxSignatureVerificationService.verifyNotarySignature(signedTransaction, notMatchingSignatureKeyId)
         }
     }
 }
