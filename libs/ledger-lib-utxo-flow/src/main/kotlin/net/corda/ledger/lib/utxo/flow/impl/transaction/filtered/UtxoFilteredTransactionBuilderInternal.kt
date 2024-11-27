@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.transaction.filtered
+package net.corda.ledger.lib.utxo.flow.impl.transaction.filtered
 
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder

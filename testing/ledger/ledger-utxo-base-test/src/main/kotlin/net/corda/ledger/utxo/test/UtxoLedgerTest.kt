@@ -20,7 +20,7 @@ import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderImp
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoLedgerTransactionFactoryOsgiImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoSignedTransactionFactoryOsgiImpl
-import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactoryImpl
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactoryOsgiImpl
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp.UtxoSignedTransactionSerializer
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.kryo.UtxoSignedTransactionKryoSerializer
 import net.corda.ledger.utxo.testkit.anotherNotaryX500Name
@@ -65,7 +65,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
 
     private val mockPluggableNotaryService = mock<PluggableNotaryService>()
 
-    private val utxoFilteredTransactionFactory = UtxoFilteredTransactionFactoryImpl(
+    private val utxoFilteredTransactionFactory = UtxoFilteredTransactionFactoryOsgiImpl(
         FilteredTransactionFactoryImpl(
             jsonMarshallingService,
             jsonValidator,
