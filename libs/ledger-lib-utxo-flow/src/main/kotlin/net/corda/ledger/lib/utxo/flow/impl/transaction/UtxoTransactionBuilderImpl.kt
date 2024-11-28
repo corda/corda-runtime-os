@@ -16,6 +16,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
 import java.time.Instant
 import java.util.Objects
+import net.corda.ledger.common.data.transaction.PrivacySalt
 
 @Suppress("TooManyFunctions", "LongParameterList")
 class UtxoTransactionBuilderImpl(
@@ -31,6 +32,9 @@ class UtxoTransactionBuilderImpl(
     override val outputStates: MutableList<ContractStateAndEncumbranceTag> = mutableListOf()
 ) : UtxoTransactionBuilderInternal {
 
+    override var privacySalt: PrivacySalt?
+        get() = TODO("Not yet implemented")
+        set(value) {}
     private var alreadySigned = false
 
     override fun addCommand(command: Command): UtxoTransactionBuilder {
