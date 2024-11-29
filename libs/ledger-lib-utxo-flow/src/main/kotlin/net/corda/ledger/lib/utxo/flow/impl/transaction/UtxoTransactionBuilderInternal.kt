@@ -24,9 +24,13 @@ interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder, UtxoTransacti
     fun append(other: UtxoTransactionBuilderData): UtxoTransactionBuilderInternal
 
     var privacySalt: PrivacySalt?
-}
+        /**
+         * Gets the privacy salt, if set.
+         */
+        get
 
-// set privacy salt variable / dedup id on thread local
-// create transaction builder
-// turn into signed transaction -> this uses the thread local value
-// unset thread local
+        /**
+         * Sets the privacy salt.
+         */
+        set
+}

@@ -1,5 +1,6 @@
 package net.corda.ledger.lib.utxo.flow.impl.transaction
 
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.lib.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.lib.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
@@ -16,7 +17,6 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
 import java.time.Instant
 import java.util.Objects
-import net.corda.ledger.common.data.transaction.PrivacySalt
 
 @Suppress("TooManyFunctions", "LongParameterList")
 class UtxoTransactionBuilderImpl(
@@ -32,9 +32,8 @@ class UtxoTransactionBuilderImpl(
     override val outputStates: MutableList<ContractStateAndEncumbranceTag> = mutableListOf()
 ) : UtxoTransactionBuilderInternal {
 
-    override var privacySalt: PrivacySalt?
-        get() = TODO("Not yet implemented")
-        set(value) {}
+    override var privacySalt: PrivacySalt? = null
+
     private var alreadySigned = false
 
     override fun addCommand(command: Command): UtxoTransactionBuilder {

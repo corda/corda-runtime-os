@@ -2,6 +2,7 @@ package net.corda.ledger.lib.utxo.flow.impl.transaction
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
+import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.test.dummyCpkSignerSummaryHash
 import net.corda.ledger.common.testkit.publicKeyExample
@@ -450,5 +451,22 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             utxoTransactionBuilder
                 .addReferenceStates(List(2) { stateRef1 })
         }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Privacy salt should return null by default`() {
+        val privacySalt = utxoTransactionBuilder.privacySalt
+
+        assertThat(privacySalt).isNull()
+    }
+
+    @Test
+    fun `Privacy salt should return the value set`() {
+        val privacySalt = PrivacySaltImpl("longlonglonglonglonglonglonglongbytes".toByteArray())
+        val builder = utxoTransactionBuilder.also {
+            it.privacySalt = privacySalt
+        }
+
+        assertThat(builder.privacySalt).isEqualTo(privacySalt)
     }
 }
