@@ -23,14 +23,8 @@ interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder, UtxoTransacti
      */
     fun append(other: UtxoTransactionBuilderData): UtxoTransactionBuilderInternal
 
+    /**
+     * Privacy salt used in the transaction. If not set, the privacy salt will be generated.
+     */
     var privacySalt: PrivacySalt?
-        /**
-         * Gets the privacy salt, if set.
-         */
-        get
-
-        /**
-         * Sets the privacy salt.
-         */
-        set
 }
