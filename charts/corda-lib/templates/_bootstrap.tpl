@@ -157,7 +157,7 @@ spec:
 
               echo 'Generating config DB specification'
               {{- $configDbSettings := fromYaml ( include "corda.db.configuration" ( list $ $.Values.config.storageId "config.storageId" ) ) }}
-              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
+              java -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
                 -s "config" \
                 -g "config:${CONFIG_DB_SCHEMA}" \
                 -u "${BOOTSTRAP_CONFIG_DB_USERNAME}" -p "${BOOTSTRAP_CONFIG_DB_PASSWORD}" \
@@ -166,7 +166,7 @@ spec:
 
               echo 'Generating crypto DB specification'
               {{- $cryptoDbSettings := fromYaml ( include "corda.db.configuration" ( list $ $.Values.bootstrap.db.crypto.storageId "bootstrap.db.crypto.storageId" ) ) }}
-              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
+              java -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
                 -s "crypto" \
                 -g "crypto:${CRYPTO_DB_SCHEMA}" \
                 -u "${BOOTSTRAP_CRYPTO_DB_USERNAME}" -p "${BOOTSTRAP_CRYPTO_DB_PASSWORD}" \
@@ -175,7 +175,7 @@ spec:
 
               echo 'Generating rbac DB specification'
               {{- $rbacDbSettings := fromYaml ( include "corda.db.configuration" ( list $ $.Values.bootstrap.db.rbac.storageId "bootstrap.db.rbac.storageId" ) ) }}
-              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
+              java -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
                 -s "rbac" \
                 -g "rbac:${RBAC_DB_SCHEMA}" \
                 -u "${BOOTSTRAP_RBAC_DB_USERNAME}" -p "${BOOTSTRAP_RBAC_DB_PASSWORD}" \
@@ -184,7 +184,7 @@ spec:
 
               echo 'Generating crypto initial DB configuration'
               mkdir /tmp/crypto
-              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-db-config \
+              java -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-db-config \
                 -u "${CRYPTO_DB_USERNAME}" -p "${CRYPTO_DB_PASSWORD}" \
                 --name "corda-crypto" \
                 --jdbc-url {{ include "corda.db.connectionUrl" $cryptoDbSettings | quote }} \
@@ -205,7 +205,7 @@ spec:
 
               echo 'Generating RBAC initial DB configuration'
               mkdir /tmp/rbac
-              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-db-config \
+              java -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-db-config \
                 -u "${RBAC_DB_USERNAME}" -p "${RBAC_DB_PASSWORD}" \
                 --name "corda-rbac" \
                 --jdbc-url {{ include "corda.db.connectionUrl" $rbacDbSettings | quote }} \
@@ -227,7 +227,7 @@ spec:
               echo 'Generating virtual nodes initial DB configuration'
               mkdir /tmp/vnodes
               {{- $virtualNodesDbSettings := fromYaml ( include "corda.db.configuration" ( list $ $.Values.bootstrap.db.virtualNodes.storageId "bootstrap.db.virtualNodes.storageId" ) ) }}
-              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-db-config \
+              java -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-db-config \
                 -a -u "${VIRTUAL_NODES_DB_USERNAME}" -p "${VIRTUAL_NODES_DB_PASSWORD}" \
                 --name "corda-virtual-nodes" \
                 --jdbc-url {{ include "corda.db.connectionUrl" $virtualNodesDbSettings | quote }} \
@@ -247,15 +247,15 @@ spec:
                 -l /tmp/vnodes
 
               echo 'Generating REST API user initial configuration'
-              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-user-config \
+              java -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-user-config \
                 -u "${REST_API_ADMIN_USERNAME}" -p "${REST_API_ADMIN_PASSWORD}" \
                 -l /tmp
 
               echo 'Generating crypto initial configuration'
-              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-crypto-config \
+              java -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-crypto-config \
                 --salt "${SALT}" --passphrase "${PASSPHRASE}" \
               {{- if (((.Values).config).vault).url }}
-                -t "VAULT" --vault-path "cryptosecrets" -n 2 -ks "salt" -kp "passphrase" -ks "salt2" -kp "passphrase2" \
+                -t "VAULT" --vault-path "cryptosecrets" -n 1 -ks "salt" -kp "passphrase" \
               {{- end }}
                 -l /tmp
           workingDir: /tmp

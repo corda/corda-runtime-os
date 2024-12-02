@@ -22,6 +22,7 @@ dependencies {
     implementation project(":libs:serialization:json-validator")
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
+    implementation project(":libs:utilities")
 
     implementation libs.mockito.kotlin
 }

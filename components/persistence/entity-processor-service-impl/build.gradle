@@ -46,7 +46,7 @@ dependencies {
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
 
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:persistence-testkit')
@@ -82,6 +82,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

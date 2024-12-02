@@ -14,7 +14,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
     api "net.corda:corda-crypto"
 
     implementation project(":libs:configuration:configuration-core")

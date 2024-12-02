@@ -32,7 +32,9 @@ internal class MembershipPersistenceOperationImpl<T>(
     private val convertResult: (Any?) -> Either<T, String>,
 ) : MembershipPersistenceOperation<T> {
     private companion object {
-        const val RPC_TIMEOUT_MS = 10000L
+        // Set to 2 minutes as under certain circumstances, kafka can take this long to deliver the message
+        // (e.g. if leader election takes place).
+        const val RPC_TIMEOUT_MS = 120000L
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 

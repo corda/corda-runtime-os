@@ -11,4 +11,6 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    api "net.corda:corda-avro-schema"
 }

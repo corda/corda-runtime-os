@@ -19,6 +19,7 @@ import net.corda.data.ledger.persistence.ResolveStateRefs
 import net.corda.data.ledger.persistence.UpdateTransactionStatus
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.libs.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
@@ -28,7 +29,7 @@ import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoExecuteNamedQ
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindFilteredTransactionsAndSignaturesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGroupParametersRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
-import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionIdsAndStatusesRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedTransactionIdsAndStatusesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionsWithStatusCreatedBetweenTimeRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByTypeRequestHandler
@@ -46,6 +47,8 @@ import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.utilities.time.UTCClock
+import org.hibernate.Session
+import org.hibernate.internal.SessionImpl
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -62,7 +65,10 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
     @Suppress("LongMethod")
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
         val persistenceService = UtxoPersistenceServiceImpl(
-            entityManagerFactory = sandbox.getEntityManagerFactory(),
+            connectionFactory = {
+                val emf = sandbox.getEntityManagerFactory()
+                (emf.createEntityManager().unwrap(Session::class.java) as SessionImpl).connection()
+            },
             repository = sandbox.getSandboxSingletonService(),
             serializationService = sandbox.getSerializationService(),
             sandboxDigestService = sandbox.getSandboxSingletonService(),
@@ -188,7 +194,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                 )
             }
             is FindTransactionIdsAndStatuses -> {
-                UtxoFindTransactionIdsAndStatusesRequestHandler(
+                UtxoFindSignedTransactionIdsAndStatusesRequestHandler(
                     req,
                     externalEventContext,
                     persistenceService,

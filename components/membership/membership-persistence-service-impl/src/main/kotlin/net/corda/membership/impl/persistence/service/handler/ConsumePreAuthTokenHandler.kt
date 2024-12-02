@@ -5,6 +5,7 @@ import net.corda.data.membership.db.request.command.ConsumePreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
@@ -20,7 +21,7 @@ internal class ConsumePreAuthTokenHandler(persistenceHandlerServices: Persistenc
                 PreAuthTokenEntity::class.java,
                 request.tokenId,
                 LockModeType.PESSIMISTIC_WRITE
-            ) ?: throw MembershipPersistenceException("Pre-auth token '${request.tokenId}' does not exist.")
+            ) ?: throw NotFoundEntityPersistenceException("Pre-auth token '${request.tokenId}' does not exist.")
 
             if (MemberX500Name.parse(token.ownerX500Name) != MemberX500Name.parse(request.ownerX500Name)) {
                 throw MembershipPersistenceException(

@@ -9,8 +9,8 @@ class SniCalculatorTest {
 
     private companion object {
         const val SOURCE = "O=PartyA, L=London, C=GB"
-        const val MAX_SNI_SIZE = 255 //Under RCF-1035 the total sni can be at most 255 bytes
-        const val MAX_SNI_LABEL_SIZE = 63 //Under RCF-1035 each label can be at most 63 bytes
+        const val MAX_SNI_SIZE = 255 // Under RCF-1035 the total sni can be at most 255 bytes
+        const val MAX_SNI_LABEL_SIZE = 63 // Under RCF-1035 each label can be at most 63 bytes
         const val LABEL_DELIMITER = "."
     }
 
@@ -29,7 +29,6 @@ class SniCalculatorTest {
 
         assertThat(SniCalculator.calculateCorda5Sni(address)).isEqualTo(ip + SniCalculator.IP_SNI_SUFFIX)
     }
-
 
     @Test
     fun `sni conforms to rcf1035 for a corda4 identity`() {

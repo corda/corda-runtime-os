@@ -1,8 +1,14 @@
 package net.corda.gradle.plugin.cordalifecycle
 
 import kong.unirest.core.Unirest
+import net.corda.sdk.network.config.NetworkConfig
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.gradle.plugin.retryAttempts
+import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.ConfigSchemaVersion
+import net.corda.restclient.generated.models.UpdateConfigParameters
+import net.corda.schema.configuration.ConfigKeys.RootConfigKey
+import net.corda.sdk.config.ClusterConfig
 import java.io.File
 import java.net.Authenticator
 import java.net.PasswordAuthentication
@@ -12,6 +18,17 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 
 class EnvironmentSetupHelper {
+
+    fun isNotaryNonValidating(networkConfig: NetworkConfig): Boolean {
+        val notaryNodes = networkConfig.vNodes.filter { it.serviceX500Name != null }
+        val nodesWithProtocolName = notaryNodes.filter { it.flowProtocolName != null }
+        if (notaryNodes.isEmpty() || nodesWithProtocolName.isEmpty()) {
+            // revert to default behaviour
+            return true
+        }
+
+        return nodesWithProtocolName.any { it.flowProtocolName!!.lowercase().contains("nonvalid") }
+    }
 
     fun downloadNotaryCpb(
         notaryCpbVersion: String,
@@ -42,47 +59,30 @@ class EnvironmentSetupHelper {
     }
 
     fun getConfigVersion(
-        cordaClusterURL: String,
-        cordaRestUser: String,
-        cordaRestPassword: String,
-        configSection: String
+        restClient: CordaRestClient,
+        configSection: RootConfigKey,
     ): Int {
-        return Unirest.get("$cordaClusterURL/api/v1/config/$configSection")
-            .basicAuth(cordaRestUser, cordaRestPassword)
-            .asJson()
-            .ifSuccess {}.body.`object`["version"].toString().toInt()
+        return ClusterConfig(restClient).getCurrentConfig(configSection).version
     }
 
     @Suppress("LongParameterList")
     fun sendUpdate(
-        cordaClusterURL: String,
-        cordaRestUser: String,
-        cordaRestPassword: String,
-        configSection: String,
+        restClient: CordaRestClient,
+        configSection: RootConfigKey,
         configBody: String,
         configVersion: Int
     ) {
-        Unirest.put("$cordaClusterURL/api/v1/config")
-            .basicAuth(cordaRestUser, cordaRestPassword)
-            .body(
-                """
-                {
-                    "config": {
-                        $configBody
-                    },
-                    "schemaVersion": {
-                        "major": 1,
-                        "minor": 0
-                    },
-                    "section": "$configSection",
-                    "version": $configVersion
-                }
-                """.trimIndent()
-            )
-            .asJson()
-            .ifFailure { response ->
-                throw CordaRuntimeGradlePluginException("Failed to Update Config\n${response.body.`object`["title"]}")
-            }
+        val updateConfigParameters = UpdateConfigParameters(
+            configBody,
+            ConfigSchemaVersion(1, 0),
+            configSection.value,
+            configVersion
+        )
+        try {
+            ClusterConfig(restClient).updateConfig(updateConfigParameters)
+        } catch (e: Exception) {
+            throw CordaRuntimeGradlePluginException("Failed to Update Config", e)
+        }
     }
 
     private fun nameContainsRcOrHc(combinedWorkerFileName: String): Boolean {

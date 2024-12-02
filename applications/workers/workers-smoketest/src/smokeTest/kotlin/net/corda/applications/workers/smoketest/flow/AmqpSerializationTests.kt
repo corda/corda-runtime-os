@@ -4,9 +4,11 @@ import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
 import net.corda.e2etest.utilities.ClusterReadiness
 import net.corda.e2etest.utilities.ClusterReadinessChecker
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.REST_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.awaitRestFlowResult
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
+import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.startRestFlow
@@ -39,6 +41,7 @@ class AmqpSerializationTests : ClusterReadiness by ClusterReadinessChecker() {
     internal fun beforeAll() {
         // check cluster is ready
         assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
+        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
         // Upload test flows if not already uploaded
         conditionallyUploadCordaPackage(
             cpiName,

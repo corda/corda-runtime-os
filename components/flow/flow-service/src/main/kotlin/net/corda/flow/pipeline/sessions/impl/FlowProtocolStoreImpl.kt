@@ -4,6 +4,7 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
+import org.slf4j.LoggerFactory
 
 /**
  * Tracks initiator and responder flows for either side of flow protocols declared in the CPI.
@@ -15,6 +16,9 @@ class FlowProtocolStoreImpl(
     private val protocolToInitiator: Map<FlowProtocol, String>,
     private val protocolToResponder: Map<FlowProtocol, String>
 ) : FlowProtocolStore {
+    private companion object {
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override fun initiatorForProtocol(
         protocolName: String,
@@ -27,6 +31,9 @@ class FlowProtocolStoreImpl(
                 return initiator
             }
         }
+        val protocolsStr = sortedProtocols.joinToString(", " )
+        val respondersStr = protocolToInitiator.map { (p, i) -> "($p, $i)" }.joinToString(", " )
+        log.info("No initiator found for protocols [$protocolsStr] among registered initiators [$respondersStr]")
         throw FlowFatalException(
             "No initiator is configured for protocol $protocolName at versions $supportedVersions"
         )
@@ -44,6 +51,9 @@ class FlowProtocolStoreImpl(
                 return FlowAndProtocolVersion(protocolName, responder, protocol.version)
             }
         }
+        val protocolsStr = sortedProtocols.joinToString(", " )
+        val respondersStr = protocolToResponder.map { (p, r) -> "($p, $r)" }.joinToString(", " )
+        log.info("No responder found for protocols [$protocolsStr] among registered responders [$respondersStr]")
         throw FlowFatalException(
             "No responder is configured for protocol $protocolName at versions $supportedVersions"
         )

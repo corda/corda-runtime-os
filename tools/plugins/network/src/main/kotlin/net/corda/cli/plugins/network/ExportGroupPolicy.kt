@@ -1,13 +1,15 @@
 package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
-import net.corda.membership.rest.v1.MGMRestResource
+import net.corda.cli.plugins.typeconverter.ShortHashConverter
+import net.corda.crypto.core.ShortHash
+import net.corda.restclient.CordaRestClient
+import net.corda.sdk.network.ExportGroupPolicyFromMgm
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import java.net.URI
 
 @Command(
     name = "export-group-policy",
@@ -25,31 +27,26 @@ class ExportGroupPolicy : Runnable, RestCommand() {
         names = ["-h", "--holding-identity-short-hash"],
         arity = "1",
         description = ["The holding identity short hash of the MGM."],
+        required = true,
+        converter = [ShortHashConverter::class],
     )
-    var holdingIdentityShortHash: String? = null
+    lateinit var holdingIdentityShortHash: ShortHash
 
     override fun run() {
+        super.run()
         exportGroupPolicy()
     }
 
     private fun exportGroupPolicy() {
-        val objectMapper = ObjectMapper()
-        val groupPolicyResponse = createRestClient(MGMRestResource::class).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Failed to export group policy after $MAX_ATTEMPTS attempts.",
-            ) {
-                try {
-                    val resource = client.start().proxy
-                    resource.generateGroupPolicy(holdingIdentityShortHash!!)
-                } catch (e: Exception) {
-                    null
-                }
-            }
-        }
-
+        val restClient = CordaRestClient.createHttpClient(
+            baseUrl = URI.create(targetUrl),
+            username = username,
+            password = password,
+            insecure = insecure
+        )
+        val groupPolicyResponse = ExportGroupPolicyFromMgm(restClient).exportPolicy(holdingIdentityShortHash = holdingIdentityShortHash)
         saveLocation.parentFile.mkdirs()
+        val objectMapper = ObjectMapper()
         objectMapper.writerWithDefaultPrettyPrinter()
             .writeValue(
                 saveLocation,

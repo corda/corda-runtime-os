@@ -1,6 +1,8 @@
 package net.corda.crypto.test.certificates.generation
 
+import net.corda.crypto.test.certificates.generation.RevocableCertificateAuthorityImpl.Companion.PATH
 import java.io.File
+import java.net.ServerSocket
 import java.time.Duration
 
 /**
@@ -38,6 +40,33 @@ object CertificateAuthorityFactory {
     ): FileSystemCertificatesAuthority {
         return FileSystemCertificatesAuthorityImpl.loadOrGenerate(
             keysFactoryDefinitions, validDuration, home
+        )
+    }
+
+    /**
+     * Create a local certificate authority that support certificate revocation.
+     *
+     * @param keysFactoryDefinitions - The keys factory definitions (currently, only RSA and EC are supported)
+     * @param validDuration - The duration after which the certificate will become invalid
+     * @param host - The revocation server host name (default to localhost).
+     * @param port - The revocation server port number (default to a random unused port).
+     */
+    fun createRevocableAuthority(
+        keysFactoryDefinitions: KeysFactoryDefinitions,
+        validDuration: Duration = Duration.ofDays(30),
+        host: String = "localhost",
+        port: Int? = null,
+    ): RevocableCertificateAuthority {
+        val actualPort = port ?: ServerSocket(0).use {
+            it.localPort
+        }
+        val url = "http://$host:$actualPort$PATH"
+        val localCertificatesAuthority = LocalCertificatesAuthority(
+            keysFactoryDefinitions, validDuration, null, issuerName = null, ocspAccessMethod = url
+        )
+        return RevocableCertificateAuthorityImpl(
+            authority = localCertificatesAuthority,
+            port = actualPort,
         )
     }
 }

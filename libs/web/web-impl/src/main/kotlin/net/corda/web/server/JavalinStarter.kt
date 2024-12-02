@@ -5,7 +5,7 @@ import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
 import net.corda.utilities.trace
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
@@ -46,7 +46,7 @@ object JavalinStarter {
             try {
                 logger.trace { "Starting the $name Javalin server." }
 
-                val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
+                val bundle = FrameworkUtil.getBundle(JettyWebSocketServletFactory::class.java)
                 if (bundle != null) {
                     val bundleList = threadLocalClassLoaderBundles.plus(bundle)
                     val osgiClassLoader = OsgiClassLoader(bundleList)

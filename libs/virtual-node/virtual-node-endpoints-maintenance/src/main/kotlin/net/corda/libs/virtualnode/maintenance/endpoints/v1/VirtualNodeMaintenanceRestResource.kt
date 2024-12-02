@@ -13,7 +13,7 @@ import net.corda.rest.annotations.RestPathParameter
  * Some of them could be highly disruptive, so great care should be taken when using them.
  */
 @HttpRestResource(
-    name = "Virtual Node Maintenance API",
+    name = "Virtual Node Maintenance",
     description = "The Virtual Node Maintenance API consists of a series of endpoints used for virtual node management." +
         "Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them.",
     path = "maintenance/virtualnode"

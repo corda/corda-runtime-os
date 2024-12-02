@@ -98,7 +98,12 @@ class HttpClientTest {
 
     private val config = ConnectionConfiguration()
     private val client = HttpClient(
-        destinationInfo, sslConfiguration, writeGroup, nettyGroup, config, listener
+        destinationInfo,
+        sslConfiguration,
+        writeGroup,
+        nettyGroup,
+        config,
+        listener,
     )
 
     @Test
@@ -109,7 +114,7 @@ class HttpClientTest {
         verify(bootstrap.constructed().first()).group(nettyGroup)
         verify(bootstrap.constructed().first()).option(
             ChannelOption.CONNECT_TIMEOUT_MILLIS,
-            config.acquireTimeout.toMillis().toInt()
+            config.acquireTimeout.toMillis().toInt(),
         )
         verify(bootstrap.constructed().first()).channel(NioSocketChannel::class.java)
         verify(bootstrap.constructed().first()).connect("www.r3.com", 3023)

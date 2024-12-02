@@ -44,6 +44,7 @@ dependencies {
     implementation project(':libs:platform-info')
     implementation project(':libs:sandbox')
     implementation project(':libs:serialization:json-validator')
+    implementation project(':libs:serialization:json-validator-lib')
     implementation project(':libs:serialization:serialization-avro')
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:serialization:serialization-internal')
@@ -80,6 +81,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:membership:membership-impl')
     integrationTestRuntimeOnly project(':libs:state-manager:state-manager-db-impl')
     integrationTestRuntimeOnly project(':components:ledger:notary-worker-selection-impl')
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     cpis project(path: ':testing:ledger:ledger-utxo-state-app', configuration: 'cordaCPB')
 }

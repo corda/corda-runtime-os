@@ -155,7 +155,6 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
      */
     private fun onConfigChangedEventReceived(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
         log.debug { "Creating resources" }
-        coordinator.updateStatus(LifecycleStatus.DOWN)
         lock.withLock {
             publisher?.close()
             publisher = publisherFactory.createPublisher(

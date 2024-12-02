@@ -29,16 +29,11 @@ dependencies {
     implementation project(":libs:rest:rest-server")
     implementation "net.corda:corda-crypto"
     implementation libs.javalin
-    constraints {
-        implementation(libs.bundles.jetty) {
-            because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
-                    'This might be resolved in the future versions of Javalin.'
-        }
-    }
     implementation libs.nimbus.sdk
     implementation libs.jcip.annotations
     implementation libs.swagger.core
     implementation libs.jetty.http2.server
+    implementation libs.jetty.websocket.client
 
     implementation libs.jackson.module.kotlin
     implementation project(":libs:rest:rest-common")

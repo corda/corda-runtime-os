@@ -37,7 +37,6 @@ import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Signer
 import net.corda.membership.p2p.helpers.SignerFactory
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -46,6 +45,8 @@ import net.corda.membership.persistence.client.MembershipQueryResult.QueryExcept
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -239,12 +240,14 @@ class MgmSynchronisationServiceImplTest {
     private val allMembershipPackageRecord = mock<Record<String, AppMessage>>()
     private val bobMembershipPackageRecord = mock<Record<String, AppMessage>>()
     private val simonMembershipPackageRecord = mock<Record<String, AppMessage>>()
-    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
                 any(),
                 any(),
                 eq(allMembershipPackage),
+                eq(Subsystem.MEMBERSHIP),
+                any(),
                 any(),
                 any(),
                 eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
@@ -255,6 +258,8 @@ class MgmSynchronisationServiceImplTest {
                 any(),
                 any(),
                 eq(bobMembershipPackage),
+                eq(Subsystem.MEMBERSHIP),
+                any(),
                 any(),
                 any(),
                 eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
@@ -265,6 +270,8 @@ class MgmSynchronisationServiceImplTest {
                 any(),
                 any(),
                 eq(simonMembershipPackage),
+                eq(Subsystem.MEMBERSHIP),
+                any(),
                 any(),
                 any(),
                 eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
@@ -279,7 +286,7 @@ class MgmSynchronisationServiceImplTest {
         on { merkleTreeGenerator } doReturn merkleTreeGenerator
         on { membershipPackageFactory } doReturn membershipPackageFactory
         on { signerFactory } doReturn signerFactory
-        on { p2pRecordsFactory } doReturn p2pRecordsFactory
+        on { membershipP2PRecordsFactory } doReturn membershipP2PRecordsFactory
     }
 
     private val synchronisationService = MgmSynchronisationServiceImpl(

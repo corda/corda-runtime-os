@@ -14,8 +14,8 @@ import kotlin.test.assertTrue
 
 class PermissionValidatorImplTest {
 
-    private val cpiUploadRequest = "POST:/api/v1/cpi"
-    private val certsInstallRequest = "PUT:/api/v5_1/certificate/p2p-tls/cluster"
+    private val cpiUploadRequest = "POST:/api/v5_3/cpi"
+    private val certsInstallRequest = "PUT:/api/v5_3/certificate/p2p-tls/cluster"
 
     private val userName = "userLoginName"
 
@@ -54,7 +54,7 @@ class PermissionValidatorImplTest {
 
     @Test
     fun `will return false for missing permission`() {
-        assertFalse(permissionValidator.authorizeUser(userName, "GET:/api/v1/mgm/12345678/info"))
+        assertFalse(permissionValidator.authorizeUser(userName, "GET:/api/v5_3/mgm/12345678/info"))
     }
 
     @Test

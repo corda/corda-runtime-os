@@ -3,6 +3,7 @@ package net.corda.gradle.plugin.cordalifecycle
 import kong.unirest.core.Unirest
 import net.corda.gradle.plugin.configuration.PluginConfiguration
 import net.corda.gradle.plugin.configuration.ProjectContext
+import net.corda.schema.configuration.ConfigKeys.RootConfigKey
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
@@ -33,14 +34,18 @@ fun createPluginEnvSetupTasks(project: Project, pluginConfig: PluginConfiguratio
     // this point in the initialisation then the extension block has not yet been read and
     // will contain the default values, ie overriding in the extension block won't have any effect.
     project.afterEvaluate {
+        val projectContext = ProjectContext(project, pluginConfig)
+
         project.tasks.create(PROJINIT_TASK_NAME, ProjInit::class.java) {
             it.group = UTIL_TASK_GROUP
             it.pluginConfig.set(pluginConfig)
         }
 
-        project.tasks.create(GET_NOTARY_SERVER_CPB_TASK_NAME, DownloadNotaryCpb::class.java) {
-            it.group = UTIL_TASK_GROUP
-            it.pluginConfig.set(pluginConfig)
+        if (projectContext.isNotaryNonValidating) {
+            project.tasks.create(GET_NOTARY_SERVER_CPB_TASK_NAME, DownloadNotaryCpb::class.java) {
+                it.group = UTIL_TASK_GROUP
+                it.pluginConfig.set(pluginConfig)
+            }
         }
 
         project.tasks.create(UPDATE_PROCESSOR_TIMEOUT, UpdateClusterConfig::class.java) {
@@ -68,12 +73,14 @@ open class DownloadNotaryCpb @Inject constructor(objects: ObjectFactory) : Defau
     @TaskAction
     fun downloadNotaryCpb() {
         val pc = ProjectContext(project, pluginConfig.get())
-        EnvironmentSetupHelper().downloadNotaryCpb(
-            pc.notaryVersion,
-            pc.notaryCpbFilePath,
-            pc.artifactoryUsername,
-            pc.artifactoryPassword
-        )
+        if (pc.isNotaryNonValidating) {
+            EnvironmentSetupHelper().downloadNotaryCpb(
+                pc.notaryVersion,
+                pc.nonValidatingNotaryCpbFilePath,
+                pc.artifactoryUsername,
+                pc.artifactoryPassword
+            )
+        }
     }
 }
 
@@ -88,18 +95,15 @@ open class UpdateClusterConfig @Inject constructor(objects: ObjectFactory) : Def
             return
         }
         val helper = EnvironmentSetupHelper()
-        Unirest.config().verifySsl(false)
-        val configSection = "corda.messaging"
-        val configVersion = helper.getConfigVersion(pc.cordaClusterURL, pc.cordaRestUser, pc.cordaRestPassword, configSection)
+        val configSection = RootConfigKey.MESSAGING
+        val configVersion = helper.getConfigVersion(pc.restClient, configSection)
         val configBody = """
                 "subscription": {
                     "processorTimeout": ${pc.cordaProcessorTimeout}
                 }
             """.trimIndent()
         helper.sendUpdate(
-            pc.cordaClusterURL,
-            pc.cordaRestUser,
-            pc.cordaRestPassword,
+            pc.restClient,
             configSection,
             configBody,
             configVersion

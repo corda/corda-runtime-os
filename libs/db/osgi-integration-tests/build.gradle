@@ -33,6 +33,7 @@ dependencies {
     integrationTestRuntimeOnly project(":testing:bundles:testing-dogs")
 
     integrationTestRuntimeOnly libs.slf4j.simple
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 }

@@ -180,8 +180,10 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     private fun onUpdateIntervalEvent(event: UpdateIntervalEvent, coordinator: LifecycleCoordinator) {
         logger.info("Updating interval to ${event.intervalMs} ms")
         val newIntervalMs = event.intervalMs
-        reconciliationIntervalMs = newIntervalMs
-        coordinator.setTimer(timerKey, newIntervalMs) { ReconcileEvent(it) }
+        if (newIntervalMs != reconciliationIntervalMs) {
+            reconciliationIntervalMs = newIntervalMs
+            coordinator.setTimer(timerKey, newIntervalMs) { ReconcileEvent(it) }
+        }
     }
 
     private fun onStopEvent(coordinator: LifecycleCoordinator) {

@@ -66,9 +66,16 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
         oldValue: CpiMetadataAvro?,
         currentData: Map<CpiIdAvro, CpiMetadataAvro>
     ) {
-        if (newRecord.value != null) {
+        val cpiMetadata = newRecord.value
+        if (cpiMetadata != null) {
             try {
-                cpiInfoMap.put(newRecord.key, newRecord.value!!)
+                // TODO Logging added for CORE-19600
+                val cpiIdentifier = newRecord.key
+                log.info(
+                    "Updating CPI Info for [${cpiIdentifier.name}, ${cpiIdentifier.version}]: " +
+                            "Metadata=[${cpiMetadata.id.name}, ${cpiMetadata.id.version}]"
+                )
+                cpiInfoMap.put(newRecord.key, cpiMetadata)
             } catch (exception: IllegalArgumentException) {
                 // We only expect this code path if someone has posted to Kafka,
                 // a CpiMetadata with a different CpiIdentifier to the key.

@@ -59,7 +59,7 @@ class TypeConverterUtilTest {
             ssoAuth = false,
             passwordExpiry = now,
             parentGroup = "group1",
-            properties = listOf(PropertyResponseDto(earlier, "key1", "value1")),
+            properties = setOf(PropertyResponseDto(earlier, "key1", "value1")),
             roles = listOf(RoleAssociationResponseDto("roleId1", now))
         )
 
@@ -75,9 +75,9 @@ class TypeConverterUtilTest {
         assertEquals(now, type.passwordExpiry)
         assertEquals("group1", type.parentGroup)
         assertEquals(1, type.properties.size)
-        assertEquals(earlier, type.properties[0].lastChangedTimestamp)
-        assertEquals("key1", type.properties[0].key)
-        assertEquals("value1", type.properties[0].value)
+        assertEquals(earlier, type.properties.first().lastChangedTimestamp)
+        assertEquals("key1", type.properties.first().key)
+        assertEquals("value1", type.properties.first().value)
         assertEquals("roleId1", type.roleAssociations[0].roleId)
         assertEquals(now, type.roleAssociations[0].createTimestamp)
     }

@@ -83,12 +83,6 @@ class WrappedUtxoWireTransaction(
         }
     }
 
-    val dependencies: Set<SecureHash>
-        get() = this
-            .let { it.inputStateRefs.asSequence() + it.referenceStateRefs.asSequence() }
-            .map { it.transactionId }
-            .toSet()
-
     private inline fun <reified T> deserialize(group: UtxoComponentGroup): List<T> {
         return wireTransaction.getComponentGroupList(group.ordinal).map { serializationService.deserialize(it) }
     }

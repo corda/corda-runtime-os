@@ -7,7 +7,9 @@ import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -47,6 +49,39 @@ class SessionUtilsTest {
         whenever(sessionState.status).thenReturn(sessionStateType)
         assertDoesNotThrow {
             SessionUtils.verifySessionStatusNotErrorOrClose(SESSION_ID, flowFiberService)
+        }
+    }
+
+    @Test
+    fun `checkPayloadMaxSize does not throw an exception when payload size is equal to max allowed size`() {
+        val maxPayloadSize = 1024
+        whenever(checkpoint.maxPayloadSize).thenReturn(maxPayloadSize.toLong())
+        val payload = ByteArray(maxPayloadSize)
+
+        assertDoesNotThrow {
+            SessionUtils.checkPayloadMaxSize(payload, flowFiberService)
+        }
+    }
+
+    @Test
+    fun `checkPayloadMaxSize does not throw an exception when payload size is less than max allowed size`() {
+        val maxPayloadSize = 1024
+        whenever(checkpoint.maxPayloadSize).thenReturn(maxPayloadSize.toLong())
+        val payload = ByteArray(maxPayloadSize - 1)
+
+        assertDoesNotThrow {
+            SessionUtils.checkPayloadMaxSize(payload, flowFiberService)
+        }
+    }
+
+    @Test
+    fun `checkPayloadMaxSize throws an exception when payload size exceeds max allowed size`() {
+        val maxPayloadSize = 1024
+        whenever(checkpoint.maxPayloadSize).thenReturn(maxPayloadSize.toLong())
+        val payload = ByteArray(maxPayloadSize + 1)
+
+        assertThrows<FlowPlatformException> {
+            SessionUtils.checkPayloadMaxSize(payload, flowFiberService)
         }
     }
 }

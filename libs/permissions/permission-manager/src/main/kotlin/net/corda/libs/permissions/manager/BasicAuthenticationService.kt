@@ -13,5 +13,5 @@ interface BasicAuthenticationService : Lifecycle {
      * @param password the clear text password for the user.
      * @return whether the user is authenticated or not.
      */
-    fun authenticateUser(loginName: String, password: CharArray): Boolean
+    fun authenticateUser(loginName: String, password: CharArray): AuthenticationState
 }

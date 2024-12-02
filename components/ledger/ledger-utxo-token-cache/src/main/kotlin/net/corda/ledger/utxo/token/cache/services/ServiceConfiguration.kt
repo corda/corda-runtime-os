@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.token.cache.services
 
 import net.corda.libs.configuration.SmartConfig
+import java.time.Duration
 
 interface ServiceConfiguration {
     fun init(config: SmartConfig)
@@ -8,4 +9,10 @@ interface ServiceConfiguration {
     val cachedTokenPageSize: Int
 
     val claimTimeoutSeconds: Int
+
+    val tokenCacheExpiryPeriod: Duration
+
+    val dbBackoffMinPeriod: Duration
+
+    val dbBackoffMaxPeriod: Duration
 }

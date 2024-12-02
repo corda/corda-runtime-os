@@ -20,5 +20,6 @@ dependencies {
     implementation project(':components:flow:flow-service')
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:serialization:serialization-internal')
+    implementation project(':libs:serialization:json-validator-lib')
     implementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
 }

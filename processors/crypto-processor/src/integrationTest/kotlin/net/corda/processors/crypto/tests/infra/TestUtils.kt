@@ -92,6 +92,37 @@ fun makeBootstrapConfig(dbParams: SmartConfig): SmartConfig = smartConfigFactory
 
 fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig(listOf(KeyDerivationParameters("master-key-pass", "master-key-salt")))
 
+fun makeStateManagerConfig(dbParams: SmartConfig): SmartConfig {
+    val poolConfigProperties = mapOf(
+        "maxSize" to "5",
+        "minSize" to "0",
+        "idleTimeoutSeconds" to "120",
+        "maxLifetimeSeconds" to "1800",
+        "keepAliveTimeSeconds" to "0",
+        "validationTimeoutSeconds" to "5",
+    )
+
+    val poolConfig = ConfigFactory.parseMap(
+        mapOf(
+            "keyRotation" to mapOf(
+                "database" to mapOf(
+                    "pool" to poolConfigProperties
+                )
+            )
+        )
+    )
+
+    return smartConfigFactory.create(
+        ConfigFactory.parseMap(
+            mapOf(
+                "keyRotation" to dbParams.root().unwrapped()
+            )
+        ).withFallback(
+            poolConfig
+        )
+    )
+}
+
 fun randomDataByteArray(): ByteArray {
     val random = Random(Instant.now().toEpochMilli())
     return random.nextBytes(random.nextInt(157, 311))

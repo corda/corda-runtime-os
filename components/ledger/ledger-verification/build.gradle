@@ -28,7 +28,7 @@ dependencies {
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
 
     implementation project(':components:virtual-node:cpk-read-service')
     implementation project(':components:virtual-node:sandbox-group-context-service')
@@ -42,6 +42,7 @@ dependencies {
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:metrics')
     implementation project(":libs:serialization:json-validator")
+    implementation project(":libs:serialization:json-validator-lib")
     implementation project(":libs:serialization:serialization-avro")
     implementation project(':libs:tracing')
     implementation project(':libs:utilities')
@@ -89,6 +90,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:membership:membership-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
 }

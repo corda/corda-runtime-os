@@ -36,4 +36,6 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation libs.slf4j.api
+
+    testImplementation project(':libs:rest:json-serialization')
 }

@@ -18,7 +18,7 @@ deploy() {
                 --render-subchart-notes  \
                 --timeout 10m  \
                 --wait"
-   corda_args="--install corda -n $namespace oci://corda-os-docker.software.r3.com/helm-charts/release/os/5.2/corda \
+   corda_args="--install corda -n $namespace oci://corda-os-docker.software.r3.com/helm-charts/release/os/5.3/corda \
               --set imagePullSecrets={docker-registry-cred} --set image.tag=$DOCKER_IMAGE_VERSION \
               --set image.registry=corda-os-docker.software.r3.com --values $REPO_TOP_LEVEL_DIR/values.yaml \
               --set bootstrap.kafka.partitions=$KAFKA_PARTITION_COUNT \

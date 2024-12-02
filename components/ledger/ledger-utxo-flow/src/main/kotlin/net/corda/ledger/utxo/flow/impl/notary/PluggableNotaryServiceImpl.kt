@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.flow.impl.notary
 
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -70,7 +69,7 @@ class PluggableNotaryServiceImpl @Activate constructor(
     }
 
     override fun create(
-        transaction: UtxoSignedTransactionInternal,
+        transaction: UtxoSignedTransaction,
         pluggableNotaryDetails: PluggableNotaryDetails,
         notarizationType: NotarizationType
     ): PluggableNotaryClientFlow {

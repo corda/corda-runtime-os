@@ -2,6 +2,7 @@ package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
+import net.corda.crypto.core.ShortHash
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -29,7 +30,7 @@ class MemberLookupTest {
             "CN=Alice, OU=R3 Test, O=Mgm, L=London, ST=Tottenham, C=GB",
         )
 
-        private lateinit var holdingIdentity: String
+        private lateinit var holdingIdentity: ShortHash
 
         @BeforeAll
         @JvmStatic

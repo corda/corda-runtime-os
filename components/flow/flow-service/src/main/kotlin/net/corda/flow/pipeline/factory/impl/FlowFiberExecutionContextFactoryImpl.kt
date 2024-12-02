@@ -40,7 +40,8 @@ class FlowFiberExecutionContextFactoryImpl @Activate constructor(
             currentSandboxGroupContext,
             context.mdcProperties,
             context.flowMetrics,
-            context.configs
+            context.configs,
+            context.flowTraceContext
         )
     }
 }

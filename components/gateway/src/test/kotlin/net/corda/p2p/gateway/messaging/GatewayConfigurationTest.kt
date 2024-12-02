@@ -44,9 +44,9 @@ class GatewayConfigurationTest {
                 maxRequestSize = 1_000,
                 sslConfig = SslConfiguration(
                     revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL),
-                    tlsType = TlsType.ONE_WAY
-                )
-            )
+                    tlsType = TlsType.ONE_WAY,
+                ),
+            ),
         )
     }
 
@@ -103,8 +103,8 @@ class GatewayConfigurationTest {
                 sslConfig = SslConfiguration(
                     revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL),
                     tlsType = TlsType.ONE_WAY,
-                )
-            )
+                ),
+            ),
         )
     }
 }

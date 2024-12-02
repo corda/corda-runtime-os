@@ -7,7 +7,7 @@ import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.ApprovalRulesEntity
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.virtualnode.VirtualNodeInfo
@@ -153,6 +153,6 @@ class PersistApprovalRuleHandlerTest {
         val mergedEntity = argumentCaptor<ApprovalRulesEntity>()
         doNothing().whenever(entityManager).persist(mergedEntity.capture())
 
-        assertThrows<MembershipPersistenceException> { handler.invoke(context, request) }
+        assertThrows<ConflictPersistenceException> { handler.invoke(context, request) }
     }
 }

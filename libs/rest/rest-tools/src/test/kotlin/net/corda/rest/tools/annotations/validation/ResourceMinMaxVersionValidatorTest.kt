@@ -10,7 +10,7 @@ class ResourceMinMaxVersionValidatorTest {
 
     @Test
     fun `check valid versions`() {
-        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_2)
+        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_3)
         abstract class TestInterface : RestResource
 
         val result = ResourceMinMaxVersionValidator(

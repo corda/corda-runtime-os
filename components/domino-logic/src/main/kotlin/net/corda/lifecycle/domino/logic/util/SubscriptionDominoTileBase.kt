@@ -126,10 +126,11 @@ abstract class SubscriptionDominoTileBase(
     }
 
     private fun createAndStartSubscription() {
+        subscriptionRegistration.get()?.close()
         coordinator.createManagedResource(SUBSCRIPTION, subscriptionGenerator)
         val subscriptionName = coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)?.subscriptionName
             ?: throw CordaRuntimeException("Subscription could not be extracted from the lifecycle coordinator.")
-        subscriptionRegistration.getAndSet(coordinator.followStatusChangesByName(setOf(subscriptionName)))?.close()
+        subscriptionRegistration.getAndSet(coordinator.followStatusChangesByName(setOf(subscriptionName)))
         coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)?.start()
     }
 

@@ -6,26 +6,34 @@ import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.virtualnode.HoldingIdentity
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 internal interface SessionManager : LifecycleWithDominoTile {
+    private companion object {
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     fun <T> processOutboundMessages(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> AuthenticatedMessageAndKey,
     ): Collection<Pair<T, SessionState>>
 
-    fun <T> getSessionsById(uuids: Collection<T>, getSessionId: (T) -> String): Collection<Pair<T, SessionDirection>>
+    fun <T> getSessionsById(sessionIdAndMessages: Collection<T>, getSessionId: (T) -> String): Collection<Pair<T, SessionDirection>>
+
     fun <T> processSessionMessages(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> LinkInMessage,
-    ): Collection<Pair<T, LinkOutMessage?>>
+    ): Collection<Pair<T, ProcessSessionMessagesResult>>
 
-    fun inboundSessionEstablished(sessionId: String)
     fun messageAcknowledged(sessionId: String)
-    fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity)
-    fun dataMessageSent(session: Session)
+
     fun deleteOutboundSession(counterParties: Counterparties, message: AuthenticatedMessage)
+
+    fun dataMessageSent(session: Session)
 
     data class SessionCounterparties(
         override val ourId: HoldingIdentity,
@@ -59,7 +67,11 @@ internal interface SessionManager : LifecycleWithDominoTile {
             val sessionCounterparties: SessionCounterparties,
         ) : SessionState()
 
-        object CannotEstablishSession : SessionState()
+        class CannotEstablishSession(reason: String) : SessionState() {
+            init {
+                logger.warn(reason)
+            }
+        }
     }
 
     sealed class SessionDirection {
@@ -67,4 +79,9 @@ internal interface SessionManager : LifecycleWithDominoTile {
         data class Outbound(val counterparties: Counterparties, val session: Session) : SessionDirection()
         object NoSession : SessionDirection()
     }
+
+    data class ProcessSessionMessagesResult(
+        val message: LinkOutMessage?,
+        val sessionCreationRecords: List<Record<String, *>>
+    )
 }

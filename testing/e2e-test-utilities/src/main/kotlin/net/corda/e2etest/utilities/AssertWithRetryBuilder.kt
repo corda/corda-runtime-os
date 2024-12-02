@@ -3,20 +3,17 @@ package net.corda.e2etest.utilities
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.fail
 import java.time.Duration
+import java.time.Instant
 
 /** "Private args" that are only exposed in here */
 class AssertWithRetryArgs {
     var timeout: Duration = Duration.ofSeconds(10)
     var interval: Duration = Duration.ofMillis(500)
     var startDelay: Duration = Duration.ofMillis(10)
-    var command: (() -> SimpleResponse)? = null
+    lateinit var command: (() -> SimpleResponse)
     var condition: ((SimpleResponse) -> Boolean) = { it.code in 200..299 }
-    var immediateFailCondition: ((SimpleResponse) -> Boolean)? = null
+    var immediateFailCondition: ((SimpleResponse) -> Boolean) = { false }
     var failMessage: String = ""
-
-    fun validate() {
-        if (command == null) throw IllegalArgumentException("Command not specified in AssertWithRetryArgs")
-    }
 }
 
 /** The [assertWithRetry] builder class that helps implement the "DSL" */
@@ -78,29 +75,28 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
     val args = AssertWithRetryArgs()
 
     return trackRetryAttempts { addAttempt ->
-        AssertWithRetryBuilder(args).apply(initialize).also {
-        args.validate()
-    }.run {
+        AssertWithRetryBuilder(args).apply(initialize).run {
             var response: SimpleResponse?
 
             var retry = 0
-            var timeTried: Long
+            var timeTried: Duration
+            val startTime = Instant.now()
             Thread.sleep(args.startDelay.toMillis())
             do {
-                response = args.command!!.invoke()
+                response = args.command()
                 if (retry == 0) {
                     println(response.url)
                 }
                 unbufferedPrint('.')
-                if (null != args.immediateFailCondition && args.immediateFailCondition!!.invoke(response)) {
+                if (args.immediateFailCondition(response)) {
                     fail("Failed without retry with status code = ${response.code} and body =\n${response.body}")
                 }
                 if (args.condition.invoke(response)) break
                 retry++
-                timeTried = args.interval.toMillis() * retry
-                addAttempt(Attempt(retry, Duration.ofMillis(timeTried), response.toString()))
+                timeTried = Duration.between(startTime, Instant.now())
+                addAttempt(Attempt(retry, timeTried, response.toString()))
                 Thread.sleep(args.interval.toMillis())
-            } while (timeTried < args.timeout.toMillis())
+            } while (timeTried < args.timeout)
             println()
 
             assertThat(args.condition.invoke(response!!))
@@ -135,17 +131,16 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
     val args = AssertWithRetryArgs()
 
     return trackRetryAttempts { addAttempt ->
-        AssertWithRetryBuilder(args).apply(initialize).also {
-            args.validate()
-        }.run {
+        AssertWithRetryBuilder(args).apply(initialize).run {
             var retry = 0
             var result: Any?
-            var timeTried: Long
+            var timeTried: Duration
+            val startTime = Instant.now()
 
             Thread.sleep(args.startDelay.toMillis())
             do {
                 result = try {
-                    args.command!!.invoke()
+                    args.command()
                 } catch (exception: Exception) {
                     exception
                 }
@@ -156,18 +151,18 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
                 unbufferedPrint('.')
 
                 retry++
-                timeTried = args.interval.toMillis() * retry
-                addAttempt(Attempt(retry, Duration.ofMillis(timeTried),
+                timeTried = Duration.between(startTime, Instant.now())
+                addAttempt(Attempt(retry, timeTried,
                         if (result is Exception) result.stackTraceToString() else result.toString()))
 
                 if (result is SimpleResponse) {
-                    if (null != args.immediateFailCondition && args.immediateFailCondition!!.invoke(result)) {
+                    if (args.immediateFailCondition(result)) {
                         fail("Failed without retry with status code = ${result.code} and body =\n${result.body}")
                     }
                     if (args.condition.invoke(result)) break
                 }
                 Thread.sleep(args.interval.toMillis())
-            } while (timeTried < args.timeout.toMillis())
+            } while (timeTried < args.timeout)
             println()
 
             when (result) {

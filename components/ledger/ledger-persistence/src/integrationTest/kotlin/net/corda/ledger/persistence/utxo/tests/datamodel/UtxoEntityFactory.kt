@@ -90,14 +90,12 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
 
     fun createUtxoTransactionSignatureEntity(
         utxoTransaction: Any,
-        signatureIndex: Int,
         signature: ByteArray,
         publicKeyHash: String,
         created: Instant
     ): Any {
-        return utxoTransactionSignature.constructors.single { it.parameterCount == 5 }.newInstance(
+        return utxoTransactionSignature.constructors.single { it.parameterCount == 4 }.newInstance(
             utxoTransaction,
-            signatureIndex,
             signature,
             publicKeyHash,
             created

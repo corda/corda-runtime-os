@@ -13,6 +13,7 @@ import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.application.versioning.impl.sessions.VersionReceivingFlowSession
 import net.corda.flow.application.versioning.impl.sessions.VersionSendingFlowSession
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
@@ -23,6 +24,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
@@ -64,6 +66,12 @@ class FlowMessagingImplTest {
         val SESSION_INFO_THREE = SessionInfo(SESSION_ID_THREE, MemberX500Name("org", "LDN", "GB"))
         val SESSION_INFO_FOUR = SessionInfo(SESSION_ID_FOUR, MemberX500Name("org", "LDN", "GB"))
         val SESSION_INFO_FIVE = SessionInfo(SESSION_ID_FIVE, MemberX500Name("org", "LDN", "GB"))
+
+        val MAX_PAYLOAD_SIZE = MockFlowFiberService()
+            .getExecutingFiber()
+            .getExecutionContext()
+            .flowCheckpoint.maxPayloadSize
+            .toInt()
     }
 
     private val mockFlowFiberService = MockFlowFiberService()
@@ -782,6 +790,39 @@ class FlowMessagingImplTest {
     }
 
     @Test
+    fun `sendAll throws FlowPlatformException when payload size exceed maxPayloadSize limit`() {
+        val serializedPayload = ByteArray(MAX_PAYLOAD_SIZE + 1)
+
+        whenever(serializationService.serialize(PAYLOAD_ONE)).thenReturn(SerializedBytesImpl(serializedPayload))
+
+        assertThrows<FlowPlatformException> {
+            flowMessaging.sendAll(PAYLOAD_ONE, setOf(normalSessionOne, versionSendingSessionOne))
+        }
+    }
+
+    @Test
+    fun `sendAll does not throw when payload size is equal to the maxPayloadSize limit`() {
+        val serializedPayload = ByteArray(MAX_PAYLOAD_SIZE)
+
+        whenever(serializationService.serialize(PAYLOAD_ONE)).thenReturn(SerializedBytesImpl(serializedPayload))
+
+        assertDoesNotThrow {
+            flowMessaging.sendAll(PAYLOAD_ONE, setOf(normalSessionOne, versionSendingSessionOne))
+        }
+    }
+
+    @Test
+    fun `sendAll does not throw when payload size is below the maxPayloadSize limit`() {
+        val serializedPayload = ByteArray(MAX_PAYLOAD_SIZE - 1)
+
+        whenever(serializationService.serialize(PAYLOAD_ONE)).thenReturn(SerializedBytesImpl(serializedPayload))
+
+        assertDoesNotThrow {
+            flowMessaging.sendAll(PAYLOAD_ONE, setOf(normalSessionOne, versionSendingSessionOne))
+        }
+    }
+
+    @Test
     fun `sendAllMap with only non-version sending sessions suspends the flow to send the input payloads`() {
         whenever(mockFlowFiberService.flowFiber.suspend(sendSuspendCaptor.capture())).thenReturn(Unit)
         flowMessaging.sendAllMap(mapOf(normalSessionOne to PAYLOAD_ONE, versionReceivingSessionOne to PAYLOAD_TWO))
@@ -897,6 +938,43 @@ class FlowMessagingImplTest {
         flowMessaging.sendAllMap(emptyMap())
         verify(mockFlowFiberService.flowFiber, never()).suspend(any<FlowIORequest.Send>())
     }
+
+    @Test
+    fun `sendAllMap throws FlowPlatformException when at least one payload size exceed maxPayloadSize limit`() {
+        val serializedPayloadOne = ByteArray(MAX_PAYLOAD_SIZE + 1)
+        val serializedPayloadTwo = ByteArray(MAX_PAYLOAD_SIZE)
+
+        whenever(serializationService.serialize(PAYLOAD_ONE)).thenReturn(SerializedBytesImpl(serializedPayloadOne))
+        whenever(serializationService.serialize(PAYLOAD_TWO)).thenReturn(SerializedBytesImpl(serializedPayloadTwo))
+
+        assertThrows<FlowPlatformException> {
+            flowMessaging.sendAllMap(
+                mapOf(
+                    normalSessionOne to PAYLOAD_ONE,
+                    versionSendingSessionOne to PAYLOAD_TWO
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `sendAllMap does not throw when all payload sizes are within the maxPayloadSize limit (one lower, one equal)`() {
+        val serializedPayloadOne = ByteArray(MAX_PAYLOAD_SIZE)
+        val serializedPayloadTwo = ByteArray(MAX_PAYLOAD_SIZE - 1)
+
+        whenever(serializationService.serialize(PAYLOAD_ONE)).thenReturn(SerializedBytesImpl(serializedPayloadOne))
+        whenever(serializationService.serialize(PAYLOAD_TWO)).thenReturn(SerializedBytesImpl(serializedPayloadTwo))
+
+        assertDoesNotThrow {
+            flowMessaging.sendAllMap(
+                mapOf(
+                    normalSessionOne to PAYLOAD_ONE,
+                    versionSendingSessionOne to PAYLOAD_TWO
+                )
+            )
+        }
+    }
+
 
     @ParameterizedTest
     @EnumSource(value = SessionStateType::class, names = ["CLOSED", "ERROR"])

@@ -2,6 +2,7 @@ package net.corda.configuration.rest.impl.exception
 
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.rest.ResponseCode
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.HttpApiException
 
 /**
@@ -13,13 +14,14 @@ class ConfigException(
     schemaVersion: ConfigurationSchemaVersion,
     config: String
 ) : HttpApiException(
-        responseCode = ResponseCode.INTERNAL_SERVER_ERROR,
-        message = "$errorType: $errorMessage",
-        details = mapOf(
-            "schemaVersion" to "${schemaVersion.majorVersion}.${schemaVersion.minorVersion}",
-            "config" to config
-        )
-    )
+    responseCode = ResponseCode.INTERNAL_SERVER_ERROR,
+    title = "Config Version Error",
+    details = mapOf(
+        "schemaVersion" to "${schemaVersion.majorVersion}.${schemaVersion.minorVersion}",
+        "config" to config
+    ),
+    exceptionDetails = ExceptionDetails(errorType, errorMessage)
+)
 
 /**
  * Incorrect version for config update.
@@ -31,9 +33,10 @@ class ConfigVersionConflictException(
     config: String
 ) : HttpApiException(
     responseCode = ResponseCode.CONFLICT,
-    message = "$errorType: $errorMessage",
+    title = "Wrong Config Version",
     details = mapOf(
         "schemaVersion" to "${schemaVersion.majorVersion}.${schemaVersion.minorVersion}",
         "config" to config
-    )
+    ),
+    exceptionDetails = ExceptionDetails(errorType, errorMessage)
 )

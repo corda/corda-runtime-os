@@ -18,15 +18,10 @@ class PersistTransactionSignaturesExternalEventFactory :
     override fun createRequest(parameters: PersistTransactionSignaturesParameters): Any {
         return PersistTransactionSignatures(
             parameters.id,
-            parameters.startingIndex,
             parameters.signatures.map { ByteBuffer.wrap(it) }
         )
     }
 }
 
 @CordaSerializable
-data class PersistTransactionSignaturesParameters(
-    val id: String,
-    val startingIndex: Int,
-    val signatures: List<ByteArray>
-)
+data class PersistTransactionSignaturesParameters(val id: String, val signatures: List<ByteArray>)

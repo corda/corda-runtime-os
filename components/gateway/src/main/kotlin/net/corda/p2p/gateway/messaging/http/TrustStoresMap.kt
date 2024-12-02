@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.http
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.utils.convertToKeyStore
 import net.corda.data.p2p.GatewayTruststore
 import net.corda.libs.configuration.SmartConfig
@@ -19,7 +20,6 @@ import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.configuration.read.ConfigurationReadService
 
 internal class TrustStoresMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -40,7 +40,7 @@ internal class TrustStoresMap(
         subscriptionFactory.createCompactedSubscription(
             subscriptionConfig,
             Processor(),
-            messagingConfiguration
+            messagingConfiguration,
         )
     }
 
@@ -53,13 +53,15 @@ internal class TrustStoresMap(
         subscriptionConfig,
         configurationReadService,
         emptyList(),
-        emptyList()
+        emptyList(),
     )
 
     fun getTrustStore(sourceX500Name: MemberX500Name, destinationGroupId: String) =
         trustRootsPerHoldingIdentity[TruststoreKey(sourceX500Name, destinationGroupId)]
-            ?: throw IllegalArgumentException("Unknown trust store for source X500 name ($sourceX500Name) " +
-                    "and group ID ($destinationGroupId)")
+            ?: throw IllegalArgumentException(
+                "Unknown trust store for source X500 name ($sourceX500Name) " +
+                    "and group ID ($destinationGroupId)",
+            )
 
     fun getTrustStores() = trustRootsPerHoldingIdentity
         .values
@@ -68,7 +70,7 @@ internal class TrustStoresMap(
     private val blockingDominoTile = BlockingDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        ready
+        ready,
     )
 
     override val dominoTile = ComplexDominoTile(
@@ -83,8 +85,8 @@ internal class TrustStoresMap(
         certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
     ) {
         val trustStore: KeyStore by lazy {
-            convertToKeyStore(certificateFactory, pemCertificates, "gateway") ?:
-              throw IllegalArgumentException("Invalid trusted certificate")
+            convertToKeyStore(certificateFactory, pemCertificates, "gateway")
+                ?: throw IllegalArgumentException("Invalid trusted certificate")
         }
 
         override fun hashCode() = pemCertificates.hashCode()
@@ -108,8 +110,10 @@ internal class TrustStoresMap(
                 truststoreKey to TrustedCertificates(it.value.trustedCertificates, certificateFactory)
             }.toMap()
             trustRootsPerHoldingIdentity.putAll(newTrustRoots)
-            logger.info("Received initial set of trust roots for the following holding x500 names and destination groups: " +
-                    "${newTrustRoots.keys}")
+            logger.info(
+                "Received initial set of trust roots for the following holding x500 names and destination groups: " +
+                    "${newTrustRoots.keys}",
+            )
             ready.complete(Unit)
         }
 
@@ -125,20 +129,24 @@ internal class TrustStoresMap(
                 entriesPerKey[newRecord.key] = truststoreKey
                 val trustedCertificates = TrustedCertificates(value.trustedCertificates, certificateFactory)
                 trustRootsPerHoldingIdentity[truststoreKey] = trustedCertificates
-                logger.info("Trust roots updated for x500 name ${truststoreKey.sourceX500Name} and " +
-                        "group ID ${truststoreKey.destinationGroupId}.")
+                logger.info(
+                    "Trust roots updated for x500 name ${truststoreKey.sourceX500Name} and " +
+                        "group ID ${truststoreKey.destinationGroupId}.",
+                )
             } else {
                 val truststoreKey = entriesPerKey.remove(newRecord.key)
                 if (truststoreKey != null) {
                     trustRootsPerHoldingIdentity.remove(truststoreKey)
-                    logger.info("Trust roots removed for x500 name ${truststoreKey.sourceX500Name} and " +
-                            "group ID ${truststoreKey.destinationGroupId}.")
+                    logger.info(
+                        "Trust roots removed for x500 name ${truststoreKey.sourceX500Name} and " +
+                            "group ID ${truststoreKey.destinationGroupId}.",
+                    )
                 }
             }
         }
     }
 
-    private fun createKey(sourceX500Name: String, destinationGroupId: String) : TruststoreKey {
+    private fun createKey(sourceX500Name: String, destinationGroupId: String): TruststoreKey {
         return TruststoreKey(
             MemberX500Name.parse(sourceX500Name),
             destinationGroupId,

@@ -1,5 +1,6 @@
 package net.corda.p2p.fake.ca
 
+import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.toPem
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -30,6 +31,12 @@ class SignCertificate : Runnable {
     )
     private lateinit var csrFile: File
 
+    @Option(
+        names = ["-i", "--intermediate-cas-count"],
+        description = ["Number of intermediate CAs"],
+    )
+    private var intermediateCasCount: Int = 0
+
     @ParentCommand
     private lateinit var ca: Ca
 
@@ -58,7 +65,11 @@ class SignCertificate : Runnable {
             throw FakeCaException("The file '$csrFile' has no certificate signing request")
         }
 
-        val certificate = ca.authority.signCsr(request)
+        val authority = (1..intermediateCasCount).fold(ca.authority) { authority: CertificateAuthority, _ ->
+            authority.createIntermediateCertificateAuthority()
+        }
+
+        val certificate = authority.signCsr(request)
 
         // Save the authority because the serial number had changed.
         ca.authority.save()

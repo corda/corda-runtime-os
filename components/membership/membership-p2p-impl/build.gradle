@@ -22,6 +22,7 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:membership:membership-impl')
     implementation project(':libs:messaging:messaging')
+    implementation project(':libs:p2p-messaging')
     implementation project(':libs:schema-registry:schema-registry')
     implementation project(':libs:virtual-node:virtual-node-info')
 

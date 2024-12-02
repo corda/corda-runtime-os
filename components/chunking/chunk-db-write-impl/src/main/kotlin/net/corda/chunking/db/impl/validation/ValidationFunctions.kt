@@ -102,7 +102,7 @@ fun CpiPersistence.persistCpiToDatabase(
         val cpiExists = this.cpiExists(cpi.metadata.cpiId)
 
         return if (cpiExists && fileInfo.forceUpload) {
-            log.info("Force uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
+            log.info("Force uploading CPI: ${cpi.metadata.cpiId.name} version: ${cpi.metadata.cpiId.version}")
             this.updateMetadataAndCpks(
                 cpi,
                 fileInfo.name,
@@ -112,7 +112,7 @@ fun CpiPersistence.persistCpiToDatabase(
                 changelogsExtractedFromCpi
             )
         } else if (!cpiExists) {
-            log.info("Uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
+            log.info("Uploading CPI: ${cpi.metadata.cpiId.name} version: ${cpi.metadata.cpiId.version}")
             this.persistMetadataAndCpks(
                 cpi,
                 fileInfo.name,

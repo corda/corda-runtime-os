@@ -17,6 +17,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.impl.persistence.service.RecoverableException
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
@@ -27,6 +28,8 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatCode
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -53,7 +56,7 @@ class PersistRegistrationRequestHandlerTest {
         ourX500Name,
         ourGroupId
     )
-    private val ourRegistrationId = UUID.randomUUID().toString()
+    private val ourRegistrationId = UUID(1, 3).toString()
     private val clock = TestClock(Instant.ofEpochSecond(0))
     private val vaultDmlConnectionId = UUID(12, 0)
     private val memberContext = "89".toByteArray()
@@ -135,7 +138,7 @@ class PersistRegistrationRequestHandlerTest {
     )
 
     private fun getPersistRegistrationRequest(
-        status: RegistrationStatus = RegistrationStatus.PENDING_MEMBER_VERIFICATION
+        status: RegistrationStatus = RegistrationStatus.PENDING_MEMBER_VERIFICATION,
     ): PersistRegistrationRequest {
         val memberContext = SignedData(
             ByteBuffer.wrap(memberContext),
@@ -161,7 +164,7 @@ class PersistRegistrationRequestHandlerTest {
                 memberContext,
                 registrationContext,
                 0L,
-            )
+            ),
         )
     }
 
@@ -172,7 +175,7 @@ class PersistRegistrationRequestHandlerTest {
 
         val result = persistRegistrationRequestHandler.invoke(
             getMemberRequestContext(),
-            getPersistRegistrationRequest()
+            getPersistRegistrationRequest(RegistrationStatus.NEW)
         )
 
         assertThat(result).isInstanceOf(Unit::class.java)
@@ -189,7 +192,7 @@ class PersistRegistrationRequestHandlerTest {
             val entity = this as RegistrationRequestEntity
             assertThat(entity.registrationId).isEqualTo(ourRegistrationId)
             assertThat(entity.holdingIdentityShortHash).isEqualTo(ourHoldingIdentity.shortHash.value)
-            assertThat(entity.status).isEqualTo(RegistrationStatus.PENDING_MEMBER_VERIFICATION.toString())
+            assertThat(entity.status).isEqualTo(RegistrationStatus.NEW.toString())
             assertThat(entity.created).isBeforeOrEqualTo(clock.instant())
             assertThat(entity.lastModified).isBeforeOrEqualTo(clock.instant())
             assertThat(entity.memberContext)
@@ -235,22 +238,22 @@ class PersistRegistrationRequestHandlerTest {
     @Test
     fun `invoke will merge nothing except serial if the status is sent to MGM and serial is null`() {
         val now = clock.instant().minusSeconds(100)
-        val previousEntity = mock<RegistrationRequestEntity> {
-            on { status } doReturn RegistrationStatus.APPROVED.toString()
-            on { serial } doReturn null
-            on { registrationId } doReturn ourRegistrationId
-            on { holdingIdentityShortHash } doReturn ourHoldingIdentity.shortHash.value
-            on { created } doReturn now
-            on { lastModified } doReturn now
-            on { memberContext } doReturn memberContext
-            on { memberContextSignatureKey } doReturn memberContextSignatureKey
-            on { memberContextSignatureContent } doReturn memberContextSignatureContent
-            on { memberContextSignatureSpec } doReturn memberContextSignatureSpec
-            on { registrationContext } doReturn registrationContext
-            on { registrationContextSignatureKey } doReturn registrationContextSignatureKey
-            on { registrationContextSignatureContent } doReturn registrationContextSignatureContent
-            on { registrationContextSignatureSpec } doReturn registrationContextSignatureSpec
-        }
+        val previousEntity = RegistrationRequestEntity(
+            status = RegistrationStatus.APPROVED.toString(),
+            serial = null,
+            registrationId = ourRegistrationId,
+            holdingIdentityShortHash = ourHoldingIdentity.shortHash.value,
+            created = now,
+            lastModified = now,
+            memberContext = memberContext,
+            memberContextSignatureKey = memberContextSignatureKey,
+            memberContextSignatureContent = memberContextSignatureContent,
+            memberContextSignatureSpec = memberContextSignatureSpec,
+            registrationContext = registrationContext,
+            registrationContextSignatureKey = registrationContextSignatureKey,
+            registrationContextSignatureContent = registrationContextSignatureContent,
+            registrationContextSignatureSpec = registrationContextSignatureSpec,
+        )
         whenever(
             entityManager.find(
                 RegistrationRequestEntity::class.java,
@@ -327,5 +330,62 @@ class PersistRegistrationRequestHandlerTest {
         )
 
         verify(entityManager).merge(any<RegistrationRequestEntity>())
+    }
+
+    @Test
+    fun `invoke will fail if it need to update something that is not there`() {
+        whenever(
+            entityManager.find(
+                RegistrationRequestEntity::class.java,
+                ourRegistrationId,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        ).doReturn(null)
+
+        assertThatThrownBy {
+            persistRegistrationRequestHandler.invoke(
+                getMemberRequestContext(),
+                getPersistRegistrationRequest(status = RegistrationStatus.SENT_TO_MGM)
+            )
+        }.isInstanceOf(RecoverableException::class.java)
+    }
+
+    @Test
+    fun `invoke will not fail if it need to create something that is not there`() {
+        whenever(
+            entityManager.find(
+                RegistrationRequestEntity::class.java,
+                ourRegistrationId,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        ).doReturn(null)
+
+        assertThatCode {
+            persistRegistrationRequestHandler.invoke(
+                getMemberRequestContext(),
+                getPersistRegistrationRequest(status = RegistrationStatus.NEW)
+            )
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `invoke will not fail if it need to update something is there`() {
+        val status = mock<RegistrationRequestEntity> {
+            on { status } doReturn RegistrationStatus.NEW.toString()
+        }
+        whenever(
+            entityManager.find(
+                RegistrationRequestEntity::class.java,
+                ourRegistrationId,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        ).doReturn(status)
+
+        assertThatCode {
+            persistRegistrationRequestHandler.invoke(
+                getMemberRequestContext(),
+                getPersistRegistrationRequest(status = RegistrationStatus.RECEIVED_BY_MGM)
+            )
+        }.doesNotThrowAnyException()
     }
 }

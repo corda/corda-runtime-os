@@ -19,8 +19,8 @@ class SslConfigurationTest {
         assertThat(sslConfiguration).isEqualTo(
             SslConfiguration(
                 revocationCheck = RevocationConfig(RevocationConfigMode.SOFT_FAIL),
-                tlsType = TlsType.MUTUAL
-            )
+                tlsType = TlsType.MUTUAL,
+            ),
         )
     }
 }

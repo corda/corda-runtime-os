@@ -29,13 +29,13 @@ import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.sync.BloomFilter
-import net.corda.membership.impl.p2p.MembershipP2PProcessor.Companion.MEMBERSHIP_P2P_SUBSYSTEM
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.Schemas.Membership.SYNCHRONIZATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -233,7 +233,7 @@ class MembershipP2PProcessorTest {
 
     @Test
     fun `Registration request on a non-membership subsystem returns no output records`() {
-        val result = processUnauthMsgPayload(unauthenticatedRegMsgPayload, "BAD_SUBSYSTEM")
+        val result = processUnauthMsgPayload(unauthenticatedRegMsgPayload, Subsystem.LINK_MANAGER)
         assertThat(result).isEmpty()
     }
 
@@ -357,14 +357,14 @@ class MembershipP2PProcessorTest {
 
     private fun createUnauthMsg(
         payload: ByteBuffer,
-        subsystem: String = MEMBERSHIP_P2P_SUBSYSTEM
+        subsystem: Subsystem = Subsystem.MEMBERSHIP
     ) = with(payload) {
         mockPayloadDeserialization()
         asUnauthenticatedAppMessagePayload(subsystem)
     }
     private fun processUnauthMsgPayload(
         payload: ByteBuffer,
-        subsystem: String = MEMBERSHIP_P2P_SUBSYSTEM
+        subsystem: Subsystem = Subsystem.MEMBERSHIP
     ) = membershipP2PProcessor.onNext(
         listOf(Record(TOPIC, KEY, createUnauthMsg(payload, subsystem)))
     )
@@ -383,12 +383,12 @@ class MembershipP2PProcessorTest {
     )
 
     private fun ByteBuffer.asUnauthenticatedAppMessagePayload(
-        subsystem: String = MEMBERSHIP_P2P_SUBSYSTEM
+        subsystem: Subsystem = Subsystem.MEMBERSHIP
     ): AppMessage {
         return AppMessage(
             InboundUnauthenticatedMessage(
                 InboundUnauthenticatedMessageHeader(
-                    subsystem,
+                    subsystem.systemName,
                     "messageId"
                 ),
                 this
@@ -408,7 +408,7 @@ class MembershipP2PProcessorTest {
                     clock.instant().plusMillis(300000L),
                     "mid",
                     null,
-                    MEMBERSHIP_P2P_SUBSYSTEM,
+                    Subsystem.MEMBERSHIP.systemName,
                     MembershipStatusFilter.ACTIVE
                 ),
                 this

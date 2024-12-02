@@ -1,0 +1,16 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+description 'JSON Validator Lib'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib'
+    implementation "io.github.erdtman:java-json-canonicalization:$jsonCanonicalizerVersion"
+}

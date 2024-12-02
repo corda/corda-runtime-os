@@ -10,7 +10,7 @@ class TestInitialConfigPlugin {
     @Test
     fun testSetupScriptMissingCommand() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(

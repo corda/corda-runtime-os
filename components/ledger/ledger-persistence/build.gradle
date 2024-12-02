@@ -39,10 +39,12 @@ dependencies {
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:metrics')
     implementation project(':libs:serialization:json-validator')
+    implementation project(':libs:serialization:json-validator-lib')
     implementation project(':libs:utilities')
     implementation project(":libs:serialization:serialization-avro")
     implementation project(":libs:tracing")
     implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(':libs:ledger-lib-persistence')
 
     // TODO This might not be needed if code is refactored so that WireTransactionSerializer is not used and
     //  WireTransaction's ID is sent over wire (doesn't need to be calculated using MerkleTreeFactory)
@@ -55,10 +57,9 @@ dependencies {
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
 
-    testImplementation project(':libs:ledger:ledger-utxo-data')
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:persistence-testkit')
 
@@ -106,6 +107,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:membership:membership-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

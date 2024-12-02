@@ -1,11 +1,13 @@
 package net.corda.rest.server.impl
 
 import com.google.gson.Gson
-import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_CREDENTIALS
-import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_ORIGIN
-import io.javalin.core.util.Header.CACHE_CONTROL
-import io.javalin.core.util.Header.WWW_AUTHENTICATE
+import io.javalin.core.util.Header
+import io.javalin.http.Header.ACCESS_CONTROL_ALLOW_CREDENTIALS
+import io.javalin.http.Header.ACCESS_CONTROL_ALLOW_ORIGIN
+import io.javalin.http.Header.CACHE_CONTROL
+import io.javalin.http.Header.WWW_AUTHENTICATE
 import kong.unirest.core.HttpStatus
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.apigen.test.TestJavaPrimitivesRestResourceImpl
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.toExample
@@ -38,17 +40,18 @@ import kotlin.test.assertEquals
 
 class RestServerRequestsTest : RestServerTestBase() {
     companion object {
+        val restServerSettings = RestServerSettings(
+            NetworkHostAndPort("localhost", 0),
+            context,
+            null,
+            null,
+            RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            20000L
+        )
+
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val restServerSettings = RestServerSettings(
-                NetworkHostAndPort("localhost", 0),
-                context,
-                null,
-                null,
-                RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
-                20000L
-            )
             server = RestServerImpl(
                 listOf(
                     TestHealthCheckAPIImpl(),
@@ -93,6 +96,8 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
         assertEquals(HttpStatus.NOT_FOUND, invalidPathResponse.responseStatus)
+        assertThat((invalidPathResponse.body!!.asMapFromJson()["details"] as Map<*, *>)["url"].toString())
+            .contains("/api/${apiVersion.versionPath}/invalidPath")
     }
 
     @Test
@@ -104,9 +109,9 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
         assertEquals(HttpStatus.OK, getPathResponse.responseStatus)
-        assertEquals("localhost", getPathResponse.headers[ACCESS_CONTROL_ALLOW_ORIGIN.lowercase()])
-        assertEquals("true", getPathResponse.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS.lowercase()])
-        assertEquals("no-cache", getPathResponse.headers[CACHE_CONTROL.lowercase()])
+        assertEquals("http://localhost", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_ORIGIN.lowercase()])
+        assertEquals("true", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_CREDENTIALS.lowercase()])
+        assertEquals("no-cache", getPathResponse.headers[Header.CACHE_CONTROL.lowercase()])
     }
 
     @Test
@@ -117,7 +122,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.OK, sanityResponse.responseStatus)
+        assertEquals(HttpStatus.SC_OK, sanityResponse.responseStatus)
         assertEquals("Sane", sanityResponse.body)
     }
 
@@ -256,7 +261,11 @@ class RestServerRequestsTest : RestServerTestBase() {
     @Test
     fun `Verify no permission check on GetProtocolVersion`() {
         val fullUrl = "testEntity/getProtocolVersion"
-        val helloResponse = client.call(
+        val clientV52 = TestHttpClientUnirestImpl(
+            "http://${restServerSettings.address.host}:${server.port}/" +
+                "${restServerSettings.context.basePath}/${RestApiVersion.C5_2.versionPath}/"
+        )
+        val helloResponse = clientV52.call(
             GET,
             WebRequest<Any>(fullUrl),
             userName,
@@ -264,6 +273,9 @@ class RestServerRequestsTest : RestServerTestBase() {
         )
         assertEquals(HttpStatus.OK, helloResponse.responseStatus)
         assertEquals("3", helloResponse.body)
+
+        // Check that the response returned a deprecation warning in the header
+        assertThat(helloResponse.headers.toMap()["Warning"]!!.contains("299"))
 
         // Check that security managed has not been called for GetProtocolVersion which is exempt from permissions check
         assertThat(securityManager.checksExecuted).hasSize(0)
@@ -429,30 +441,6 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
         assertEquals(HttpStatus.OK, getPathResponse.responseStatus)
-    }
-
-    @Test
-    fun `GET valid user with valid permissions on requested get protocol version returns 200`() {
-        val getPathResponse = client.call(
-            GET,
-            WebRequest<Any>("health/getprotocolversion"),
-            userName,
-            password
-        )
-        assertEquals(HttpStatus.OK, getPathResponse.responseStatus)
-        assertEquals("2", getPathResponse.body)
-    }
-
-    @Test
-    fun `GET invalid user without permissions on requested get protocol version returns 200`() {
-        val getPathResponse = client.call(
-            GET,
-            WebRequest<Any>("health/getprotocolversion"),
-            "invalid",
-            "invalid"
-        )
-        assertEquals(HttpStatus.OK, getPathResponse.responseStatus)
-        assertEquals("2", getPathResponse.body)
     }
 
     @Test

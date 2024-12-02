@@ -19,13 +19,13 @@ class RandomSelectionAddressResolverTest {
         val allIps = mutableSetOf<String>()
         eventually(
             duration = 20.seconds,
-            waitBetween = 0.seconds
+            waitBetween = 0.seconds,
         ) {
             val resolved = resolver.getResolver(executor)
                 .resolve(address)
                 .get()
             allIps.add(
-                resolved.address.address.joinToString(".")
+                resolved.address.address.joinToString("."),
             )
 
             assertThatIterable(allIps).hasSize(9)
@@ -52,7 +52,7 @@ class RandomSelectionAddressResolverTest {
         val address = InetSocketAddress.createUnresolved("www.shared_ips.net", 1001)
         eventually(
             duration = 20.seconds,
-            waitBetween = 0.seconds
+            waitBetween = 0.seconds,
         ) {
             val resolvedByFirst = firsResolver.getResolver(executor)
                 .resolve(address)
@@ -74,7 +74,7 @@ class RandomSelectionAddressResolverTest {
         val address = InetSocketAddress.createUnresolved("www.shared_ips.net", 1001)
         eventually(
             duration = 20.seconds,
-            waitBetween = 0.seconds
+            waitBetween = 0.seconds,
         ) {
             val resolvedByFirst = firsResolver.getResolver(executor)
                 .resolve(address)

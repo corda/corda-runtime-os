@@ -16,6 +16,6 @@ dependencies {
     implementation 'net.corda:corda-base'
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    compileOnly 'org.slf4j:slf4j-api'
+    compileOnly libs.slf4j.api
     compileOnly project(':osgi-framework-api')
 }

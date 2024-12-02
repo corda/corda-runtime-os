@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+
+<configuration>
+
+    <Appenders>
+        <!-- Logs the redirected stdOut to the console -->
+        <Console name="LogToConsoleOut" target="SYSTEM_OUT"/>
+
+        <!-- Logs the redirected stdErr to the console -->
+        <Console name="LogToConsoleErr" target="SYSTEM_ERR"/>
+
+        <File name="LogToFile" fileName="${sys:logFile:-${sys:user.home}/.corda/cli/logs/corda-cli.log}" append="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %level [%t] [%c] - %msg%n"/>
+        </File>
+
+    </Appenders>
+
+    <Loggers>
+        <Logger name="SystemErr" level="error" additivity="false">
+            <AppenderRef ref="LogToConsoleErr"/>
+            <AppenderRef ref="LogToFile"/>
+        </Logger>
+
+        <Logger name="SystemOut" level="info" additivity="false">
+            <AppenderRef ref="LogToConsoleOut"/>
+            <AppenderRef ref="LogToFile"/>
+        </Logger>
+
+        <Root level="${sys:logLevel:-info}" >
+            <AppenderRef ref="LogToFile"/>
+        </Root>
+    </Loggers>
+
+</configuration>

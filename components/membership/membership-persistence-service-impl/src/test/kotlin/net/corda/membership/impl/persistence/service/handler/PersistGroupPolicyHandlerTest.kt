@@ -11,6 +11,7 @@ import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupPolicyEntity
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
@@ -177,7 +178,7 @@ class PersistGroupPolicyHandlerTest {
             on { version } doReturn 1L
         }
 
-        assertThrows<MembershipPersistenceException> { handler.invoke(requestContext, request) }
+        assertThrows<ConflictPersistenceException> { handler.invoke(requestContext, request) }
         verify(entityManager, never()).persist(any())
     }
 

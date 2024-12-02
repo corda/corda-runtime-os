@@ -1,8 +1,6 @@
 package net.corda.cli.plugin.initialconfig
 
 import com.github.stefanbirkner.systemlambda.SystemLambda
-import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
-import net.corda.libs.configuration.secret.SecretsCreateService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
@@ -11,7 +9,7 @@ class TestInitialConfigPluginDb {
     @Test
     fun testDbConfigCreationMissingOptions() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
@@ -24,7 +22,7 @@ class TestInitialConfigPluginDb {
     @Test
     fun testDbConfigCreationCorda() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
@@ -66,7 +64,7 @@ class TestInitialConfigPluginDb {
     @Test
     fun `test DbConfig creation with MinPoolSize`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
@@ -99,7 +97,7 @@ class TestInitialConfigPluginDb {
     @Test
     fun testDbConfigCreationVault() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
@@ -133,32 +131,10 @@ class TestInitialConfigPluginDb {
         ).endsWith("Z', 0);\n")
     }
 
-    @Test
-    fun `test DbConfig creation directly with escaped string`() {
-        val jdbcUrl = ""
-        val jdbcPoolMaxSize = 10
-        val jdbcPoolMinSize: Int? = null
-        val idleTimeout: Int = 120
-        val maxLifetime: Int = 1800
-        val keepaliveTime: Int = 0
-        val validationTimeout: Int = 5
-        val username = "test\"user"
-        val password = ""
-        val salt = "123"
-        val passphrase = "123"
-        val vaultKey = "corda-config-database-password"
-        val secretsService: SecretsCreateService = EncryptionSecretsServiceImpl(passphrase, salt)
-
-        val outText = createConfigDbConfig(jdbcUrl, username, password, vaultKey, jdbcPoolMaxSize, jdbcPoolMinSize,
-            idleTimeout, maxLifetime, keepaliveTime, validationTimeout, secretsService)
-
-        assertThat(outText).contains("\"user\":\"test\\\"user\"")
-    }
-
     // Running the command via command line applies additional escaping
     @Test
     fun `test DbConfig creation via command line with escaped string`() {
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(

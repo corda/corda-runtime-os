@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.test
 
+import net.corda.flow.application.services.FlowCheckpointService
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.ledger.common.data.transaction.filtered.factory.impl.FilteredTransactionFactoryImpl
@@ -32,7 +32,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 abstract class UtxoLedgerTest : CommonLedgerTest() {
-    private val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
+    protected val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
     private val mockUtxoLedgerTransactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val mockUtxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
     private val mockGroupParametersLookup = mockGroupParametersLookup()
@@ -105,7 +105,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         mockExternalEventExecutor,
         mockResultSetFactory,
         mockUtxoLedgerTransactionVerificationService,
-        mock<FlowFiberService>()
+        mock<FlowCheckpointService>()
     )
     val utxoSignedTransactionKryoSerializer = UtxoSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,

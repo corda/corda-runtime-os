@@ -48,7 +48,7 @@ class TokenBalanceQueryEventHandlerTest {
 
     @BeforeEach
     fun setup() {
-        whenever(tokenCache.iterator()).doAnswer { cachedTokens.iterator() }
+        whenever(tokenCache.get(any())).doAnswer { cachedTokens }
         whenever(poolCacheState.claimedTokens()).doAnswer { emptyList() }
     }
 

@@ -1,5 +1,6 @@
 package net.corda.crypto.softhsm.impl
 
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.db.connection.manager.DbConnectionManager
@@ -30,7 +31,7 @@ class SigningRepositoryImplTests {
         val dbConnectionManager = mock<DbConnectionManager> {
             on { getOrCreateEntityManagerFactory(any<CordaDb>(), any()) } doReturn entityManagerFactory
         }
-        val tenant = CryptoTenants.CRYPTO
+        val tenant = ClusterCryptoDb.SCHEMA_NAME
         makeMockSigningRepository(tenant, dbConnectionManager).use { repo ->
             assertThat(repo::class.simpleName).isEqualTo("SigningRepositoryImpl")
             verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)

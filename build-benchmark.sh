@@ -2,7 +2,7 @@
 # to Gradle Enterprise so that we can analyse them.
 #
 MAX_WORKERS=4
-TAG_BENCHMARK="build-benchmark-5.2"    # Gradle build scan label prefix - should remain stable
+TAG_BENCHMARK="build-benchmark-5.3"    # Gradle build scan label prefix - should remain stable
 TAG_EXP="${TAG_BENCHMARK}-0002"    # Gradle build scan label suffix - can be incremented in case we want another set of benchmarks, for example to compare a before/after change
 
 TAG_CACHE="cache"

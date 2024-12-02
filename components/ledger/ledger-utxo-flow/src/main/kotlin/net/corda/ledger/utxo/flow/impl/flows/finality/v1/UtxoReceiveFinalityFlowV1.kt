@@ -38,6 +38,12 @@ import org.slf4j.LoggerFactory
  * V1 changed slightly between 5.0 and 5.1.
  * (5.1's initial payload contains the number of parties to let bypass steps later not needed for two parties cases)
  * This change is not managed through flow versioning since flow interoperability is not supported between these versions.
+ *
+ * Runs on the other vnodes in a UTXO transaction when one vnode initiates a finality flow.
+ * Checks signatures, contracts (verification) and runs `validator` which is a user-supplied callback
+ * which can accept or reject the transaction. This flow will persist the transaction as unverified before it
+ * is notarized, and then persist it as verified after successful notarization.
+ *
  */
 
 @CordaSystemFlow
@@ -45,7 +51,6 @@ class UtxoReceiveFinalityFlowV1(
     private val session: FlowSession,
     private val validator: UtxoTransactionValidator
 ) : UtxoFinalityBaseV1() {
-
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(UtxoReceiveFinalityFlowV1::class.java)
     }
@@ -115,9 +120,9 @@ class UtxoReceiveFinalityFlowV1(
         transferAdditionalSignatures: Boolean
     ): UtxoSignedTransactionInternal {
         return if (transferAdditionalSignatures) {
-            receiveSignaturesAndAddToTransaction(transaction).let { (it, startingIndex, signatures) ->
+            receiveSignaturesAndAddToTransaction(transaction).let { (it, signatures) ->
                 verifyAllReceivedSignatures(it)
-                persistenceService.persistTransactionSignatures(it.id, startingIndex, signatures)
+                persistenceService.persistTransactionSignatures(it.id, signatures)
                 it
             }
         } else {
@@ -197,16 +202,20 @@ class UtxoReceiveFinalityFlowV1(
 
         val inputStateAndRefs = initialTransaction.inputStateRefs.map { stateRef ->
             requireNotNull(dependentStateAndRefs[stateRef]) {
-                "Missing input state and ref from the filtered transaction"
+                "Missing input state and ref $stateRef from the filtered transaction"
             }
         }
         val referenceStateAndRefs = initialTransaction.referenceStateRefs.map { stateRef ->
             requireNotNull(dependentStateAndRefs[stateRef]) {
-                "Missing reference state and ref from the filtered transaction"
+                "Missing reference state and ref $stateRef from the filtered transaction"
             }
         }
 
-        persistenceService.persistFilteredTransactionsAndSignatures(filteredTransactionsAndSignatures)
+        persistenceService.persistFilteredTransactionsAndSignatures(
+            filteredTransactionsAndSignatures,
+            inputStateAndRefs.map { it.ref },
+            referenceStateAndRefs.map { it.ref }
+        )
 
         return InitialTransactionPayload(
             initialTransaction,
@@ -304,7 +313,7 @@ class UtxoReceiveFinalityFlowV1(
 
     @Suspendable
     private fun receiveSignaturesAndAddToTransaction(transaction: UtxoSignedTransactionInternal): TransactionAndReceivedSignatures {
-        val initialSignaturesSize = transaction.signatures.size
+        val initialSignatures = transaction.signatures.toSet()
         if (log.isDebugEnabled) {
             log.debug("Waiting for other parties' signatures for transaction: ${transaction.id}")
         }
@@ -319,8 +328,7 @@ class UtxoReceiveFinalityFlowV1(
 
         return TransactionAndReceivedSignatures(
             signedTransaction,
-            initialSignaturesSize,
-            signedTransaction.signatures.drop(initialSignaturesSize)
+            signedTransaction.signatures.toSet() - initialSignatures
         )
     }
 
@@ -395,7 +403,6 @@ class UtxoReceiveFinalityFlowV1(
 
     private data class TransactionAndReceivedSignatures(
         val transaction: UtxoSignedTransactionInternal,
-        val indexOfNewSignatures: Int,
-        val orderedNewSignatures: List<DigitalSignatureAndMetadata>
+        val newSignatures: Set<DigitalSignatureAndMetadata>
     )
 }

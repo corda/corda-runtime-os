@@ -5,9 +5,13 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.PersistSignedGroupParametersIfDoNotExist
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.libs.persistence.utxo.SignatureSpec
+import net.corda.ledger.libs.persistence.utxo.SignatureWithKey
+import net.corda.ledger.libs.persistence.utxo.SignedGroupParameters
+import net.corda.ledger.libs.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.common.RequestHandler
-import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.messaging.api.records.Record
+import net.corda.data.membership.SignedGroupParameters as SignedGroupParametersAvro
 
 class UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler(
     private val persistSignedGroupParametersIfDoNotExist: PersistSignedGroupParametersIfDoNotExist,
@@ -23,7 +27,8 @@ class UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler(
         requireNotNull(persistSignedGroupParametersIfDoNotExist.signedGroupParameters.mgmSignatureSpec) {
             "SignedGroupParameters needs a signature specification."
         }
-        persistenceService.persistSignedGroupParametersIfDoNotExist(persistSignedGroupParametersIfDoNotExist.signedGroupParameters)
+        val signedGroupParameters = persistSignedGroupParametersIfDoNotExist.signedGroupParameters
+        persistenceService.persistSignedGroupParametersIfDoNotExist(signedGroupParameters.toCorda())
 
         return listOf(
             externalEventResponseFactory.success(
@@ -32,4 +37,16 @@ class UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler(
             )
         )
     }
+}
+
+private fun SignedGroupParametersAvro.toCorda(): SignedGroupParameters {
+    return SignedGroupParameters(
+        groupParameters.array(),
+        SignatureWithKey(mgmSignature.publicKey.array(), mgmSignature.bytes.array()),
+        SignatureSpec(
+            mgmSignatureSpec.signatureName,
+            mgmSignatureSpec.customDigestName,
+            mgmSignatureSpec.params?.bytes?.array()
+        )
+    )
 }

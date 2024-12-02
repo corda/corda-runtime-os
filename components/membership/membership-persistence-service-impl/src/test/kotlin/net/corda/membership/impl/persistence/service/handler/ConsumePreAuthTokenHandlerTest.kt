@@ -10,6 +10,7 @@ import net.corda.data.membership.preauth.PreAuthTokenStatus.REVOKED
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
@@ -19,6 +20,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -178,7 +180,10 @@ class ConsumePreAuthTokenHandlerTest {
 
     @Test
     fun `Handler throws exception if no token is found for ID`() {
-        invokeTestFunctionWithError("does not exist")
+        assertThatThrownBy {
+            invokeTestFunction()
+        }.isInstanceOf(NotFoundEntityPersistenceException::class.java)
+            .hasMessageContaining("does not exist")
     }
 
     @Test

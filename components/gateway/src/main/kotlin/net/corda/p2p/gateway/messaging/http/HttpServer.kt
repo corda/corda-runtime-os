@@ -66,7 +66,7 @@ internal class HttpServer(
          */
         private val BENIGN_STATUS_CODES = setOf(
             HttpResponseStatus.OK,
-            HttpResponseStatus.GONE
+            HttpResponseStatus.GONE,
         )
     }
 

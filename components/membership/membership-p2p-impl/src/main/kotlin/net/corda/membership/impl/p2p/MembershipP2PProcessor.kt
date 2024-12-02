@@ -22,6 +22,7 @@ import net.corda.membership.lib.SetOwnRegistrationStatusV2
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
@@ -38,8 +39,6 @@ class MembershipP2PProcessor(
 
     companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
-        const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
     }
 
     private val messageProcessorFactories: Map<Class<*>, () -> MessageHandler> = mapOf(
@@ -107,8 +106,8 @@ class MembershipP2PProcessor(
             (this as? InboundUnauthenticatedMessage)?.isMembershipSubsystem() ?: false
     }
 
-    private fun AuthenticatedMessage.isMembershipSubsystem() = header.subsystem == MEMBERSHIP_P2P_SUBSYSTEM
-    private fun InboundUnauthenticatedMessage.isMembershipSubsystem() = header.subsystem == MEMBERSHIP_P2P_SUBSYSTEM
+    private fun AuthenticatedMessage.isMembershipSubsystem() = header.subsystem == Subsystem.MEMBERSHIP.systemName
+    private fun InboundUnauthenticatedMessage.isMembershipSubsystem() = header.subsystem == Subsystem.MEMBERSHIP.systemName
 
     private val Any.header: Any
         get() = (this as? AuthenticatedMessage)?.header

@@ -20,6 +20,7 @@ import net.corda.membership.impl.persistence.service.RecoverableException
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
@@ -250,7 +251,7 @@ class PersistGroupParametersHandlerTest {
         whenever(deserializer.deserialize(serializedNewParams)).doReturn(newParams)
         whenever(request.groupParameters).doReturn(newSignedParams)
 
-        val exception = assertThrows<MembershipPersistenceException> {
+        val exception = assertThrows<ConflictPersistenceException> {
             handler.invoke(requestContext, request)
         }
         assertThat(exception).hasMessageContaining("already exist with different parameters")

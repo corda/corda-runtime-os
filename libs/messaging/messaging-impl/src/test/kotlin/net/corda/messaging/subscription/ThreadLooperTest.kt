@@ -28,10 +28,12 @@ class ThreadLooperTest {
         lifecycleCoordinatorFactory,
         "",
         { },
-    ) { _, block ->
-        block()
-        thread
-    }
+        { _, block ->
+            block()
+            thread
+        },
+        callUntilStopped = false
+    )
 
     @Test
     fun `updateLifecycleStatus will update a running coordinate`() {

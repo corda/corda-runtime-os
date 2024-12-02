@@ -5,7 +5,9 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.messaging.api.publisher.Publisher
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
@@ -18,23 +20,28 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.Recor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeService
 import org.slf4j.Logger
 import java.time.Instant
+import javax.persistence.EntityManagerFactory
 
 @Suppress("LongParameterList")
 internal class CreateVirtualNodeOperationHandler(
     private val createVirtualNodeService: CreateVirtualNodeService,
     private val virtualNodeDbFactory: VirtualNodeDbFactory,
     private val recordFactory: RecordFactory,
-    statusPublisher: Publisher,
     private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator,
-    private val logger: Logger
-) : VirtualNodeAsyncOperationHandler<VirtualNodeCreateRequest>, AbstractVirtualNodeOperationHandler(statusPublisher, logger) {
+    private val logger: Logger,
+    entityManagerFactory: EntityManagerFactory,
+    virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
+) : VirtualNodeAsyncOperationHandler<VirtualNodeCreateRequest>, AbstractVirtualNodeOperationHandler(
+    entityManagerFactory,
+    virtualNodeRepository
+) {
 
     override fun handle(
         requestTimestamp: Instant,
         requestId: String,
         request: VirtualNodeCreateRequest
     ) {
-        publishStartProcessingStatus(requestId)
+        recordStartProcessingStatus(requestId, VirtualNodeOperationType.CREATE)
 
         try {
             val holdingId = request.holdingId.toCorda()
@@ -131,11 +138,11 @@ internal class CreateVirtualNodeOperationHandler(
                 )
             }
         } catch (e: Exception) {
-            publishErrorStatus(requestId, e.message ?: "Unexpected error")
+            recordErrorStatus(requestId, e.message ?: "Unexpected error", VirtualNodeOperationType.CREATE)
             throw e
         }
 
-        publishProcessingCompletedStatus(requestId)
+        recordProcessingCompletedStatus(requestId, VirtualNodeOperationType.CREATE)
     }
 
     private fun checkSchemasArePresentOnExternalDbs(

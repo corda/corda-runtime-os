@@ -10,6 +10,7 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
@@ -59,17 +60,17 @@ internal class PersistMemberInfoHandler(
                         val updatedMemberContext = deserialize(it.signedMemberContext.data.array())
                         val updatedMGMContext = deserialize(it.serializedMgmContext.array())
                         if (currentMemberContext.items != updatedMemberContext.items) {
-                            throw MembershipPersistenceException(
+                            throw ConflictPersistenceException(
                                 "Cannot update member info with same serial number " +
-                                    "(${newMemberInfo.serial}): member context differs from original."
+                                    "(${newMemberInfo.serial}) for member: '${newMemberInfo.name}': member context differs from original."
                             )
                         }
                         if (currentMgmContext.toMap().removeTime() != updatedMGMContext.toMap()
                                 .removeTime()
                         ) {
-                            throw MembershipPersistenceException(
+                            throw ConflictPersistenceException(
                                 "Cannot update member info with same serial number " +
-                                    "(${newMemberInfo.serial}): mgm context differs from original."
+                                    "(${newMemberInfo.serial}) for member: '${newMemberInfo.name}': mgm context differs from original."
                             )
                         }
                         return@forEach

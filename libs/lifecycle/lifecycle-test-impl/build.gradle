@@ -20,5 +20,5 @@ dependencies {
     implementation libs.mockito.core
     implementation libs.mockito.kotlin
     implementation 'net.corda:corda-base'
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
 }

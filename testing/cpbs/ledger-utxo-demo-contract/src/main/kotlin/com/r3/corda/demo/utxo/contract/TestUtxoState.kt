@@ -9,12 +9,15 @@ class TestUtxoState(
     val identifier: Int,
     val testField: String,
     private val participants: List<PublicKey>,
-    val participantNames: List<String>
+    val participantNames: List<String>,
+    val priority: Long? = null
 ) : ContractState {
 
     constructor(testField: String,
                 participants: List<PublicKey>,
-                participantNames: List<String>) : this(2, testField, participants, participantNames)
+                participantNames: List<String>,
+                priority: Long? = null) : this(2, testField, participants, participantNames, priority)
+
     override fun getParticipants(): List<PublicKey> {
         return participants
     }
@@ -22,6 +25,7 @@ class TestUtxoState(
     override fun toString(): String{
         return "testField: '$testField'; " +
                 "participants: $participants ;" +
-                "participantNames: $participantNames ;"
+                "participantNames: $participantNames ;" +
+                "priority: $priority ;"
     }
 }

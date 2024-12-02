@@ -5,6 +5,8 @@ import net.corda.rest.ResponseCode
 /**
  * Indicates a requested state change matches the resources current state
  *
- * @param message the exception message
+ * @param title the exception title
+ * @param exceptionDetails contains cause and reason
  */
-class InvalidStateChangeException(message: String) : HttpApiException(ResponseCode.CONFLICT, message)
+class InvalidStateChangeException(title: String, exceptionDetails: ExceptionDetails? = null) :
+    HttpApiException(ResponseCode.CONFLICT, title, exceptionDetails = exceptionDetails)

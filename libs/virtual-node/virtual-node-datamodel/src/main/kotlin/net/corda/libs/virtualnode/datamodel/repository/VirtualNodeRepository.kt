@@ -32,7 +32,7 @@ interface VirtualNodeRepository {
      * Find a virtual node operation by the given operation requestId
      * @throws VirtualNodeOperationNotFoundException
      */
-    fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): List<VirtualNodeOperationDto>
+    fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): VirtualNodeOperationDto
 
     /**
      * Stores virtual node operation into the DB

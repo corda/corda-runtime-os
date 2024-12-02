@@ -48,7 +48,6 @@ class CryptoRewrapBusProcessorTests {
 
     companion object {
         private val tenantId = UUID.randomUUID().toString()
-        private const val OLD_PARENT_KEY_ALIAS = "alias1"
         private const val WRAPPING_KEY_ALIAS = "alias"
         private const val DEFAULT_MASTER_WRAP_KEY_ALIAS = "defaultKeyAlias"
     }
@@ -117,14 +116,12 @@ class CryptoRewrapBusProcessorTests {
             cryptoService,
             stateManager,
             unmanagedCordaAvroSerializationFactory,
-            DEFAULT_MASTER_WRAP_KEY_ALIAS
         )
 
         managedCryptoRewrapBusProcessor = CryptoRewrapBusProcessor(
             cryptoService,
             stateManager,
             managedCordaAvroSerializationFactory,
-            DEFAULT_MASTER_WRAP_KEY_ALIAS
         )
     }
 
@@ -138,6 +135,7 @@ class CryptoRewrapBusProcessorTests {
                     IndividualKeyRotationRequest(
                         UUID.randomUUID().toString(),
                         tenantId,
+                        DEFAULT_MASTER_WRAP_KEY_ALIAS,
                         "alias1",
                         null,
                         KeyType.UNMANAGED
@@ -160,6 +158,7 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             null,
+                            DEFAULT_MASTER_WRAP_KEY_ALIAS,
                             "alias1",
                             null,
                             KeyType.UNMANAGED
@@ -183,6 +182,57 @@ class CryptoRewrapBusProcessorTests {
                         UUID.randomUUID().toString(),
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
+                            "",
+                            DEFAULT_MASTER_WRAP_KEY_ALIAS,
+                            "alias1",
+                            null,
+                            KeyType.UNMANAGED
+                        )
+                    )
+                )
+            ).isEmpty()
+        )
+
+        verify(cryptoService, never()).rewrapWrappingKey(any(), any(), any())
+        verify(stateManager, never()).update(any())
+    }
+
+    @Test
+    fun `unmanaged rewrap with null master wrapping key should be ignored`() {
+        assertTrue(
+            unmanagedCryptoRewrapBusProcessor.onNext(
+                listOf(
+                    Record(
+                        "TBC",
+                        UUID.randomUUID().toString(),
+                        IndividualKeyRotationRequest(
+                            UUID.randomUUID().toString(),
+                            tenantId,
+                            null,
+                            "alias1",
+                            null,
+                            KeyType.UNMANAGED
+                        )
+                    )
+                )
+            ).isEmpty()
+        )
+
+        verify(cryptoService, never()).rewrapWrappingKey(any(), any(), any())
+        verify(stateManager, never()).update(any())
+    }
+
+    @Test
+    fun `unmanaged rewrap with empty master wrapping key should be ignored`() {
+        assertTrue(
+            unmanagedCryptoRewrapBusProcessor.onNext(
+                listOf(
+                    Record(
+                        "TBC",
+                        UUID.randomUUID().toString(),
+                        IndividualKeyRotationRequest(
+                            UUID.randomUUID().toString(),
+                            tenantId,
                             "",
                             "alias1",
                             null,
@@ -208,6 +258,7 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
+                            DEFAULT_MASTER_WRAP_KEY_ALIAS,
                             null,
                             null,
                             KeyType.UNMANAGED
@@ -232,6 +283,7 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
+                            DEFAULT_MASTER_WRAP_KEY_ALIAS,
                             "",
                             "",
                             KeyType.UNMANAGED
@@ -256,6 +308,7 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
+                            DEFAULT_MASTER_WRAP_KEY_ALIAS,
                             "alias1",
                             UUID.randomUUID().toString(),
                             KeyType.UNMANAGED
@@ -281,6 +334,7 @@ class CryptoRewrapBusProcessorTests {
                         UUID.randomUUID().toString(),
                         tenantId,
                         null,
+                        null,
                         uuid.toString(),
                         KeyType.MANAGED
                     )
@@ -300,6 +354,7 @@ class CryptoRewrapBusProcessorTests {
                         UUID.randomUUID().toString(),
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
+                            null,
                             null,
                             null,
                             UUID.randomUUID().toString(),
@@ -326,6 +381,32 @@ class CryptoRewrapBusProcessorTests {
                             UUID.randomUUID().toString(),
                             "",
                             null,
+                            null,
+                            UUID.randomUUID().toString(),
+                            KeyType.MANAGED
+                        )
+                    )
+                )
+            ).isEmpty()
+        )
+
+        verify(cryptoService, never()).rewrapWrappingKey(any(), any(), any())
+        verify(stateManager, never()).update(any())
+    }
+
+    @Test
+    fun `managed rewrap with master wrapping key set should be ignored`() {
+        assertTrue(
+            managedCryptoRewrapBusProcessor.onNext(
+                listOf(
+                    Record(
+                        "TBC",
+                        UUID.randomUUID().toString(),
+                        IndividualKeyRotationRequest(
+                            UUID.randomUUID().toString(),
+                            tenantId,
+                            DEFAULT_MASTER_WRAP_KEY_ALIAS,
+                            "alias1",
                             UUID.randomUUID().toString(),
                             KeyType.MANAGED
                         )
@@ -349,6 +430,7 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
+                            null,
                             "alias1",
                             UUID.randomUUID().toString(),
                             KeyType.MANAGED
@@ -375,6 +457,7 @@ class CryptoRewrapBusProcessorTests {
                             tenantId,
                             null,
                             null,
+                            null,
                             KeyType.MANAGED
                         )
                     )
@@ -397,6 +480,7 @@ class CryptoRewrapBusProcessorTests {
                         IndividualKeyRotationRequest(
                             UUID.randomUUID().toString(),
                             tenantId,
+                            null,
                             null,
                             "",
                             KeyType.MANAGED
@@ -422,6 +506,7 @@ class CryptoRewrapBusProcessorTests {
                             UUID.randomUUID().toString(),
                             tenantId,
                             null,
+                            null,
                             "invalid uuid",
                             KeyType.MANAGED
                         )
@@ -445,6 +530,7 @@ class CryptoRewrapBusProcessorTests {
                     IndividualKeyRotationRequest(
                         UUID.randomUUID().toString(),
                         tenantId,
+                        null,
                         null,
                         uuid.toString(),
                         KeyType.MANAGED

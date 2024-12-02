@@ -4,11 +4,14 @@ import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
 import net.corda.libs.permissions.common.exception.EntityNotFoundException
+import net.corda.libs.permissions.common.exception.IllegalEntityStateException
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.Role
+import net.corda.permissions.model.RoleGroupAssociation
 import net.corda.permissions.model.RolePermissionAssociation
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
+import net.corda.permissions.model.UserProperty
 import javax.persistence.EntityManager
 
 class EntityValidationUtil(private val entityManager: EntityManager) {
@@ -54,11 +57,59 @@ class EntityValidationUtil(private val entityManager: EntityManager) {
         return entityManager.find(Role::class.java, roleId) ?: throw EntityNotFoundException("Role '$roleId' not found.")
     }
 
+    fun validateAndGetUniqueGroup(groupId: String): Group {
+        return entityManager.find(Group::class.java, groupId) ?: throw EntityNotFoundException("Group '$groupId' not found.")
+    }
+
     fun validateAndGetOptionalParentGroup(groupId: String?): Group? {
         return if (groupId != null) {
             requireEntityExists(Group::class.java, groupId)
         } else {
             null
+        }
+    }
+
+    fun validateRoleNotAlreadyAssignedToGroup(group: Group, roleId: String) {
+        if (group.roleGroupAssociations.any { it.role.id == roleId }) {
+            throw EntityAssociationAlreadyExistsException("Role '$roleId' is already associated with Group '${group.id}'.")
+        }
+    }
+
+    fun validateAndGetRoleAssociatedWithGroup(group: Group, roleId: String): RoleGroupAssociation {
+        val value = group.roleGroupAssociations.singleOrNull { it.role.id == roleId }
+        if (value == null) {
+            throw EntityAssociationDoesNotExistException("Role '$roleId' is not associated with Group '${group.id}'.")
+        } else {
+            return value
+        }
+    }
+
+    fun validateGroupIsEmpty(group: Group) {
+        val groupId = group.id
+
+        val subgroupsQuery = """
+            SELECT count(1) FROM ${Group::class.java.simpleName} 
+            WHERE ${Group::parentGroup.name}.${Group::id.name} = :groupId
+        """.trimIndent()
+
+        val numSubgroups = entityManager.createQuery(subgroupsQuery, Long::class.javaObjectType)
+            .setParameter("groupId", groupId)
+            .singleResult
+
+        val usersQuery = """
+            SELECT count(1) FROM ${User::class.java.simpleName} 
+            WHERE ${User::parentGroup.name}.${Group::id.name} = :groupId
+        """.trimIndent()
+
+        val numUsers = entityManager.createQuery(usersQuery, Long::class.javaObjectType)
+            .setParameter("groupId", groupId)
+            .singleResult
+
+        if (numSubgroups + numUsers > 0) {
+            throw IllegalEntityStateException(
+                "Group '$groupId' must be empty. " +
+                    "$numSubgroups subgroups and $numUsers users are associated with it."
+            )
         }
     }
 
@@ -72,6 +123,15 @@ class EntityValidationUtil(private val entityManager: EntityManager) {
         val value = user.roleUserAssociations.singleOrNull { it.role.id == roleId }
         if (value == null) {
             throw EntityAssociationDoesNotExistException("Role '$roleId' is not associated with User '${user.loginName}'.")
+        } else {
+            return value
+        }
+    }
+
+    fun validateAndGetPropertyByKey(user: User, propertyKey: String): UserProperty {
+        val value = user.userProperties.singleOrNull { it.key == propertyKey }
+        if (value == null) {
+            throw EntityAssociationDoesNotExistException("Property '$propertyKey' is not assigned to User '${user.loginName}'.")
         } else {
             return value
         }

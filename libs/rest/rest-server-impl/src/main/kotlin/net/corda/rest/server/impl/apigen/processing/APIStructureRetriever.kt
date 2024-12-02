@@ -10,22 +10,20 @@ import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.HttpWS
 import net.corda.rest.annotations.isRestEndpointAnnotation
 import net.corda.rest.annotations.retrieveApiVersionsSet
-import net.corda.rest.durablestream.DurableStreamContext
-import net.corda.rest.durablestream.api.isFiniteDurableStreamsMethod
-import net.corda.rest.durablestream.api.returnsDurableCursorBuilder
+import net.corda.rest.response.ResponseEntity
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
 import net.corda.rest.server.impl.apigen.models.InvocationMethod
 import net.corda.rest.server.impl.apigen.models.Resource
 import net.corda.rest.server.impl.apigen.models.ResponseBody
-import net.corda.rest.server.impl.apigen.processing.streams.DurableReturnResult
-import net.corda.rest.server.impl.apigen.processing.streams.FiniteDurableReturnResult
 import net.corda.rest.tools.annotations.extensions.name
 import net.corda.rest.tools.annotations.extensions.path
 import net.corda.rest.tools.annotations.extensions.title
 import net.corda.rest.tools.annotations.validation.RestInterfaceValidator
 import net.corda.rest.tools.isStaticallyExposedGet
+import net.corda.rest.tools.maxVersion
+import net.corda.rest.tools.methodDescription
 import net.corda.rest.tools.responseDescription
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -157,7 +155,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                 Endpoint(
                     EndpointMethod.GET,
                     annotation.title(method),
-                    annotation.description,
+                    method.methodDescription,
                     annotation.path(method),
                     method.retrieveParameters(),
                     ResponseBody(
@@ -167,8 +165,12 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                         method.toClassAndParameterizedTypes().second,
                         method.kotlinFunction?.returnType?.isMarkedNullable ?: false
                     ),
-                    method.getInvocationMethod(clazz),
-                    retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
+                    method.getInvocationMethod(clazz, transform = {
+                        val msg = "Method \"${method.name}\" is deprecated."
+                        log.warn(msg)
+                        ResponseEntity.okButDeprecated(it, msg)
+                    }),
+                    retrieveApiVersionsSet(annotation.minVersion, method.maxVersion)
                 )
             }
         }
@@ -254,7 +256,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
             annotation.title(this),
             annotation.description,
             annotation.path(),
-            retrieveParameters(true),
+            retrieveParameters(),
             responseBody,
             this.getInvocationMethod(),
             retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
@@ -263,38 +265,13 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
 
     private fun Method.createResponseBody(responseDescription: String, successCode: Int): ResponseBody {
         val isReturnTypeNullable = this.kotlinFunction?.returnType?.isMarkedNullable ?: false
-        val responseBody = when {
-            this.returnsDurableCursorBuilder() && !this.isFiniteDurableStreamsMethod() -> {
-                ResponseBody(
-                    responseDescription,
-                    successCode,
-                    DurableReturnResult::class.java,
-                    this.toClassAndParameterizedTypes().second,
-                    isReturnTypeNullable
-                )
-            }
-
-            this.isFiniteDurableStreamsMethod() -> {
-                ResponseBody(
-                    responseDescription,
-                    successCode,
-                    FiniteDurableReturnResult::class.java,
-                    this.toClassAndParameterizedTypes().second,
-                    isReturnTypeNullable
-                )
-            }
-
-            else -> {
-                ResponseBody(
-                    responseDescription,
-                    successCode,
-                    this.toClassAndParameterizedTypes().first,
-                    this.toClassAndParameterizedTypes().second,
-                    isReturnTypeNullable
-                )
-            }
-        }
-        return responseBody
+        return ResponseBody(
+            responseDescription,
+            successCode,
+            this.toClassAndParameterizedTypes().first,
+            this.toClassAndParameterizedTypes().second,
+            isReturnTypeNullable
+        )
     }
 
     private fun Method.toPUTEndpoint(annotation: HttpPUT): Endpoint {
@@ -306,7 +283,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
             annotation.title(this),
             annotation.description,
             annotation.path(),
-            retrieveParameters(true),
+            retrieveParameters(),
             responseBody,
             this.getInvocationMethod(),
             retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
@@ -333,7 +310,10 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
         ).also { log.trace { """"Method "$name" to WS endpoint completed.""" } }
     }
 
-    private fun Method.getInvocationMethod(clazz: Class<out RestResource>? = null): InvocationMethod {
+    private fun Method.getInvocationMethod(
+        clazz: Class<out RestResource>? = null,
+        transform: ((Any?) -> ResponseEntity<Any?>)? = null
+    ): InvocationMethod {
         try {
             log.debug { "Get invocation method for \"${this.name}\"." }
             return InvocationMethod(
@@ -342,7 +322,8 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                 // so direct class scanning now must also be checked
                 delegationTargetsMap[this.declaringClass]
                     ?: delegationTargetsMap[clazz]
-                    ?: throw NoSuchElementException("No valid implementation for  \"${this.declaringClass.name}#${this.name} \" found.")
+                    ?: throw NoSuchElementException("No valid implementation for  \"${this.declaringClass.name}#${this.name} \" found."),
+                transform
             ).also { log.trace { "Get invocation method for \"${this.name}\" completed." } }
         } catch (e: Exception) {
             "Error during Get invocation method for \"${this.name}\"".let {
@@ -356,20 +337,12 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
         return this.kotlinFunction?.parameters?.filter { it.kind == KParameter.Kind.VALUE } ?: emptyList()
     }
 
-    private fun Method.retrieveParameters(includeContextParam: Boolean = false): List<EndpointParameter> {
+    private fun Method.retrieveParameters(): List<EndpointParameter> {
         try {
             log.trace { """Retrieve parameters for method "$name".""" }
             val methodParams = this.kotlinValueKParameters().map { ParametersTransformerFactory.create(it).transform() }
-            val contextParam = ParametersTransformerFactory.create(
-                "context",
-                DurableStreamContext::class.java.toEndpointParameterParameterizedType()!!
-            )
-                .transform()
-
-            return when {
-                returnsDurableCursorBuilder() && includeContextParam -> methodParams.plus(contextParam)
-                else -> methodParams
-            }.also { log.trace { """Retrieve parameters for method "$name" completed.""" } }
+            log.trace { """Retrieve parameters for method "$name" completed.""" }
+            return methodParams
         } catch (e: Exception) {
             """Error during Retrieve parameters for method "$name".""".let {
                 log.error("$it: ${e.message}")

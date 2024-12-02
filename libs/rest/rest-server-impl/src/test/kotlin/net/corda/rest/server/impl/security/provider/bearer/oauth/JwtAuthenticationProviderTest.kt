@@ -2,6 +2,7 @@ package net.corda.rest.server.impl.security.provider.bearer.oauth
 
 import com.nimbusds.jose.proc.BadJOSEException
 import com.nimbusds.jwt.JWTParser
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.rest.security.read.RestSecurityManager
 import net.corda.rest.server.impl.security.TestRestResource
 import net.corda.rest.server.impl.security.provider.bearer.TestAdminSubject
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import javax.security.auth.login.FailedLoginException
@@ -26,7 +28,7 @@ class JwtAuthenticationProviderTest {
     private val permission = "InvokeRpc:${TestRestResource::class.java.name}#dummy2"
 
     private val restSecurityManager = mock<RestSecurityManager>().apply {
-        whenever(buildSubject(any())).thenReturn(TestAdminSubject(username))
+        whenever(buildSubject(any(), eq(PasswordExpiryStatus.ACTIVE))).thenReturn(TestAdminSubject(username))
     }
 
     private val provider = JwtAuthenticationProvider(jwtProcessor, claimExtractor, ::restSecurityManager)

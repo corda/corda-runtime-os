@@ -6,6 +6,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.membership.datamodel.GroupPolicyEntity
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.toCorda
@@ -44,7 +45,7 @@ internal class PersistGroupPolicyHandler(
             em.find(GroupPolicyEntity::class.java, request.version, LockModeType.PESSIMISTIC_WRITE)?.let {
                 val persistedProperties = keyValuePairListDeserializer.deserialize(it.properties)
                 if (persistedProperties != request.properties) {
-                    throw MembershipPersistenceException(
+                    throw ConflictPersistenceException(
                         "Cannot update group policy: a group policy with version ${request.version} already exists."
                     )
                 }

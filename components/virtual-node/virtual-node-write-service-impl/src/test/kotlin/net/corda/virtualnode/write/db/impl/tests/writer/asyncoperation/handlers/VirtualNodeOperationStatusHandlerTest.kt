@@ -41,7 +41,7 @@ class VirtualNodeOperationStatusHandlerTest {
     private val virtualNodeOperationDto = VirtualNodeOperationDto(
         requestId.toString(),
         "requestData",
-        "CREATE",
+        "UPGRADE",
         Instant.now(),
         Instant.now(),
         Instant.now(),
@@ -52,7 +52,7 @@ class VirtualNodeOperationStatusHandlerTest {
     @Test
     fun `OperationStatus handler returns VirtualNodeOperationStatusResponse if operation found`() {
         whenever(virtualNodeRepository.findVirtualNodeOperationByRequestId(em, requestId.toString()))
-            .thenReturn(listOf(virtualNodeOperationDto))
+            .thenReturn(virtualNodeOperationDto)
 
         val respFuture = CompletableFuture<VirtualNodeManagementResponse>()
 

@@ -164,9 +164,9 @@ class UtxoReceiveFinalityFlowV1Test {
         stxRefState
     )
     private val filteredTransaction = mock<UtxoFilteredTransaction>()
-    private val filteredTxAndSig = UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction, listOf(signatureNotary))
+    private val filteredTxAndSig = UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction, setOf(signatureNotary))
     private val filteredTransaction2 = mock<UtxoFilteredTransaction>()
-    private val filteredTxAndSig2 = UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction2, listOf(signatureNotary))
+    private val filteredTxAndSig2 = UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction2, setOf(signatureNotary))
     private val filteredTxPayload = listOf(filteredTxAndSig, filteredTxAndSig2)
     private val finalityPayload = FinalityPayload(signedTransaction, true)
     private val verifyingFinalityPayload = FinalityPayload(signedTransaction, true, filteredTxPayload)
@@ -259,8 +259,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             ID,
-            2,
-            listOf(signature3)
+            setOf(signature3)
         )
         verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
@@ -335,8 +334,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             ID,
-            2,
-            listOf(signature3)
+            setOf(signature3)
         )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
@@ -362,8 +360,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             ID,
-            2,
-            listOf(signature3)
+            setOf(signature3)
         )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
@@ -384,8 +381,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             ID,
-            2,
-            listOf(signature3)
+            setOf(signature3)
         )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.INVALID), any())
@@ -410,8 +406,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             ID,
-            2,
-            listOf(signature3)
+            setOf(signature3)
         )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
@@ -437,8 +432,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             ID,
-            2,
-            listOf(signature3)
+            setOf(signature3)
         )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
@@ -467,8 +461,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService, times(1)).persist(signedTransactionWith1Key, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             ID,
-            1,
-            listOf()
+            setOf()
         )
         verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1)))
@@ -537,8 +530,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService, times(1)).persist(signedTransaction, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             ID,
-            1,
-            listOf()
+            setOf()
         )
         verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
     }
@@ -651,8 +643,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             ID,
-            2,
-            listOf(signature3)
+            setOf(signature3)
         )
     }
 
@@ -692,7 +683,7 @@ class UtxoReceiveFinalityFlowV1Test {
             whenever(it.notaryName).thenReturn(notaryX500Name)
         }
 
-        val filteredTxAndSig = UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction, listOf(signatureAnotherNotary))
+        val filteredTxAndSig = UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction, setOf(signatureAnotherNotary))
         val filteredTxPayload = listOf(filteredTxAndSig)
         val finalityPayload = FinalityPayload(signedTransaction, true, filteredTxPayload)
 
@@ -834,7 +825,7 @@ class UtxoReceiveFinalityFlowV1Test {
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining(
-                "Missing input state and ref from the filtered transaction"
+                "Missing input state and ref $stxInputState from the filtered transaction"
             )
 
         // assert that the filtered transaction receives and dependencies don't match
@@ -856,7 +847,32 @@ class UtxoReceiveFinalityFlowV1Test {
         assertThatThrownBy { callReceiveFinalityFlow() }
 
         // assert persisting filtered transactions and signatures never happened since they are invalid.
-        verify(persistenceService, never()).persistFilteredTransactionsAndSignatures(listOf(filteredTxAndSig, filteredTxAndSig2))
+        verify(persistenceService, never())
+            .persistFilteredTransactionsAndSignatures(
+                listOf(filteredTxAndSig, filteredTxAndSig2),
+                listOf(stxInputState),
+                listOf(stxRefState)
+            )
+    }
+
+    @Test
+    fun `do not persist existing transaction signatures when receiving signatures from peers`() {
+        whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
+        whenever(session.receive(List::class.java)).thenReturn(listOf(signature1, signature2, signature3))
+        whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
+
+        callReceiveFinalityFlow()
+
+        verify(signedTransaction).addMissingSignatures()
+
+        verify(signedTransactionWithOwnKeys).addSignature(signature3)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            ID,
+            setOf(signature3)
+        )
+        verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
+        verify(session).send(Payload.Success(listOf(signature1, signature2)))
     }
 
     private fun callReceiveFinalityFlow(validator: UtxoTransactionValidator = UtxoTransactionValidator { }) {

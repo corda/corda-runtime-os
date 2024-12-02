@@ -95,7 +95,7 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
 
         storedFilteredTransactions.clear()
         whenever(mockGroupParametersLookup.currentGroupParameters).thenReturn(groupParameters)
-        whenever(mockPersistenceService.persistFilteredTransactionsAndSignatures(any())).thenAnswer {
+        whenever(mockPersistenceService.persistFilteredTransactionsAndSignatures(any(), any(), any())).thenAnswer {
             @Suppress("unchecked_cast")
             storedFilteredTransactions.addAll(it.arguments.first() as List<UtxoFilteredTransactionAndSignatures>)
         }

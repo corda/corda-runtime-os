@@ -1,6 +1,6 @@
 package net.corda.ledger.common.testkit
 
-import net.corda.common.json.validation.JsonValidator
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.WireTransaction

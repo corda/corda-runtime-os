@@ -24,6 +24,6 @@ dependencies {
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-crypto-extensions'
-    cordaProvided 'org.slf4j:slf4j-api'
+    cordaProvided libs.slf4j.api
     implementation libs.jackson.annotations
 }

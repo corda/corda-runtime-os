@@ -120,6 +120,30 @@ class SigningServiceImpl @Activate constructor(
         return recordSuspendable({ cryptoFlowTimer("findMySigningKeys") }, operation)
     }
 
+    override fun decodePublicKey(encodedKey: ByteArray): PublicKey {
+        return recordSuspendable({ cryptoFlowTimer("decodePublicKeyFromByteArray") }) {
+            keyEncodingService.decodePublicKey(encodedKey)
+        }
+    }
+
+    override fun decodePublicKey(encodedKey: String): PublicKey {
+        return recordSuspendable({ cryptoFlowTimer("decodePublicKeyFromString") }) {
+            keyEncodingService.decodePublicKey(encodedKey)
+        }
+    }
+
+    override fun encodeAsByteArray(publicKey: PublicKey): ByteArray {
+        return recordSuspendable({ cryptoFlowTimer("encodePublicKeyToByteArray") }) {
+            keyEncodingService.encodeAsByteArray(publicKey)
+        }
+    }
+
+    override fun encodeAsString(publicKey: PublicKey): String {
+        return recordSuspendable({ cryptoFlowTimer("encodePublicKeyToString") }) {
+            keyEncodingService.encodeAsString(publicKey)
+        }
+    }
+
     private fun cryptoFlowTimer(operationName: String): Timer {
         return CordaMetrics.Metric.CryptoOperationsFlowTime
             .builder()

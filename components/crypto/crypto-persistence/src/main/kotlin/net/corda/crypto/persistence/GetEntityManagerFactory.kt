@@ -1,6 +1,6 @@
 package net.corda.crypto.persistence
 
-import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.ShortHash
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
@@ -20,9 +20,10 @@ fun getEntityManagerFactory(
         .withTag(CordaMetrics.Tag.Tenant, tenantId)
         .build()
         .recordCallable {
-            val onCluster = CryptoTenants.isClusterTenant(tenantId)
+            val onCluster = ClusterCryptoDb.isReferencingClusterDb(tenantId)
             val entityManagerFactory = if (onCluster) {
-                // tenantID is crypto, P2P or REST; let's obtain a connection to our cluster Crypto database
+                // tenantID is either CryptoTenant.P2P or the cluster crypto database identifier;
+                // let's obtain a connection to our cluster Crypto database
                 dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
             } else {
                 // tenantID is a virtual node; let's connect to one of the virtual node Crypto databases

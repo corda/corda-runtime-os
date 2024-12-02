@@ -7,7 +7,9 @@ import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.ErrorKind
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.membership.impl.persistence.service.handler.HandlerFactories
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
@@ -40,6 +42,8 @@ internal class MembershipPersistenceRPCProcessor(
             logger.warn(error)
             val kind = when (e) {
                 is InvalidEntityUpdateException -> ErrorKind.INVALID_ENTITY_UPDATE
+                is NotFoundEntityPersistenceException -> ErrorKind.NOT_FOUND
+                is ConflictPersistenceException -> ErrorKind.CONFLICT
                 else -> ErrorKind.GENERAL
             }
             PersistenceFailedResponse(error, kind)

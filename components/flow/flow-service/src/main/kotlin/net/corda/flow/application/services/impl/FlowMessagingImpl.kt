@@ -7,6 +7,7 @@ import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
+import net.corda.flow.application.sessions.utils.SessionUtils.checkPayloadMaxSize
 import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
 import net.corda.flow.application.versioning.impl.sessions.VersionReceivingFlowSession
 import net.corda.flow.application.versioning.impl.sessions.VersionSendingFlowSession
@@ -160,6 +161,7 @@ class FlowMessagingImpl @Activate constructor(
         @Suppress("unchecked_cast")
         val flowSessionInternals = sessions as Set<FlowSessionInternal>
         val serializedPayload = serialize(payload)
+        checkPayloadMaxSize(serializedPayload, flowFiberService)
         val sessionToPayload = flowSessionInternals.associate { session ->
             verifySessionStatusNotErrorOrClose(session.getSessionId(), flowFiberService)
             session.getSessionInfo() to when (session) {
@@ -179,9 +181,11 @@ class FlowMessagingImpl @Activate constructor(
         val sessionPayload = payloadsPerSession.map { (session, payload) ->
             val flowSessionInternal = session as FlowSessionInternal
             verifySessionStatusNotErrorOrClose(session.getSessionId(), flowFiberService)
+            val serializedPayload = serialize(payload)
+            checkPayloadMaxSize(serializedPayload, flowFiberService)
             flowSessionInternal.getSessionInfo() to when (session) {
-                is VersionSendingFlowSession -> session.getPayloadToSend(serialize(payload))
-                else -> serialize(payload)
+                is VersionSendingFlowSession -> session.getPayloadToSend(serializedPayload)
+                else -> serializedPayload
             }
         }.toMap()
         fiber.suspend(FlowIORequest.Send(sessionPayload))

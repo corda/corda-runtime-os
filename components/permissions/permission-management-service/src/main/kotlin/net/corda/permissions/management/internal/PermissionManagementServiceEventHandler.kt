@@ -151,7 +151,7 @@ internal class PermissionManagementServiceEventHandler(
 
         basicAuthenticationService?.stop()
         log.info("Creating and starting basic authentication service using permission system.")
-        basicAuthenticationService = permissionManagerFactory.createBasicAuthenticationService(permissionManagementCacheRef)
+        basicAuthenticationService = permissionManagerFactory.createBasicAuthenticationService(rbacConfig, permissionManagementCacheRef)
             .also { it.start() }
     }
 

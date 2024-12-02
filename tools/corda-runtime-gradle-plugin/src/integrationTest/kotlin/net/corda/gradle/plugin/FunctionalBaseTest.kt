@@ -1,6 +1,7 @@
 package net.corda.gradle.plugin
 
 import io.javalin.Javalin
+import io.javalin.config.JavalinConfig
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.BuildTask
 import org.gradle.testkit.runner.GradleRunner
@@ -12,11 +13,11 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.File
 
 // https://docs.gradle.org/current/userguide/test_kit.html
-abstract class FunctionalBaseTest : Javalin() {
-
+abstract class FunctionalBaseTest : Javalin(JavalinConfig()) {
     @field:TempDir
     lateinit var projectDir: File
     protected lateinit var buildFile: File
+    private lateinit var networkPath: String
 
     protected var restHostname = "localhost"
     protected var restPort = 8888
@@ -54,16 +55,28 @@ abstract class FunctionalBaseTest : Javalin() {
         sourceConfigFolder.absoluteFile.copyRecursively(targetConfigFolder)
     }
 
-    fun appendCordaRuntimeGradlePluginExtension(restProtocol: String = "https", appendArtifactoryCredentials: Boolean = false) {
+    fun appendCordaRuntimeGradlePluginExtension(
+        restProtocol: String = "https",
+        appendArtifactoryCredentials: Boolean = false,
+        isStaticNetwork: Boolean = true
+    ) {
+
+        networkPath = if (isStaticNetwork) {
+            "config/static-network-config.json"
+        } else {
+            "config/dynamic-network-config.json"
+        }
+
         buildFile.appendText(
             """
             cordaRuntimeGradlePlugin {
                 cordaClusterURL = "$restProtocol://$restHostnameWithPort"
                 cordaRestUser = "admin"
                 cordaRestPasswd ="admin"
-                notaryVersion = "5.2.0.0-beta-1706865687074"
+                notaryVersion = "5.3.0.0-HC01"
+                runtimeVersion = "5.3.0.0-HC01"
                 composeFilePath = "config/combined-worker-compose.yml"
-                networkConfigFile = "config/static-network-config.json"
+                networkConfigFile = "$networkPath"
                 r3RootCertFile = "config/r3-ca-key.pem"
                 corDappCpiName = "MyCorDapp"
                 notaryCpiName = "NotaryServer"
@@ -102,6 +115,13 @@ abstract class FunctionalBaseTest : Javalin() {
             """.trimIndent()
         }
         buildFile.writeText(newContent)
+    }
+
+    /**
+     * Allow tests to edit the network config file
+     */
+    fun getNetworkConfigFile() : File {
+        return File("$projectDir/$networkPath")
     }
 
     fun executeWithRunner(vararg args: String): BuildResult {

@@ -1,6 +1,7 @@
 package net.corda.processors.p2p.linkmanager.internal
 
 import com.typesafe.config.ConfigValueFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -49,6 +50,8 @@ class LinkManagerProcessorImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = SubscriptionFactory::class)
@@ -124,6 +127,7 @@ class LinkManagerProcessorImpl @Activate constructor(
                     publisherFactory,
                     coordinatorFactory,
                     configurationReadService,
+                    cordaAvroSerializationFactory,
                     configMerger.getMessagingConfig(event.config),
                     groupPolicyProvider,
                     virtualNodeInfoReadService,

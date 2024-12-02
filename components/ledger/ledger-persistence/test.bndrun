@@ -45,6 +45,7 @@
     bnd.identity;id='org.postgresql.jdbc',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
+    bnd.identity;id='com.opencsv',\
     bnd.identity;id='slf4j.simple'
 
 -runstartlevel: \

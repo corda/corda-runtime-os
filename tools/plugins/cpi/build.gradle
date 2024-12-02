@@ -1,0 +1,28 @@
+plugins {
+    id 'distribution'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
+}
+
+ext {
+    releasable = false
+}
+
+ext.cordaEnableFormatting = true
+
+group 'net.corda.cli.deployment'
+
+dependencies {
+
+    implementation project(':libs:rest:generated-rest-client')
+    implementation project(":libs:virtual-node:cpi-upload-endpoints")
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-db-schema'
+
+    implementation project(":tools:plugins:plugins-rest")
+    implementation project(':tools:plugins:common-utils')
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
+
+    testImplementation libs.bundles.test
+}

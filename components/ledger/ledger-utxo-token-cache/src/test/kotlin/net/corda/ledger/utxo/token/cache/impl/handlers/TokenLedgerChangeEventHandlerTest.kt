@@ -30,7 +30,7 @@ class TokenLedgerChangeEventHandlerTest {
 
         assertThat(result).isNull()
 
-        verify(tokenCache, never()).add(any())
+        verify(tokenCache, never()).add(any(), any())
     }
 
     @Test

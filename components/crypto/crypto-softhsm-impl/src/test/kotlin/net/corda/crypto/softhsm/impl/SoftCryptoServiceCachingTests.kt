@@ -6,8 +6,8 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.TenantInfoService
@@ -19,6 +19,7 @@ import net.corda.crypto.softhsm.impl.infra.makePrivateKeyCache
 import net.corda.crypto.softhsm.impl.infra.makeShortHashCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
+import net.corda.utilities.toByteArray
 import net.corda.v5.base.util.EncodingUtils
 import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
@@ -62,7 +63,7 @@ class SoftCryptoServiceCachingTests {
         val rootWrappingKey =
             CountingWrappingKey(WrappingKeyImpl.generateWrappingKey(schemeMetadata), wrapCount, unwrapCount)
 
-        val vnodeTenantId = EncodingUtils.toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
+        val vnodeTenantId = EncodingUtils.toHex(UUID.randomUUID().toByteArray().sha256Bytes()).take(12)
         val clusterWrappingRepository = TestWrappingRepository()
         val vnodeWrappingRepository = TestWrappingRepository()
         val tenantInfoService = mock<TenantInfoService>()
@@ -86,7 +87,7 @@ class SoftCryptoServiceCachingTests {
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             wrappingRepositoryFactory = {
                 when (it) {
-                    CryptoTenants.CRYPTO -> clusterWrappingRepository
+                    ClusterCryptoDb.SCHEMA_NAME -> clusterWrappingRepository
                     else -> vnodeWrappingRepository
                 }
             },

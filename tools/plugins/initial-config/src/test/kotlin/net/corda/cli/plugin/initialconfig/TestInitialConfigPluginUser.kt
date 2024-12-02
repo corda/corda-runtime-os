@@ -11,7 +11,7 @@ class TestInitialConfigPluginUser {
     @Test
     fun testSetupScript() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = tapSystemOutNormalized {
             CommandLine(
@@ -31,7 +31,7 @@ class TestInitialConfigPluginUser {
     @Test
     fun testSetupScriptMissingUser() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = tapSystemErrNormalized {
             CommandLine(
@@ -44,7 +44,7 @@ class TestInitialConfigPluginUser {
     @Test
     fun testSetupScriptNoPassword() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = tapSystemOutNormalized {
             CommandLine(

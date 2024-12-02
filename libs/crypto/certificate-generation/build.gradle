@@ -12,4 +12,11 @@ dependencies {
     implementation 'net.corda:corda-crypto'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation project(':libs:crypto:cipher-suite')
+    implementation libs.javalin
+    constraints {
+        implementation(libs.bundles.jetty) {
+            because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048, CVE-2023-26049 ' +
+                    'and CVE-2023-36478. This might be resolved in the future versions of Javalin.'
+        }
+    }
 }

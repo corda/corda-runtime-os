@@ -3,8 +3,8 @@ package net.corda.cli.plugins.packaging
 import java.nio.file.Files
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
-import net.corda.cli.plugins.packaging.signing.SigningHelpers
 import net.corda.cli.plugins.packaging.signing.SigningOptions
+import net.corda.sdk.packaging.signing.CpxSigner
 import picocli.CommandLine
 
 @CommandLine.Command(
@@ -34,27 +34,19 @@ class SignCpx : Runnable {
         val signedCpxPath = requireFileDoesNotExist(outputSignedCpxFile)
 
         if (multipleSignatures) {
-            SigningHelpers.sign(
+            CpxSigner.sign(
                 cpxFilePath,
                 signedCpxPath,
-                signingOptions.keyStoreFileName,
-                signingOptions.keyStorePass,
-                signingOptions.keyAlias,
-                signingOptions.sigFile,
-                signingOptions.tsaUrl
+                signingOptions.asSigningOptionsSdk
             )
         } else {
             val removedSignaturesCpx = Files.createTempFile("removedSignaturesCpx", null)
             try {
-                SigningHelpers.removeSignatures(cpxFilePath, removedSignaturesCpx)
-                SigningHelpers.sign(
+                CpxSigner.removeSignatures(cpxFilePath, removedSignaturesCpx)
+                CpxSigner.sign(
                     removedSignaturesCpx,
                     signedCpxPath,
-                    signingOptions.keyStoreFileName,
-                    signingOptions.keyStorePass,
-                    signingOptions.keyAlias,
-                    signingOptions.sigFile,
-                    signingOptions.tsaUrl
+                    signingOptions.asSigningOptionsSdk
                 )
             } finally {
                 Files.deleteIfExists(removedSignaturesCpx)

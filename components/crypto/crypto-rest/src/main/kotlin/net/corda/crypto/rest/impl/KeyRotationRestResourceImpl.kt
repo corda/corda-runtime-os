@@ -182,6 +182,10 @@ class KeyRotationRestResourceImpl @Activate constructor(
             "State manager for key rotation is not initialised."
         }
 
+        if (tenantId.isEmpty() || tenantId.isBlank()) throw InvalidInputDataException(
+            "Cannot retrieve key rotation status. TenantId is not specified."
+        )
+
         when (tenantId) {
             MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER -> { // do unmanaged key rotation status
                 val records = stateManager.findByMetadataMatchingAll(
@@ -210,7 +214,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
                 val deserializedValueOfOneRecord =
                     checkNotNull(unmanagedKeyStatusDeserializer.deserialize(records.first().value))
                 return KeyRotationStatusResponse(
-                    MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER,
+                    records.first().metadata[KeyRotationMetadataValues.DEFAULT_MASTER_KEY_ALIAS].toString(),
                     rotationStatus,
                     deserializedValueOfOneRecord.createdTimestamp,
                     getLatestTimestamp(records),
@@ -259,10 +263,9 @@ class KeyRotationRestResourceImpl @Activate constructor(
             }
         }
 
-        if (tenantId.isEmpty()) throw InvalidInputDataException(
+        if (tenantId.isEmpty() || tenantId.isBlank()) throw InvalidInputDataException(
             "Cannot start key rotation. TenantId is not specified."
         )
-
 
         return if (tenantId == MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER) {
             doKeyRotation(publishRequests = { publishToKafka!!.publish(it) })

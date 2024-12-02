@@ -16,7 +16,7 @@ class EndpointMinMaxVersionValidatorTest {
         @HttpRestResource
         abstract class TestInterface : RestResource {
 
-            @HttpGET(minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_2)
+            @HttpGET(minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_3)
             abstract fun test()
         }
 

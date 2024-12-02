@@ -1,15 +1,15 @@
 package net.corda.libs.cpiupload.endpoints.v1
 
-import net.corda.rest.RestResource
 import net.corda.rest.HttpFileUpload
-import net.corda.rest.annotations.HttpGET
-import net.corda.rest.annotations.RestPathParameter
-import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.RestResource
 import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestPathParameter
 
 @HttpRestResource(
-    name = "CPI API",
+    name = "CPI",
     description = "The CPI API consists of a number of endpoints used to manage Corda Package Installer (CPI) " +
             "files in the Corda cluster.",
     path = "cpi"

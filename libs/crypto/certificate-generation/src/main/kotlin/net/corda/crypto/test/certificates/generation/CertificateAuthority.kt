@@ -42,7 +42,7 @@ interface CertificateAuthority {
      *
      * @param publicKey -
      * @param hosts - the list of hosts.
-     * @return The generated certificate.
+     * @return The generated certificates.
      */
     fun generateCertificates(hosts: Collection<String>, publicKey: PublicKey): Collection<Certificate>
 

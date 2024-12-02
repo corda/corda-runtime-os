@@ -11,7 +11,7 @@ import javax.net.ssl.X509KeyManager
 
 class SNIKeyManager(
     private val keyManager: X509ExtendedKeyManager,
-): X509ExtendedKeyManager(),
+) : X509ExtendedKeyManager(),
     X509KeyManager by keyManager {
 
     private val logger = LoggerFactory.getLogger(SNIKeyManager::class.java)
@@ -36,7 +36,7 @@ class SNIKeyManager(
         logger.debug("Checking aliases: ${aliases.joinToString(",")}")
         return (matcher as? HostnameMatcher)?.let { hostMatcher ->
             aliases.firstOrNull { alias ->
-                when(hostMatcher.aliasMatch(alias)) {
+                when (hostMatcher.aliasMatch(alias)) {
                     HostnameMatcher.MatchType.NONE -> false
                     HostnameMatcher.MatchType.C4 -> true
                     HostnameMatcher.MatchType.C5 -> {
@@ -46,7 +46,7 @@ class SNIKeyManager(
                             val issuesrsSet = issuers.toSet()
                             val certificate = keyManager.getCertificateChain(alias).lastOrNull()
                             val issuer = certificate?.issuerX500Principal
-                            if (issuer==null) {
+                            if (issuer == null) {
                                 false
                             } else {
                                 issuesrsSet.contains(issuer)

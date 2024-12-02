@@ -1,7 +1,7 @@
 package net.corda.ledger.persistence.utxo
 
-import net.corda.ledger.persistence.common.mapToComponentGroups
-import net.corda.ledger.persistence.utxo.impl.UtxoComponentGroupMapper
+import net.corda.ledger.libs.persistence.common.mapToComponentGroups
+import net.corda.ledger.libs.persistence.utxo.impl.UtxoComponentGroupMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -19,6 +19,7 @@ class UtxoComponentGroupMapperTest {
     private fun mockTuple(values: List<Any>) =
         mock<Tuple>().apply {
             whenever(this.get(anyInt())).thenAnswer { invocation -> values[invocation.arguments[0] as Int] }
+            whenever(this.toArray()).thenAnswer { values.toTypedArray() }
         }
 
     @Test

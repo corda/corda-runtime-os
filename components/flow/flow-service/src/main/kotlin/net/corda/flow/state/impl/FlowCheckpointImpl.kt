@@ -18,6 +18,7 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowContext
 import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
+import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_MAX_PAYLOAD
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
@@ -139,6 +140,9 @@ class FlowCheckpointImpl(
 
     override val maxMessageSize: Long
         get() = config.getLong(MAX_ALLOWED_MSG_SIZE)
+
+    override val maxPayloadSize: Long
+        get() = config.getLong(SESSION_FLOW_MAX_PAYLOAD)
 
     override val initialPlatformVersion: Int
         get() = checkpoint.initialPlatformVersion

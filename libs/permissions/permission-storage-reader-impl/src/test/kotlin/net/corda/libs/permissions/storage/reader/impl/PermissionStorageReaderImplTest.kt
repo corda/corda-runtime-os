@@ -335,7 +335,7 @@ class PermissionStorageReaderImplTest {
         whenever(permissionRepository.findAllRoles()).thenReturn(listOf(role))
         whenever(permissionRepository.findAllPermissions()).thenReturn(listOf(permission))
 
-        val summariesDb = mapOf(user.loginName to InternalUserPermissionSummary(user.loginName, true, emptyList(), Instant.now()))
+        val summariesDb = mapOf(user.loginName to InternalUserPermissionSummary(user.loginName, true, sortedSetOf(), Instant.now()))
         val summariesCached = mapOf(user.loginName to avroSummaryEmptyPermissions)
         whenever(permissionRepository.findAllPermissionSummaries()).thenReturn(summariesDb)
         whenever(permissionValidationCache.permissionSummaries).thenReturn(summariesCached)
@@ -348,7 +348,7 @@ class PermissionStorageReaderImplTest {
         val groupRecord = Record(REST_PERM_GROUP_TOPIC, group.id, avroGroup)
         val roleRecord = Record(REST_PERM_ROLE_TOPIC, role.id, avroRole)
         val permissionRecord = Record(REST_PERM_ENTITY_TOPIC, permission.id, avroPermission)
-        val permissionSummayRecord = Record(PERMISSIONS_USER_SUMMARY_TOPIC, user.loginName, avroSummaryWithPermission)
+        val permissionSummaryRecord = Record(PERMISSIONS_USER_SUMMARY_TOPIC, user.loginName, avroSummaryWithPermission)
 
         val captor = argumentCaptor<List<Record<String, Any>>>()
         verify(publisher, times(5)).publish(captor.capture())
@@ -356,7 +356,7 @@ class PermissionStorageReaderImplTest {
         assertEquals(listOf(groupRecord), captor.secondValue)
         assertEquals(listOf(roleRecord), captor.thirdValue)
         assertEquals(listOf(permissionRecord), captor.allValues[3])
-        assertEquals(listOf(permissionSummayRecord), captor.allValues[4])
+        assertEquals(listOf(permissionSummaryRecord), captor.allValues[4])
     }
 
     @Test
@@ -383,7 +383,7 @@ class PermissionStorageReaderImplTest {
         val groupRecord = Record(REST_PERM_GROUP_TOPIC, group.id, value = null)
         val roleRecord = Record(REST_PERM_ROLE_TOPIC, role.id, value = null)
         val permissionRecord = Record(REST_PERM_ENTITY_TOPIC, permission.id, value = null)
-        val permissionSummayRecord = Record(PERMISSIONS_USER_SUMMARY_TOPIC, user.loginName, null)
+        val permissionSummaryRecord = Record(PERMISSIONS_USER_SUMMARY_TOPIC, user.loginName, null)
 
         val captor = argumentCaptor<List<Record<String, Any>>>()
         verify(publisher, times(5)).publish(captor.capture())
@@ -391,7 +391,7 @@ class PermissionStorageReaderImplTest {
         assertEquals(listOf(groupRecord), captor.secondValue)
         assertEquals(listOf(roleRecord), captor.thirdValue)
         assertEquals(listOf(permissionRecord), captor.allValues[3])
-        assertEquals(listOf(permissionSummayRecord), captor.allValues[4])
+        assertEquals(listOf(permissionSummaryRecord), captor.allValues[4])
     }
 
     @Test
@@ -525,7 +525,7 @@ class PermissionStorageReaderImplTest {
 
     @Test
     fun `reconcilePermissionSummaries does not publish empty list when no users need reconciled`() {
-        val summariesDb = mapOf(user.loginName to InternalUserPermissionSummary(user.loginName, true, emptyList(), Instant.now()))
+        val summariesDb = mapOf(user.loginName to InternalUserPermissionSummary(user.loginName, true, sortedSetOf(), Instant.now()))
         val summariesCached = mapOf(user.loginName to avroSummaryEmptyPermissions)
         whenever(permissionRepository.findAllPermissionSummaries()).thenReturn(summariesDb)
         whenever(permissionValidationCache.permissionSummaries).thenReturn(summariesCached)
@@ -539,8 +539,8 @@ class PermissionStorageReaderImplTest {
     @Test
     fun `reconcilePermissionSummaries publishes records for users requiring reconciliation`() {
         val summariesDb = mapOf(
-            "login1" to InternalUserPermissionSummary("login1", true, emptyList(), Instant.now()),
-            "login2" to InternalUserPermissionSummary("login2", true, emptyList(), Instant.now()),
+            "login1" to InternalUserPermissionSummary("login1", true, sortedSetOf(), Instant.now()),
+            "login2" to InternalUserPermissionSummary("login2", true, sortedSetOf(), Instant.now()),
         )
         val summariesCached = mapOf(
             "login3" to AvroUserPermissionSummary("login3", true, listOf(AvroPermissionSummary()), Instant.now())

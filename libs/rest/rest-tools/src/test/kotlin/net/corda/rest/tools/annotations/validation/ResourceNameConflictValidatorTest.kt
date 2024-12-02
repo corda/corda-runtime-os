@@ -35,13 +35,13 @@ class ResourceNameConflictValidatorTest {
 
     @Test
     fun `validate withResourceDuplicateNamesDifferentVersions errorListIsEmpty`() {
-        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_1)
+        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_2)
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
         }
 
-        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_2, maxVersion = RestApiVersion.C5_2)
+        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_3, maxVersion = RestApiVersion.C5_3)
         class TestInterface2 : RestResource {
             override val protocolVersion: Int
                 get() = 1
@@ -59,13 +59,13 @@ class ResourceNameConflictValidatorTest {
 
     @Test
     fun `validate withResourceDuplicateNamesOverlappingVersions errorListContainsMessage`() {
-        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_1)
+        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_2)
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
         }
 
-        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_2)
+        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_2, maxVersion = RestApiVersion.C5_3)
         class TestInterface2 : RestResource {
             override val protocolVersion: Int
                 get() = 1
@@ -84,13 +84,13 @@ class ResourceNameConflictValidatorTest {
 
     @Test
     fun `validate withResourceDuplicateNamesContainedVersions errorListContainsMessage`() {
-        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_2)
+        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_3)
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
         }
 
-        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_1)
+        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_2, maxVersion = RestApiVersion.C5_2)
         class TestInterface2 : RestResource {
             override val protocolVersion: Int
                 get() = 1
@@ -109,19 +109,19 @@ class ResourceNameConflictValidatorTest {
 
     @Test
     fun `validate withResourceDuplicateNamesMultipleConflicts errorListContainsMessages`() {
-        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_0)
+        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_1)
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
         }
 
-        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_2, maxVersion = RestApiVersion.C5_2)
+        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_3, maxVersion = RestApiVersion.C5_3)
         class TestInterface2 : RestResource {
             override val protocolVersion: Int
                 get() = 1
         }
 
-        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_2)
+        @HttpRestResource(path = "test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_3)
         class TestInterface3 : RestResource {
             override val protocolVersion: Int
                 get() = 1

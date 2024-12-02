@@ -11,6 +11,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -55,6 +56,26 @@ internal class ReconcilerEventHandlerTest {
         reconcilerEventHandler.processEvent(updateIntervalEvent, coordinator)
         verify(coordinator).setTimer(eq(reconcilerEventHandler.name), eq(updateIntervalEvent.intervalMs), any())
         assertEquals(updateIntervalEvent.intervalMs, reconcilerEventHandler.reconciliationIntervalMs)
+    }
+
+    @Test
+    fun `on updating reconciliation with same interval does not update timer`() {
+        reconcilerEventHandler =
+            ReconcilerEventHandler(
+                mock(),
+                mock(),
+                mock(),
+                String::class.java,
+                Int::class.java,
+                1000L,
+                forceInitialReconciliation = false,
+            )
+
+        val updateIntervalEvent = ReconcilerEventHandler.UpdateIntervalEvent(1000L)
+        val coordinator = mock<LifecycleCoordinator>()
+
+        reconcilerEventHandler.processEvent(updateIntervalEvent, coordinator)
+        verify(coordinator, times(0)).setTimer(eq(reconcilerEventHandler.name), any(), any())
     }
 
     private val dbRecord = object : VersionedRecord<String, Int> {

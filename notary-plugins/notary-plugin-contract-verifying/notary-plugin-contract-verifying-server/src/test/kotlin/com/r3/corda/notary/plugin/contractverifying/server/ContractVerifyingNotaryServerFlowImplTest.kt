@@ -136,7 +136,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
     private val filteredTxAndSignature = UtxoFilteredTransactionAndSignaturesImpl(
         filteredTransaction,
-        listOf(notarySignatureAlice)
+        setOf(notarySignatureAlice)
     )
     private val filteredTxsAndSignatures = listOf(filteredTxAndSignature)
 
@@ -261,7 +261,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         )
         val filteredTransactionSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
-            listOf(notarySignatureAlice)
+            setOf(notarySignatureAlice)
         )
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
             ContractVerifyingNotarizationPayload(
@@ -396,7 +396,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(filteredTransaction.outputStateAndRefs).thenReturn(mockOutputStateProof)
         val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
-            listOf(notarySignatureAlice)
+            setOf(notarySignatureAlice)
         )
 
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
@@ -422,7 +422,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(filteredTransaction.verify()).thenThrow(IllegalArgumentException("DUMMY ERROR"))
         val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
-            listOf(notarySignatureAlice)
+            setOf(notarySignatureAlice)
         )
 
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
@@ -496,7 +496,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
         val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
-            listOf(notarySignatureAlice)
+            setOf(notarySignatureAlice)
         )
 
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
@@ -528,7 +528,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
         val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
-            listOf(notarySignatureAlice)
+            setOf(notarySignatureAlice)
         )
 
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
@@ -561,7 +561,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
         val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
-            listOf(notarySignatureAlice)
+            setOf(notarySignatureAlice)
         )
 
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(

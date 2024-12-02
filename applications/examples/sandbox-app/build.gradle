@@ -38,7 +38,7 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-application'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
 
     implementation project(':testing:sandboxes')
     implementation project(':libs:configuration:configuration-core')

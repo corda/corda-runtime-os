@@ -66,6 +66,16 @@ internal class PermissionManagementCacheImpl(
         return permissions[permissionId]
     }
 
+    override fun getUsersByProperty(propertyKey: String, propertyValue: String): Set<User> {
+        validateCacheIsRunning()
+        return users.values.filter { user ->
+            user.properties.any { userProperty ->
+                userProperty.key.lowercase() == propertyKey.lowercase() &&
+                    userProperty.value.lowercase() == propertyValue.lowercase()
+            }
+        }.toSet()
+    }
+
     private fun validateCacheIsRunning() {
         if (!isRunning) {
             throw PermissionCacheException("Permission management cache is not running.")

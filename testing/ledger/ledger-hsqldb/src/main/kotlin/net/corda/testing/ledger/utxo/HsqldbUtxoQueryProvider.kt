@@ -1,7 +1,8 @@
 package net.corda.testing.ledger.utxo
 
-import net.corda.ledger.persistence.utxo.impl.AbstractUtxoQueryProvider
-import net.corda.ledger.persistence.utxo.impl.UtxoQueryProvider
+import net.corda.ledger.libs.persistence.utxo.impl.AbstractUtxoQueryProvider
+import net.corda.ledger.libs.persistence.utxo.impl.UtxoQueryProvider
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.HSQLDB_TYPE_FILTER
 import net.corda.utilities.debug
@@ -20,9 +21,14 @@ class HsqldbUtxoQueryProvider @Activate constructor(
         LoggerFactory.getLogger(this::class.java).debug { "Activated for ${databaseTypeProvider.databaseType}" }
     }
 
+    override fun wrapInList(placeHolder: String): String {
+        // HSQL needs to UNNEST the array
+        return "IN (UNNEST($placeHolder))"
+    }
+
     override val persistTransaction: String
         get() = """
-            MERGE INTO {h-schema}utxo_transaction AS ut
+            MERGE INTO utxo_transaction AS ut
             USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), :status, CAST(:updatedAt AS TIMESTAMP), :metadataHash, FALSE)
                 AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
             ON x.id = ut.id
@@ -35,7 +41,7 @@ class HsqldbUtxoQueryProvider @Activate constructor(
 
     override val persistUnverifiedTransaction: String
         get() = """
-            MERGE INTO {h-schema}utxo_transaction AS ut
+            MERGE INTO utxo_transaction AS ut
             USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), '$UNVERIFIED', CAST(:updatedAt AS TIMESTAMP), :metadataHash, FALSE)
                 AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
             ON x.id = ut.id
@@ -46,22 +52,28 @@ class HsqldbUtxoQueryProvider @Activate constructor(
                 VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated, x.metadata_hash, x.is_filtered)"""
             .trimIndent()
 
-    override val persistFilteredTransaction: String
-        get() = """
-            MERGE INTO {h-schema}utxo_transaction AS ut
-            USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), '$VERIFIED', CAST(:updatedAt AS TIMESTAMP), :metadataHash, TRUE)
+    override val persistFilteredTransaction: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            MERGE INTO utxo_transaction AS ut
+            USING (VALUES${
+                List(batchSize) {
+                    "(?, CAST(? AS VARBINARY(64)), ?, CAST(? AS TIMESTAMP), '$VERIFIED', CAST(? AS TIMESTAMP), ?, TRUE)"
+                }.joinToString(",")
+            })
                 AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
             ON x.id = ut.id
             WHEN MATCHED AND ((ut.status = '$UNVERIFIED' OR ut.status = '$DRAFT') AND ut.is_filtered = FALSE)
             THEN UPDATE SET ut.is_filtered = TRUE
             WHEN NOT MATCHED THEN
                 INSERT (id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
-                VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated, x.metadata_hash, x.is_filtered)"""
-            .trimIndent()
+                VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated, x.metadata_hash, x.is_filtered)
+            """.trimIndent()
+        }
 
     override val persistTransactionMetadata: String
         get() = """
-            MERGE INTO {h-schema}utxo_transaction_metadata AS m
+            MERGE INTO utxo_transaction_metadata AS m
             USING (VALUES :hash, CAST(:canonicalData AS VARBINARY(1048576)), :groupParametersHash, :cpiFileChecksum)
                 AS x(hash, canonical_data, group_parameters_hash, cpi_file_checksum)
             ON x.hash = m.hash
@@ -110,17 +122,17 @@ class HsqldbUtxoQueryProvider @Activate constructor(
             MERGE INTO utxo_visible_transaction_output AS uto
             USING (VALUES${
                 List(batchSize) {
-                    "(?, CAST(? AS INT), CAST(? AS INT), ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS TIMESTAMP), ?, ?)"
+                    "(?, CAST(? AS INT), CAST(? AS INT), ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS TIMESTAMP), ?, ?)"
                 }.joinToString(",")
             })
                 AS x(transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
-                     token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation)
+                     token_symbol, token_tag, token_owner_hash, token_amount, token_priority, created, consumed, custom_representation)
             ON uto.transaction_id = x.transaction_id AND uto.group_idx = x.group_idx AND uto.leaf_idx = x.leaf_idx
             WHEN NOT MATCHED THEN
                 INSERT (transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
-                        token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation)
+                        token_symbol, token_tag, token_owner_hash, token_amount, token_priority, created, consumed, custom_representation)
                 VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.type, x.token_type, x.token_issuer_hash, x.token_notary_x500_name,
-                        x.token_symbol, x.token_tag, x.token_owner_hash, x.token_amount, x.created, x.consumed, x.custom_representation)
+                        x.token_symbol, x.token_tag, x.token_owner_hash, x.token_amount, x.token_priority, x.created, x.consumed, x.custom_representation)
             """.trimIndent()
         }
 
@@ -130,20 +142,20 @@ class HsqldbUtxoQueryProvider @Activate constructor(
             MERGE INTO utxo_transaction_signature AS uts
             USING (VALUES${
                 List(batchSize) {
-                    "(?, CAST(? AS INT), CAST(? AS VARBINARY(1048576)), ?, CAST(? AS TIMESTAMP))"
+                    "(?, ?, CAST(? AS VARBINARY(1048576)), CAST(? AS TIMESTAMP))"
                 }.joinToString(",")
             })
-                AS x(transaction_id, signature_idx, signature, pub_key_hash, created)
-            ON uts.transaction_id = x.transaction_id AND uts.signature_idx = x.signature_idx
+                AS x(transaction_id, pub_key_hash, signature, created)
+            ON uts.transaction_id = x.transaction_id AND uts.pub_key_hash = x.pub_key_hash
             WHEN NOT MATCHED THEN
-                INSERT (transaction_id, signature_idx, signature, pub_key_hash, created)
-                VALUES (x.transaction_id, x.signature_idx, x.signature, x.pub_key_hash, x.created)
+                INSERT (transaction_id, pub_key_hash, signature, created)
+                VALUES (x.transaction_id, x.pub_key_hash, x.signature, x.created)
             """.trimIndent()
         }
 
     override val persistSignedGroupParameters: String
         get() = """
-            MERGE INTO {h-schema}utxo_group_parameters AS ugp
+            MERGE INTO utxo_group_parameters AS ugp
             USING (VALUES :hash, CAST(:parameters AS VARBINARY(1048576)),
                           CAST(:signature_public_key AS VARBINARY(1048576)), CAST(:signature_content AS VARBINARY(1048576)),
                           :signature_spec, CAST(:createdAt AS TIMESTAMP))
@@ -182,6 +194,17 @@ class HsqldbUtxoQueryProvider @Activate constructor(
             WHEN NOT MATCHED THEN
                 INSERT (merkle_proof_id, leaf_index)
                 VALUES (x.merkle_proof_id, x.leaf_index)
+            """.trimIndent()
+        }
+
+    override val stateRefsExist: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            SELECT tc.transaction_id, tc.leaf_idx
+            FROM utxo_transaction_component AS tc
+            WHERE (tc.transaction_id, tc.group_idx, tc.leaf_idx) in (
+                ${List(batchSize) { "(?, ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}, ?)" }.joinToString(",")}
+            )
             """.trimIndent()
         }
 }

@@ -15,6 +15,6 @@ abstract class RestServerTestBase {
         const val password = FakeSecurityManager.PASSWORD
         val securityManager = FakeSecurityManager()
         val context = RestContext("api", "RestContext test title ", "RestContext test description")
-        val apiVersion = RestApiVersion.C5_0
+        val apiVersion = RestApiVersion.C5_3
     }
 }

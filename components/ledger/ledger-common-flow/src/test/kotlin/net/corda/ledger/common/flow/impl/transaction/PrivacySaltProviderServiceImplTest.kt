@@ -7,14 +7,14 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.whenever
 
 internal class PrivacySaltProviderServiceImplTest : CommonLedgerTest() {
-    private val privacySaltProviderService = PrivacySaltProviderServiceImpl(flowFiberService)
+    private val privacySaltProviderService = PrivacySaltProviderServiceImpl(flowCheckpointService)
 
     @BeforeEach
     fun setupPrivacySaltProviderService() {
         val flowId = "fc321a0c-62c6-41a1-85e6-e61870ab93aa"
         val suspendCount = 10
         val ledgerSaltCounter = 1
-        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        val checkpoint = flowCheckpointService.getCheckpoint()
 
         whenever(checkpoint.flowId).thenReturn(flowId)
         whenever(checkpoint.suspendCount).thenReturn(suspendCount)
@@ -33,7 +33,7 @@ internal class PrivacySaltProviderServiceImplTest : CommonLedgerTest() {
         val transaction1 = privacySaltProviderService.generatePrivacySalt()
 
         val newFlowId = "5e3fb677-6b03-4a0b-8ff4-e2a2465143a7"
-        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        val checkpoint = flowCheckpointService.getCheckpoint()
         whenever(checkpoint.flowId).thenReturn(newFlowId)
 
         val transaction2 = privacySaltProviderService.generatePrivacySalt()
@@ -45,7 +45,7 @@ internal class PrivacySaltProviderServiceImplTest : CommonLedgerTest() {
         val transaction1 = privacySaltProviderService.generatePrivacySalt()
 
         val newSuspendCount = 50
-        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        val checkpoint = flowCheckpointService.getCheckpoint()
         whenever(checkpoint.suspendCount).thenReturn(newSuspendCount)
 
         val transaction2 = privacySaltProviderService.generatePrivacySalt()
@@ -57,7 +57,7 @@ internal class PrivacySaltProviderServiceImplTest : CommonLedgerTest() {
         val transaction1 = privacySaltProviderService.generatePrivacySalt()
 
         val ledgerSaltCounter = 2
-        val checkpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        val checkpoint = flowCheckpointService.getCheckpoint()
         whenever(checkpoint.ledgerSaltCounter).thenReturn(ledgerSaltCounter)
 
         val transaction2 = privacySaltProviderService.generatePrivacySalt()

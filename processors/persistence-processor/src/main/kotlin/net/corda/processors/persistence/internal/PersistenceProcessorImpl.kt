@@ -27,6 +27,14 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
+
+/**
+ *  All this processor classes actually does is set up the database connection manager once Corda configuration
+ *  is available.
+ *
+ *  The entry point to the persistence processor is actually [LedgerPersistenceRequestProcessor]
+ */
+
 @Suppress("Unused", "LongParameterList")
 @Component(service = [PersistenceProcessor::class])
 class PersistenceProcessorImpl @Activate constructor(

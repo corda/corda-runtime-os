@@ -78,6 +78,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
@@ -242,7 +243,6 @@ class SynchronisationIntegrationTest {
                 ConfigValueFactory.fromAnyRef(1L)
             ).root()
             .render(ConfigRenderOptions.concise())
-        const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
         const val CATEGORY = "SESSION_INIT"
         const val SCHEME = ECDSA_SECP256R1_CODE_NAME
         const val EPOCH = "5"
@@ -445,7 +445,7 @@ class SynchronisationIntegrationTest {
             clock.instant().truncatedTo(ChronoUnit.MILLIS).plusMillis(300000L),
             UUID.randomUUID().toString(),
             null,
-            MEMBERSHIP_P2P_SUBSYSTEM,
+            Subsystem.MEMBERSHIP.systemName,
             MembershipStatusFilter.ACTIVE
         )
         val payload = ByteBuffer.wrap(syncRequestSerializer.serialize(syncRequest))
@@ -629,7 +629,7 @@ class SynchronisationIntegrationTest {
             clock.instant().truncatedTo(ChronoUnit.MILLIS).plusMillis(300000L),
             UUID.randomUUID().toString(),
             null,
-            MEMBERSHIP_P2P_SUBSYSTEM,
+            Subsystem.MEMBERSHIP.systemName,
             MembershipStatusFilter.ACTIVE
         )
         val payload = ByteBuffer.wrap(membershipPackageSerializer.serialize(membershipPackage))

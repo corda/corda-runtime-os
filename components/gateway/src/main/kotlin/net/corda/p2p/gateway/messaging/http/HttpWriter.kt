@@ -7,6 +7,6 @@ internal interface HttpWriter {
     fun write(
         statusCode: HttpResponseStatus,
         destination: SocketAddress,
-        message: ByteArray = byteArrayOf()
+        message: ByteArray = byteArrayOf(),
     )
 }

@@ -1,6 +1,7 @@
 package net.corda.rest.server.impl.security.provider.bearer.azuread
 
 import com.nimbusds.jwt.JWTParser
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.rest.security.read.RestSecurityManager
 import net.corda.rest.server.config.AzureAdSettingsProvider
 import net.corda.rest.server.impl.security.provider.bearer.TestAdminSubject
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -25,7 +27,7 @@ class AzureAdAuthenticationProviderTest {
     private val settings: AzureAdSettingsProvider = mock()
     private val jwtProcessor: JwtProcessor = mock()
     private val restSecurityManager = mock<RestSecurityManager>().apply {
-        whenever(buildSubject(any())).thenReturn(TestAdminSubject(username))
+        whenever(buildSubject(any(), eq(PasswordExpiryStatus.ACTIVE))).thenReturn(TestAdminSubject(username))
     }
 
     private lateinit var provider: AzureAdAuthenticationProvider

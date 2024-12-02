@@ -5,11 +5,14 @@ import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.internal.TokenCacheImpl
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
+import net.corda.utilities.time.UTCClock
+import net.corda.v5.ledger.utxo.token.selection.Strategy
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
+import java.time.Duration
 
 class SimpleTokenFilterStrategyTest {
 
@@ -25,8 +28,8 @@ class SimpleTokenFilterStrategyTest {
      */
     @Test
     fun `null tag and owner criteria should match all`() {
-        val tc = TokenCacheImpl()
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, null, POOL_KEY)
+        val tc = TokenCacheImpl(Duration.ZERO, UTCClock()).get(Strategy.RANDOM)
+        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, null, POOL_KEY, null)
 
         val result = target.filterTokens(tc, query).toList()
         println(result)
@@ -34,21 +37,21 @@ class SimpleTokenFilterStrategyTest {
 
     @Test
     fun `tag regex should match token tag null owner matches anything`() {
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), "(t1)", null, POOL_KEY)
+        val query = ClaimQuery("r1", "f1", BigDecimal(1), "(t1)", null, POOL_KEY, null)
 
         assertThat(target.filterTokens(inputTokens, query)).containsOnly(token1, token2)
     }
 
     @Test
     fun `owner hash should match token owner hash null tag regex matches anything`() {
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, "h1", POOL_KEY)
+        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, "h1", POOL_KEY, null)
 
         assertThat(target.filterTokens(inputTokens, query)).containsOnly(token1, token2)
     }
 
     @Test
     fun `owner hash and tag should match token owner hash and tag`() {
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), "t2", "h1", POOL_KEY)
+        val query = ClaimQuery("r1", "f1", BigDecimal(1), "t2", "h1", POOL_KEY, null)
 
         assertThat(target.filterTokens(inputTokens, query)).containsOnly(token2)
     }

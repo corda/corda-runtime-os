@@ -5,6 +5,7 @@ import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectExcep
 import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
+import net.corda.flow.application.sessions.utils.SessionUtils.checkPayloadMaxSize
 import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
@@ -92,11 +93,11 @@ class FlowSessionImpl(
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
-        val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
+        val serializedPayload = serialize(payload)
+        checkPayloadMaxSize(serializedPayload, flowFiberService)
+        val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serializedPayload))
         val received = fiber.suspend(request)
-
         setSessionConfirmed()
-
         return processReceivedPayload(received, receiveType)
     }
 
@@ -112,7 +113,9 @@ class FlowSessionImpl(
     @Suspendable
     override fun send(payload: Any) {
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
-        val request = FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
+        val serializedPayload = serialize(payload)
+        checkPayloadMaxSize(serializedPayload, flowFiberService)
+        val request = FlowIORequest.Send(mapOf(getSessionInfo() to serializedPayload))
         fiber.suspend(request)
     }
 

@@ -43,6 +43,7 @@ dependencies {
     compileOnly "org.ow2.asm:asm:$asmVersion"
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
     testCompileOnly 'org.jetbrains:annotations'
     testImplementation libs.assertj.core
@@ -52,8 +53,8 @@ dependencies {
     testRuntimeOnly "org.ow2.asm:asm:$asmVersion"
 
     integrationTestImplementation project(':libs:kotlin-reflection:kotlin-reflection-test-example')
-    integrationTestImplementation 'org.slf4j:slf4j-api'
     integrationTestImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    integrationTestImplementation project(':testing:slf4jv1')
     integrationTestImplementation libs.junit
     integrationTestRuntimeOnly libs.junit.engine
     integrationTestRuntimeOnly libs.junit.platform
@@ -97,7 +98,7 @@ def resolve = tasks.register('resolve', Resolve) {
     outputBndrun = layout.buildDirectory.file('resolved-test.bndrun')
     doFirst {
         //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
-        System.setProperty('bnd.home.dir', "$rootDir/bnd")
+        System.setProperty('bnd.home.dir', "$rootDir/bnd/${UUID.randomUUID()}")
     }
 }
 

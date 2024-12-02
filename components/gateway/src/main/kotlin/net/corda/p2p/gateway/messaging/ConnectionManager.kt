@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 internal class ConnectionManager(
     private val sslConfiguration: SslConfiguration,
     private val connectionConfiguration: ConnectionConfiguration,
-    nioEventLoopGroupFactory: (Int) -> NioEventLoopGroup = { NioEventLoopGroup(it) }
+    nioEventLoopGroupFactory: (Int) -> NioEventLoopGroup = { NioEventLoopGroup(it) },
 ) : Resource {
 
     companion object {
@@ -34,7 +34,8 @@ internal class ConnectionManager(
         Caffeine.newBuilder()
             .maximumSize(connectionConfiguration.maxClientConnections)
             .expireAfterAccess(connectionConfiguration.connectionIdleTimeout)
-            .removalListener { _, value, _ -> value?.close() })
+            .removalListener { _, value, _ -> value?.close() },
+    )
     private var writeGroup = nioEventLoopGroupFactory(NUM_CLIENT_WRITE_THREADS)
     private var nettyGroup = nioEventLoopGroupFactory(NUM_CLIENT_NETTY_THREADS)
 

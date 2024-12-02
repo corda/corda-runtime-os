@@ -146,7 +146,6 @@ class LiquibaseSchemaMigratorImplTest {
         val e = assertThrows<ChangeLogParseException> {
             lbm.updateDb(ds.connection, cl)
         }
-        assertThat(e).hasMessageContaining("IllegalArgumentException")
         assertThat(e).hasMessageContaining("mysteryclass")
     }
 

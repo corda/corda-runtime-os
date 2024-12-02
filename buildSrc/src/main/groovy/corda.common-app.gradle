@@ -100,8 +100,16 @@ private def addSystemPackagesExtra(
                 Attributes mainAttributes = jarFile.manifest.mainAttributes
                 if (isBundle(mainAttributes)) {
                     mainAttributes.getValue(EXPORT_PACKAGE)?.with { exportPackage ->
-                        aQute.bnd.header.OSGiHeader.parseHeader(exportPackage).entrySet().each { exportEntry ->
-                            final def export = exportEntry.key + ";" + exportEntry.value.toString()
+                        aQute.bnd.header.OSGiHeader.parseHeader(exportPackage).each { exportEntry ->
+
+                            // For some reason, the parsing library thinks the package `slf4j`
+                            // is a split package and appends the character tilde to the key.
+                            // The code below removes the tilde character.
+                            def key = exportEntry.key
+                            if (key.contains("slf4j") && key.endsWith("~")) {
+                                key = exportEntry.key.substring(0, exportEntry.key.length() - 1)
+                            }
+                            final def export = key + ";" + exportEntry.value.toString()
                             systemBundleExtraSet.add(export)
                             logger.info "OSGI $export included as system package extra."
                         }
@@ -132,7 +140,9 @@ private def addSystemPackagesExtra(
             "javax.transaction;version=1.2.0",
             "javax.xml.stream;version=1.0",
             "javax.xml.stream.events;version=1.0",
-            "javax.xml.stream.util;version=1.0"
+            "javax.xml.stream.util;version=1.0",
+            "org.slf4j.spi;version=\"1.7.36\"",
+            "org.slf4j.event;version=\"1.7.36\"",
     ]
     jdkExtraPackages.each { export -> systemBundleExtraSet.add(export) }
 }
@@ -319,7 +329,7 @@ def verifyApp = tasks.register('verifyApp', Resolve) {
     writeOnChanges = false
 
     //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
-    System.setProperty('bnd.home.dir', "$rootDir/bnd/")
+    System.setProperty('bnd.home.dir', "$rootDir/bnd/${UUID.randomUUID()}")
 }
 
 @CompileStatic

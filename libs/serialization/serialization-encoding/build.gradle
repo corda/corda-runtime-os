@@ -21,7 +21,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
 }
 
 def jar = tasks.named('jar', Jar) {
@@ -33,6 +33,7 @@ Bundle-Name: Corda serialization encoding library
 Bundle-SymbolicName: \${project.group}.serialization.encoding
 Import-Package:\
     !org.apache.hadoop.io.compress,\
+    !org.apache.hadoop.conf,\
     sun.misc;resolution:=optional,\
     *
 -includeresource: @snappy-${snappyVersion}.jar

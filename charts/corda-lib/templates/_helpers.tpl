@@ -377,7 +377,11 @@ metadata:
   name: {{ $secretName }}
   annotations:
     "helm.sh/hook-weight": "-1"
-    "helm.sh/hook": pre-install
+{{- if $options.hook }}
+    "helm.sh/hook": {{ $options.hook }}
+{{- else }}
+    "helm.sh/hook": pre-install, pre-upgrade
+{{- end }}
 {{- if $options.cleanup }}
     "helm.sh/hook-delete-policy": hook-succeeded
 {{- end }}

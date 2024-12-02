@@ -2,12 +2,6 @@ package net.corda.gradle.plugin.dtos
 
 // A collection of dataclasses representing objects used by the plugin
 
-data class VNode(
-    var x500Name: String? = null,
-    var cpi: String? = null,
-    var serviceX500Name : String? = null,
-)
-
 data class GroupPolicyDTO(
     // Note, we only need protocolParameters rather than the full set of properties.
     var protocolParameters: ProtocolParametersDTO? = null

@@ -39,6 +39,7 @@ class TokenSelectionSyncRPCProcessorTest {
     private val testExternalEventRequestId = "e1"
 
     private val tokenEvent = mock<TokenEvent>().apply {
+        whenever(this.poolKey).thenReturn(POOL_KEY)
         whenever(this.flowId).thenReturn(testFlowId)
         whenever(this.externalEventRequestId).thenReturn(testExternalEventRequestId)
     }
@@ -80,7 +81,7 @@ class TokenSelectionSyncRPCProcessorTest {
         whenever(entityConverter.toPoolCacheState(TOKEN_POOL_CACHE_STATE_2)).thenReturn(POOL_CACHE_STATE_2)
 
         claimStateStore.inputPoolState = TOKEN_POOL_CACHE_STATE_2
-        whenever(tokenPoolCacheManager.processEvent(any(), any(), any())).thenReturn(processorResponse)
+        whenever(tokenPoolCacheManager.processEvent(any(), any())).thenReturn(processorResponse)
 
         // Process the event
         val result = tokenSelectionSyncRPCProcessor.process(tokenPoolCacheEvent)
@@ -90,7 +91,7 @@ class TokenSelectionSyncRPCProcessorTest {
 
         // Ensure the correct arguments are passed to the tokenPoolCacheManager
         val expectedState = POOL_CACHE_STATE_2
-        verify(tokenPoolCacheManager).processEvent(eq(expectedState), eq(POOL_KEY), eq(tokenEvent))
+        verify(tokenPoolCacheManager).processEvent(eq(expectedState), eq(tokenEvent))
     }
 
     @Test
@@ -104,7 +105,7 @@ class TokenSelectionSyncRPCProcessorTest {
 
         claimStateStore.inputPoolState = TOKEN_POOL_CACHE_STATE
         claimStateStore.completionType = false
-        whenever(tokenPoolCacheManager.processEvent(any(), any(), any())).thenReturn(processorResponse)
+        whenever(tokenPoolCacheManager.processEvent(any(), any())).thenReturn(processorResponse)
 
         val e = assertThrows<CordaHTTPServerTransientException> {
             tokenSelectionSyncRPCProcessor.process(tokenPoolCacheEvent)

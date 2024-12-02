@@ -12,6 +12,7 @@ import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
@@ -23,6 +24,7 @@ import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makeShortHashCache
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
+import net.corda.utilities.toByteArray
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
@@ -50,7 +52,7 @@ import java.security.InvalidParameterException
 import java.security.KeyPairGenerator
 import java.security.Provider
 import java.security.PublicKey
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -110,7 +112,7 @@ class SoftCryptoServiceOperationsTests {
         private val cryptoService = SoftCryptoService(
             wrappingRepositoryFactory = {
                 when (it) {
-                    CryptoTenants.CRYPTO -> clusterWrappingRepository
+                    ClusterCryptoDb.SCHEMA_NAME -> clusterWrappingRepository
                     tenantId -> tenantWrappingRepository
                     else -> throw InvalidParameterException(it)
                 }
@@ -207,7 +209,7 @@ class SoftCryptoServiceOperationsTests {
                         signatureSpec = spec,
                         category = CryptoConsts.Categories.LEDGER
                     ),
-                    UUID.randomUUID().toString().toByteArray(),
+                    UUID.randomUUID().toByteArray(),
                     defaultContext
                 )
             }
@@ -259,7 +261,7 @@ class SoftCryptoServiceOperationsTests {
     ) {
         val scheme = schemeMetadata.schemes.first { it.codeName == codeName }
         val key = (if (fresh) softFreshKeys else softAliasedKeys).getValue(scheme)
-        val testData = UUID.randomUUID().toString().toByteArray()
+        val testData = UUID.randomUUID().toByteArray()
         val signingWrappedSpec = makeSigningWrappedSpec(scheme, key)
         val signedData1stTime = cryptoService.sign(signingWrappedSpec, testData, defaultContext)
         val signedData2ndTime = cryptoService.sign(signingWrappedSpec, testData, defaultContext)
@@ -278,7 +280,7 @@ class SoftCryptoServiceOperationsTests {
     ) {
         val scheme = schemeMetadata.schemes.first { it.codeName == codeName }
         val key = (if (fresh) softFreshKeys else softAliasedKeys).getValue(scheme)
-        val testData = UUID.randomUUID().toString().toByteArray()
+        val testData = UUID.randomUUID().toByteArray()
         val signingWrappedSpec = makeSigningWrappedSpec(scheme, key)
         val signedData1stTime = cryptoService.sign(signingWrappedSpec, testData, defaultContext)
         val signedData2ndTime = cryptoService.sign(signingWrappedSpec, testData, defaultContext)
@@ -396,7 +398,7 @@ class SoftCryptoServiceOperationsTests {
     ) {
         val anotherWrappingKey = UUID.randomUUID().toString()
         cryptoService.createWrappingKey(anotherWrappingKey, true, defaultContext)
-        val testData = UUID.randomUUID().toString().toByteArray()
+        val testData = UUID.randomUUID().toByteArray()
         val key = softAliasedKeys.getValue(scheme)
         val exception = assertThrows<Throwable> {
             cryptoService.sign(
@@ -426,7 +428,7 @@ class SoftCryptoServiceOperationsTests {
     ) {
         val anotherWrappingKey = UUID.randomUUID().toString()
         cryptoService.createWrappingKey(anotherWrappingKey, true, defaultContext)
-        val testData = UUID.randomUUID().toString().toByteArray()
+        val testData = UUID.randomUUID().toByteArray()
         val key = softFreshKeys.getValue(scheme)
         val exception = assertThrows<Throwable> {
             cryptoService.sign(

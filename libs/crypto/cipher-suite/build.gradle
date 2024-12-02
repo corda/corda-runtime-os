@@ -10,7 +10,7 @@ dependencies {
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
     implementation project(":libs:crypto:crypto-utils")
 
     api platform("net.corda:corda-api:$cordaApiVersion")

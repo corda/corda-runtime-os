@@ -10,13 +10,17 @@ import java.util.Collections
 
 /**
  * Common MDC properties used across corda.
+ * The name of the MDC properties should be prefixed with `corda.` so we can tell from the logs which MDC values
+ * were set explicitly by corda from those that were set by a third-party library.
  */
 const val MDC_CLIENT_ID = "corda.client.id"
-const val MDC_FLOW_ID = "flow.id"
-const val MDC_VNODE_ID = "vnode.id"
-const val MDC_SESSION_EVENT_ID = "session.event.id"
+const val MDC_FLOW_ID = "corda.flow.id"
+const val MDC_VNODE_ID = "corda.vnode.id"
+const val MDC_SESSION_EVENT_ID = "corda.session.event.id"
 const val MDC_EXTERNAL_EVENT_ID = "corda.external.event.id"
-
+const val MDC_USER = "corda.http.user"
+const val MDC_METHOD = "corda.http.method"
+const val MDC_PATH = "corda.http.path"
 const val MDC_LOGGED_PREFIX = "corda.logged"
 
 inline fun <T> logElapsedTime(label: String, logger: Logger, body: () -> T): T {
@@ -117,5 +121,17 @@ fun clearMDC(mdcData: Map<String, String>) {
  * Clear the Log4j logging MDC of all data stored there.
  */
 fun clearMDC() {
-    MDC.clear()
+    // Clear only the MDC properties that are explicitly set  by Corda
+    // Some libraries like Brave also manage the MDC properties and those
+    // properties shouldn't be cleared out.
+    MDC.getMDCAdapter().apply {
+        remove(MDC_CLIENT_ID)
+        remove(MDC_FLOW_ID)
+        remove(MDC_VNODE_ID)
+        remove(MDC_SESSION_EVENT_ID)
+        remove(MDC_EXTERNAL_EVENT_ID)
+        remove(MDC_USER)
+        remove(MDC_METHOD)
+        remove(MDC_PATH)
+    }
 }

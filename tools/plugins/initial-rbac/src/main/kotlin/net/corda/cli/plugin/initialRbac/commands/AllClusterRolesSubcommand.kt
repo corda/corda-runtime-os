@@ -19,6 +19,7 @@ import kotlin.reflect.full.declaredMemberProperties
 class AllClusterRolesSubcommand : RestCommand(), Callable<Int> {
 
     override fun call(): Int {
+        super.call()
         // If a subcommand fails with a return code of 5 (role already exists),
         // continue on to process the other roles. All other failures
         // (e.g. due to lack of connectivity) result in an exception being propagated.

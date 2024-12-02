@@ -42,7 +42,7 @@ deploy_sender() {
 echo "Starting Sender in $1 mode"
 
 MGM_HOLDING_ID_SHORT_HASH=$(cat $MGM_HOLDING_ID_FILE)
-GROUP_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -X GET https://$MGM_RPC/api/v1/members/$MGM_HOLDING_ID_SHORT_HASH | jq '.members[0].memberContext."corda.groupId"' | tr -d '"')
+GROUP_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -X GET https://$MGM_RPC/api/v5_3/members/$MGM_HOLDING_ID_SHORT_HASH | jq '.members[0].memberContext."corda.groupId"' | tr -d '"')
 
 HELM_A_X500_NAME=$(echo $A_X500_NAME | sed 's/,/\\,/g')
 HELM_B_X500_NAME=$(echo $B_X500_NAME | sed 's/,/\\,/g')
@@ -60,7 +60,7 @@ then
   echo "Deploying one-way sender."
   SENDERS=$(calculate_peers $NUM_OF_MEMBERS_PER_CLUSTER_A $HELM_A_X500_NAME)
   DESTINATIONS=$(calculate_peers $NUM_OF_MEMBERS_PER_CLUSTER_B $HELM_B_X500_NAME)
-  get_db_password $APP_SIMULATOR_DB_NAMESPACE_A
+  get_db_password $APP_SIMULATOR_DB_NAMESPACE
   deploy_sender $A_CLUSTER_NAMESPACE $POSTGRES_ADMIN_PASSWORD $SENDERS $DESTINATIONS $APP_SIMULATOR_DB_NAMESPACE
   sender_pid=$!
 

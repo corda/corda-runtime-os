@@ -5,10 +5,6 @@ import org.slf4j.LoggerFactory
 object AuthorizationUtils {
     private val log = LoggerFactory.getLogger(AuthorizationUtils::class.java)
 
-    const val USER_MDC = "http.user"
-    const val METHOD_MDC = "http.method"
-    const val PATH_MDC = "http.path"
-
     fun authorize(
         authorizingSubject: AuthorizingSubject,
         resourceAccessString: String,

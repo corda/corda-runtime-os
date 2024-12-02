@@ -12,7 +12,7 @@ import net.corda.membership.impl.persistence.service.RecoverableException
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARIES_KEY
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
@@ -54,7 +54,7 @@ internal class UpdateGroupParametersHandler(
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .setMaxResults(1)
             if (previous.resultList.isEmpty()) {
-                throw MembershipPersistenceException(
+                throw NotFoundEntityPersistenceException(
                     "Failed to update group parameters - could not retrieve current set of group parameters."
                 )
             }

@@ -103,7 +103,7 @@ class HttpHelperTest {
             on { isReadable } doReturn true
         }
         val headers = DefaultHttpHeaders()
-        headers.set(HttpHeaderNames.CONTENT_LENGTH, (MAX_REQUEST_SIZE+1).toString())
+        headers.set(HttpHeaderNames.CONTENT_LENGTH, (MAX_REQUEST_SIZE + 1).toString())
         headers.set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
         val request = DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri, payload, headers, EmptyHttpHeaders.INSTANCE)
 

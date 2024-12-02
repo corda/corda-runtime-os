@@ -26,7 +26,7 @@ class KeyStoreFactoryTest {
         signer,
         certificateStore,
         "name",
-        installer
+        installer,
     )
 
     @AfterEach

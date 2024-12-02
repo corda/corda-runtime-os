@@ -22,6 +22,8 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeO
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier as CpiIdentifierRestResponse
 import net.corda.libs.packaging.core.CpiIdentifier as CpiIdentifierDto
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityRestResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.RouteConfiguration as RouteConfigurationRestResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.Routes as RoutesRestResponse
 import net.corda.virtualnode.HoldingIdentity as HoldingIdentityDto
 import net.corda.virtualnode.VirtualNodeInfo as VirtualNodeInfoDto
 
@@ -200,6 +202,17 @@ class MessageConverterTest {
 
         val expectedHoldingIdentityRestResponse = HoldingIdentityRestResponse(aliceX500, groupId, shortHash, longHash)
         val expectedCpiRestResponse = CpiIdentifierRestResponse(cpiName, cpiVersion, exampleSecureHash.toString())
+        val expectedRouteConfigurationRestResponse = RouteConfigurationRestResponse(
+            RoutesRestResponse(
+                CpiIdentifierRestResponse(
+                    cpiIdentifierDto.name,
+                    cpiIdentifierDto.version,
+                    cpiIdentifierDto.signerSummaryHash.toString()
+                ),
+                listOf()
+            ),
+            listOf()
+        )
 
         assertSoftly {
             assertThat(result.holdingIdentity).isEqualTo(expectedHoldingIdentityRestResponse)
@@ -217,7 +230,7 @@ class MessageConverterTest {
             assertThat(result.flowStartOperationalStatus).isEqualTo(flowStartOperationalStatus)
             assertThat(result.flowOperationalStatus).isEqualTo(flowOperationalStatus)
             assertThat(result.vaultDbOperationalStatus).isEqualTo(vaultDbOperationalStatus)
-            assertThat(result.externalMessagingRouteConfiguration).isEqualTo(routeConfiguration)
+            assertThat(result.externalMessagingRouteConfiguration).isEqualTo(expectedRouteConfigurationRestResponse)
         }
 
         verify(routeConfigSerializer).deserialize(externalMessagingRouteConfig)

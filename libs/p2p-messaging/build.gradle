@@ -1,0 +1,25 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+description 'P2P library for message creation'
+
+ext.cordaEnableFormatting = true
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda:corda-topic-schema'
+
+    implementation project(':libs:utilities')
+    implementation project(':libs:messaging:messaging')
+    implementation project(':libs:serialization:serialization-avro')
+
+    testImplementation project(':testing:test-utilities')
+}

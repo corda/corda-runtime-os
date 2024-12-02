@@ -23,7 +23,7 @@ dependencies {
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'org.osgi:osgi.core'
     cordaProvided 'net.corda:corda-application'
-    cordaProvided 'org.slf4j:slf4j-api'
+    cordaProvided libs.slf4j.api
     // We use version 2.10.10 here, and version 2.10.9 in CPK Two, to show that multiple versions of a library can
     // co-exist in a sandbox group.
     implementation 'joda-time:joda-time:2.10.10'

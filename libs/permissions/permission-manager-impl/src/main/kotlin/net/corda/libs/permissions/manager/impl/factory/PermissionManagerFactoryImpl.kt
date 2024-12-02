@@ -16,6 +16,7 @@ import net.corda.libs.permissions.manager.impl.RbacBasicAuthenticationService
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.permissions.password.PasswordServiceFactory
+import net.corda.utilities.time.UTCClock
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -27,6 +28,8 @@ class PermissionManagerFactoryImpl @Activate constructor(
     @Reference(service = PasswordServiceFactory::class)
     private val passwordServiceFactory: PasswordServiceFactory
 ) : PermissionManagerFactory {
+
+    private val clock = UTCClock()
 
     override fun createPermissionManager(
         restConfig: SmartConfig,
@@ -51,9 +54,12 @@ class PermissionManagerFactoryImpl @Activate constructor(
     }
 
     override fun createBasicAuthenticationService(
+        rbacConfig: SmartConfig,
         permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>
     ): BasicAuthenticationService {
         return RbacBasicAuthenticationService(
+            rbacConfig,
+            clock,
             permissionManagementCacheRef,
             passwordServiceFactory.createPasswordService(SecureRandom())
         )

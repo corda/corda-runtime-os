@@ -35,4 +35,12 @@ interface FlowStatusLookupService: Lifecycle {
      * @return A list of flow statuses, or an empty list if none exist.
      * */
     fun getStatusesPerIdentity(holdingIdentity: HoldingIdentity): List<FlowStatus>
+
+    /**
+     * Stores a new status in the state manager.
+     * Intended to allow saving "start requested" stauses from flow start REST handler
+     *
+     * @param status Status to save
+     */
+    fun storeStatus(status: FlowStatus)
 }

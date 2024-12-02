@@ -9,14 +9,21 @@ import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
+import net.corda.libs.permissions.endpoints.v1.user.types.PropertyResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.PermissionManager
+import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.ChangeUserParentIdDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
+import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
+import net.corda.libs.permissions.manager.request.GetUserPropertiesRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
+import net.corda.libs.permissions.manager.request.GetUsersByPropertyRequestDto
+import net.corda.libs.permissions.manager.request.RemovePropertyFromUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
@@ -28,6 +35,7 @@ import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.authorization.AuthorizationProvider
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.response.ResponseEntity
@@ -43,6 +51,7 @@ import kotlin.reflect.full.memberFunctions
 /**
  * A REST resource endpoint for User operations.
  */
+@Suppress("TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
 class UserEndpointImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -81,6 +90,8 @@ class UserEndpointImpl @Activate constructor(
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
+        private const val INVALID_ARGUMENT_MESSAGE = "Invalid argument in request."
+
         @Suppress("ThrowsCount")
         private fun PermissionManager.checkProtectedRole(loginName: String, roleId: String, principal: String) {
             val role = getRole(GetRoleRequestDto(principal, roleId))
@@ -114,18 +125,27 @@ class UserEndpointImpl @Activate constructor(
                 createUser(createUserType.convertToDto(principal))
             }
         } catch (e: IllegalArgumentException) {
-            throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
+            throw InvalidInputDataException(
+                title = e::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: INVALID_ARGUMENT_MESSAGE)
+            )
         }
 
         return ResponseEntity.created(createUserResult.convertToEndpointType())
     }
 
-    @Deprecated("Deprecated in favour of `getUserPath()`")
-    override fun getUserQuery(loginName: String): ResponseEntity<UserResponseType> {
-        "Deprecated, please use next version where loginName is passed as a path parameter.".let { msg ->
-            logger.warn(msg)
-            return ResponseEntity.okButDeprecated(doGetUser(loginName), msg)
+    override fun deleteUser(loginName: String): ResponseEntity<UserResponseType> {
+        val principal = getRestThreadLocalContext()
+
+        if (principal.equals(loginName, ignoreCase = true)) {
+            throw BadRequestException("User cannot delete self")
         }
+
+        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            deleteUser(DeleteUserRequestDto(principal, loginName.lowercase()))
+        }
+
+        return ResponseEntity.deleted(userResponseDto.convertToEndpointType())
     }
 
     override fun getUserPath(loginName: String): UserResponseType {
@@ -142,6 +162,23 @@ class UserEndpointImpl @Activate constructor(
         return userResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("User", loginName)
     }
 
+    override fun changeUserParentGroup(loginName: String, newParentGroupId: String?): ResponseEntity<UserResponseType> {
+        val principal = getRestThreadLocalContext()
+
+        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            try {
+                changeUserParentGroup(ChangeUserParentIdDto(principal, loginName, newParentGroupId))
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, e.message ?: "No resource found for this request.")
+                )
+            }
+        }
+
+        return ResponseEntity.updated(userResponseDto.convertToEndpointType())
+    }
+
     override fun changeUserPasswordSelf(password: String): UserResponseType {
         val principal = getRestThreadLocalContext()
 
@@ -149,9 +186,15 @@ class UserEndpointImpl @Activate constructor(
             try {
                 changeUserPasswordSelf(ChangeUserPasswordDto(principal, principal.lowercase(), password))
             } catch (e: NoSuchElementException) {
-                throw ResourceNotFoundException(e.message ?: "No resource found for this request.")
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, e.message ?: "No resource found for this request.")
+                )
             } catch (e: IllegalArgumentException) {
-                throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
+                throw InvalidInputDataException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: INVALID_ARGUMENT_MESSAGE)
+                )
             }
         }
 
@@ -165,9 +208,15 @@ class UserEndpointImpl @Activate constructor(
             try {
                 changeUserPasswordOther(ChangeUserPasswordDto(principal, username.lowercase(), password))
             } catch (e: NoSuchElementException) {
-                throw ResourceNotFoundException(e.message ?: "No resource found for this request.")
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, e.message ?: "No resource found for this request.")
+                )
             } catch (e: IllegalArgumentException) {
-                throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
+                throw InvalidInputDataException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: INVALID_ARGUMENT_MESSAGE)
+                )
             }
         }
 
@@ -208,6 +257,38 @@ class UserEndpointImpl @Activate constructor(
         )
     }
 
+    override fun addProperty(loginName: String, properties: Map<String, String>): ResponseEntity<UserResponseType> {
+        val principal = getRestThreadLocalContext()
+
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            addPropertyToUser(AddPropertyToUserRequestDto(principal, loginName.lowercase(), properties))
+        }
+        return ResponseEntity.ok(result.convertToEndpointType())
+    }
+
+    override fun removeProperty(loginName: String, propertyKey: String): ResponseEntity<UserResponseType> {
+        val principal = getRestThreadLocalContext()
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            removePropertyFromUser(RemovePropertyFromUserRequestDto(principal, loginName.lowercase(), propertyKey))
+        }
+        return ResponseEntity.deleted(result.convertToEndpointType())
+    }
+
+    override fun getUserProperties(loginName: String): ResponseEntity<Set<PropertyResponseType>> {
+        val principal = getRestThreadLocalContext()
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            getUserProperties(GetUserPropertiesRequestDto(principal, loginName.lowercase()))
+        }
+        return ResponseEntity.ok(result.map { it.convertToEndpointType() }.toSet())
+    }
+
+    override fun getUsersByPropertyKey(propertyKey: String, propertyValue: String): ResponseEntity<Set<UserResponseType>> {
+        val principal = getRestThreadLocalContext()
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            getUsersByProperty(GetUsersByPropertyRequestDto(principal, propertyKey, propertyValue))
+        }
+        return ResponseEntity.ok(result.map { it.convertToEndpointType() }.toSet())
+    }
     private fun getRestThreadLocalContext(): String {
         val restContext = CURRENT_REST_CONTEXT.get()
         return restContext.principal

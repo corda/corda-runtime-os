@@ -19,7 +19,7 @@ internal class LinkManagerRpcClient(
         publisherFactory.createHttpRpcClient()
     }
 
-    private val endpoint=
+    private val endpoint =
         bootConfig.getString(P2P_LINK_MANAGER_WORKER_REST_ENDPOINT)
 
     private val url by lazy {

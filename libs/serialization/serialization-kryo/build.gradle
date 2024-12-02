@@ -33,7 +33,7 @@ dependencies {
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation project(path: ':libs:serialization:kryo-serializers', configuration: 'bundle')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.slf4j:slf4j-api"
+    implementation libs.slf4j.api
     
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:serialization-checkpoint-api")
@@ -61,6 +61,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 }
 
 tasks.withType(Test).configureEach {

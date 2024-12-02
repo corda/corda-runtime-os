@@ -9,7 +9,6 @@ import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
-import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 /**
@@ -34,15 +33,18 @@ class EntityRequestProcessor(
     override val responseClass = FlowEvent::class.java
 
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        val processorService = ProcessorService()
+        private val logger = LoggerFactory.getLogger(EntityRequestProcessor::class.java)
+        private val processorService = ProcessorService()
     }
 
     override fun process(request: EntityRequest): FlowEvent {
-        logger.debug { "process processing request $request" }
-
         val record = processorService.processEvent(
-            logger, request, entitySandboxService, currentSandboxGroupContext, responseFactory, requestsIdsRepository
+            logger,
+            request,
+            entitySandboxService,
+            currentSandboxGroupContext,
+            responseFactory,
+            requestsIdsRepository
         )
         return record.value as FlowEvent
     }

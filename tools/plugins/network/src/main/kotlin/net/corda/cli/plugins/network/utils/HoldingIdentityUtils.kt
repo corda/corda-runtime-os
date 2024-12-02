@@ -1,21 +1,21 @@
 package net.corda.cli.plugins.network.utils
 
+import net.corda.crypto.core.ShortHash
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import java.io.File
 
 object HoldingIdentityUtils {
     fun getHoldingIdentity(
-        holdingIdentityShortHash: String?,
-        name: String?,
+        holdingIdentityShortHash: ShortHash?,
+        name: MemberX500Name?,
         group: String?,
-    ): String {
+    ): ShortHash {
         return holdingIdentityShortHash ?: name?.let {
-            val x500Name = MemberX500Name.parse(it)
             val holdingIdentity = group?.let { group ->
-                HoldingIdentity(x500Name, group)
-            } ?: HoldingIdentity(x500Name, readDefaultGroup())
-            holdingIdentity.shortHash.toString()
+                HoldingIdentity(name, group)
+            } ?: HoldingIdentity(name, readDefaultGroup())
+            holdingIdentity.shortHash
         } ?: throw IllegalArgumentException("Either 'holdingIdentityShortHash' or 'name' must be specified.")
     }
 

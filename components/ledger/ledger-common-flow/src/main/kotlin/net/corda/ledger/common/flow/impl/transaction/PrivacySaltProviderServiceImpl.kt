@@ -1,6 +1,6 @@
 package net.corda.ledger.common.flow.impl.transaction
 
-import net.corda.flow.fiber.FlowFiberService
+import net.corda.flow.application.services.FlowCheckpointService
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.flow.transaction.PrivacySaltProviderService
@@ -10,12 +10,12 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(service = [PrivacySaltProviderService::class])
 class PrivacySaltProviderServiceImpl @Activate constructor(
-    @Reference(service = FlowFiberService::class)
-    private val flowFiberService: FlowFiberService
+    @Reference(service = FlowCheckpointService::class)
+    private val flowCheckpointService: FlowCheckpointService
 ) : PrivacySaltProviderService {
 
     override fun generatePrivacySalt(): PrivacySalt {
-        val flowCheckpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        val flowCheckpoint = flowCheckpointService.getCheckpoint()
         val flowID = flowCheckpoint.flowId
         val suspendCount = flowCheckpoint.suspendCount
         val saltCounter = flowCheckpoint.ledgerSaltCounter

@@ -1,12 +1,13 @@
-@file:Suppress("DEPRECATION")
-
 package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
+import net.corda.crypto.core.ShortHash
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.restclient.CordaRestClient
+import net.corda.sdk.packaging.CpiUploader
+import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -14,7 +15,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
+import java.net.URI
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
 class OnboardMgmTest {
     companion object {
@@ -25,9 +28,9 @@ class OnboardMgmTest {
         private val password = "--password=${DEFAULT_CLUSTER.rest.password}"
         private const val INSECURE = "--insecure=true"
 
-        private fun mgmName() = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB").toString()
+        private fun mgmName() = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB")
 
-        private lateinit var holdingIdentity: String
+        private lateinit var holdingIdentity: ShortHash
     }
 
     @BeforeEach
@@ -39,7 +42,7 @@ class OnboardMgmTest {
     fun `onboarding MGM with default options succeeds`() {
         val mgm = mgmName()
         CommandLine(OnboardMgm()).execute(
-            mgm,
+            mgm.toString(),
             targetUrl,
             user,
             password,
@@ -55,7 +58,7 @@ class OnboardMgmTest {
         val command = OnboardMgm()
 
         CommandLine(command).execute(
-            mgmName(),
+            mgmName().toString(),
             targetUrl,
             user,
             password,
@@ -65,7 +68,7 @@ class OnboardMgmTest {
 
         val mgm = mgmName()
         CommandLine(OnboardMgm()).execute(
-            mgm,
+            mgm.toString(),
             "--cpi-hash=$cpiHash",
             targetUrl,
             user,
@@ -81,7 +84,7 @@ class OnboardMgmTest {
     fun `onboarding MGM saves group policy to file`() {
         val groupPolicyLocation = "${System.getProperty("user.home")}/.corda/gp/test.json"
         CommandLine(OnboardMgm()).execute(
-            mgmName(),
+            mgmName().toString(),
             "-s=$groupPolicyLocation",
             targetUrl,
             user,
@@ -100,7 +103,7 @@ class OnboardMgmTest {
     @Test
     fun `onboarding MGM saves group ID to file`() {
         CommandLine(OnboardMgm()).execute(
-            mgmName(),
+            mgmName().toString(),
             targetUrl,
             user,
             password,
@@ -118,7 +121,7 @@ class OnboardMgmTest {
     @Test
     fun `onboarding MGM with mutual TLS sets correct TLS type in group policy`() {
         CommandLine(OnboardMgm()).execute(
-            mgmName(),
+            mgmName().toString(),
             "--mutual-tls",
             targetUrl,
             user,
@@ -140,7 +143,7 @@ class OnboardMgmTest {
         val gatewayUrl0 = "https://localhost:8080"
         val gatewayUrl1 = "https://localhost:8081"
         CommandLine(OnboardMgm()).execute(
-            mgm,
+            mgm.toString(),
             "--p2p-gateway-url=$gatewayUrl0",
             "--p2p-gateway-url=$gatewayUrl1",
             targetUrl,
@@ -157,15 +160,19 @@ class OnboardMgmTest {
     }
 
     private fun OnboardMgm.getExistingCpiHash(): String {
-        return createRestClient(CpiUploadRestResource::class).use { client ->
-            val response = client.start().proxy.getAllCpis()
-            response.cpis
-                .first { it.groupPolicy?.contains("CREATE_ID") == true }
-                .cpiFileChecksum
-        }
+        val restClient = CordaRestClient.createHttpClient(
+            baseUrl = URI.create(targetUrl),
+            username = username,
+            password = password,
+            insecure = true,
+        )
+        val cpisFromCluster = CpiUploader(restClient).getAllCpis(wait = waitDurationSeconds.seconds).cpis
+        return cpisFromCluster
+            .first { it.groupPolicy?.contains("CREATE_ID") == true }
+            .cpiFileChecksum
     }
 
-    private fun OutputStub.lookup(mgmName: String) {
+    private fun OutputStub.lookup(mgmName: MemberX500Name) {
         holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
             null,
             mgmName,

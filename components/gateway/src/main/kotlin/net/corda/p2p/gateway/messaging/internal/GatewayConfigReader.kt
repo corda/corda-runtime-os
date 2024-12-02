@@ -2,8 +2,8 @@ package net.corda.p2p.gateway.messaging.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 internal class GatewayConfigReader(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val configurationReaderService: ConfigurationReadService
+    private val configurationReaderService: ConfigurationReadService,
 ) : LifecycleWithDominoTile {
 
     companion object {
@@ -36,18 +36,18 @@ internal class GatewayConfigReader(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        configurationChangeHandler = ConfigChangeHandler()
+        configurationChangeHandler = ConfigChangeHandler(),
     )
 
-    private inner class ConfigChangeHandler: ConfigurationChangeHandler<GatewayConfiguration>(
+    private inner class ConfigChangeHandler : ConfigurationChangeHandler<GatewayConfiguration>(
         configurationReaderService,
         ConfigKeys.P2P_GATEWAY_CONFIG,
-        { it.toGatewayConfiguration() }
+        { it.toGatewayConfiguration() },
     ) {
         override fun applyNewConfiguration(
             newConfiguration: GatewayConfiguration,
             oldConfiguration: GatewayConfiguration?,
-            resources: ResourcesHolder
+            resources: ResourcesHolder,
         ): CompletableFuture<Unit> {
             if (newConfiguration != oldConfiguration) {
                 logger.info("New configuration, connection settings updated to ${newConfiguration.connectionConfig}.")

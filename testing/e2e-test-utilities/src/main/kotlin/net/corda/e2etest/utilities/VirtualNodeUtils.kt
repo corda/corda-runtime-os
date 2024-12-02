@@ -1,5 +1,6 @@
 package net.corda.e2etest.utilities
 
+import net.corda.rest.ResponseCode
 import net.corda.utilities.minutes
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -17,12 +18,9 @@ fun ClusterBuilder.awaitVirtualNodeOperationStatusCheck(
         timeout(timeout)
         command { getVNodeStatus(requestId) }
         condition {
-            if (it.code != 200) {
-                false
-            } else {
+            it.code == ResponseCode.OK.statusCode && run {
                 val json = it.toJson()
                 val status = json["status"].textValue()
-
                 !(status == "ACCEPTED" || status == "IN_PROGRESS")
             }
         }

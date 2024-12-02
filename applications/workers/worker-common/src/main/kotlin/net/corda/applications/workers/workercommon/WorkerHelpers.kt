@@ -17,6 +17,7 @@ import org.osgi.framework.FrameworkUtil
 import org.slf4j.Logger
 import picocli.CommandLine
 import java.io.InputStream
+import java.lang.StringBuilder
 import java.lang.management.ManagementFactory
 import kotlin.math.absoluteValue
 import kotlin.random.Random
@@ -219,31 +220,36 @@ class WorkerHelpers {
          * Logs info about Worker startup process, including info from current process and [PlatformInfoProvider].
          */
         fun Logger.loggerStartupInfo(platformInfoProvider: PlatformInfoProvider) {
-            info("LocalWorkerPlatformVersion ${platformInfoProvider.localWorkerPlatformVersion}")
-            info("LocalWorkerSoftwareVersion ${platformInfoProvider.localWorkerSoftwareVersion}")
+            val startupInfoBuilder = StringBuilder()
+            val ls = System.lineSeparator()
+            startupInfoBuilder.append("LocalWorkerPlatformVersion ${platformInfoProvider.localWorkerPlatformVersion}$ls")
+            startupInfoBuilder.append("LocalWorkerSoftwareVersion ${platformInfoProvider.localWorkerSoftwareVersion}$ls")
 
             val processHandle = ProcessHandle.current()
             val processInfo = processHandle.info()
-            info("PID: ${processHandle.pid()}")
-            info("Command: ${processInfo.command().orElse("Null")}")
+            startupInfoBuilder.append("PID: ${processHandle.pid()}$ls")
+            startupInfoBuilder.append("Command: ${processInfo.command().orElse("Null")}$ls")
 
             val arguments = processInfo.arguments()
             if (arguments.isPresent) {
                 arguments.get().map { arg ->
                     SENSITIVE_ARGS.firstOrNull { arg.trim().startsWith(it) }
                         .let { prefix -> if (prefix == null) arg else "$prefix=[REDACTED]" }
-                }.forEachIndexed { i, redactedArg -> info("argument $i, $redactedArg") }
+                }.forEachIndexed { i, redactedArg -> startupInfoBuilder.append("argument $i, $redactedArg$ls") }
             } else {
-                info("arguments: Null")
+                startupInfoBuilder.append("arguments: Null$ls")
             }
 
-            info("User: ${processInfo.user().orElse("Null")}")
-            info("StartInstant: ${if (processInfo.startInstant().isPresent) processInfo.startInstant().get() else "Null"}")
-            info("TotalCpuDuration: ${if (processInfo.totalCpuDuration().isPresent) processInfo.totalCpuDuration().get() else "Null"}")
+            startupInfoBuilder.append("User: ${processInfo.user().orElse("Null")}$ls")
+            val startInstant = if (processInfo.startInstant().isPresent) processInfo.startInstant().get() else "Null"
+            startupInfoBuilder.append("StartInstant: $startInstant$ls")
+            val totalCpuDuration = if (processInfo.totalCpuDuration().isPresent) processInfo.totalCpuDuration().get() else "Null"
+            startupInfoBuilder.append("TotalCpuDuration: $totalCpuDuration$ls")
 
             val mxBeanInfo = ManagementFactory.getRuntimeMXBean()
-            info("classpath: ${mxBeanInfo.classPath}")
-            info("VM ${mxBeanInfo.vmName} ${mxBeanInfo.vmVendor} ${mxBeanInfo.vmVersion}")
+            startupInfoBuilder.append("classpath: ${mxBeanInfo.classPath}$ls")
+            startupInfoBuilder.append("VM ${mxBeanInfo.vmName} ${mxBeanInfo.vmVendor} ${mxBeanInfo.vmVersion}")
+            info(startupInfoBuilder.toString())
         }
     }
 }

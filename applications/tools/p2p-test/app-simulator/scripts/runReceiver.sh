@@ -36,7 +36,7 @@ deploy_receiver() {
 }
 
 MGM_HOLDING_ID_SHORT_HASH=$(cat $MGM_HOLDING_ID_FILE)
-GROUP_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -X GET https://$MGM_RPC/api/v1/members/$MGM_HOLDING_ID_SHORT_HASH | jq '.members[0].memberContext."corda.groupId"' | tr -d '"')
+GROUP_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -X GET https://$MGM_RPC/api/v5_3/members/$MGM_HOLDING_ID_SHORT_HASH | jq '.members[0].memberContext."corda.groupId"' | tr -d '"')
 
 if kubectl get ns metrics-server > /dev/null 2>/dev/null ; then
   metrics_args=" -f \"$SCRIPT_DIR/app-simulator-eks.metrics.yaml\""

@@ -9,7 +9,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 @Component(service = [RPCTopicService::class])
-class RPCTopicServiceImpl(
+internal class RPCTopicServiceImpl(
     private var executorService: ExecutorService = Executors.newCachedThreadPool()
 ) : RPCTopicService {
     private val topics = mutableMapOf<String, RPCProducerConsumerLink<*, *>>()

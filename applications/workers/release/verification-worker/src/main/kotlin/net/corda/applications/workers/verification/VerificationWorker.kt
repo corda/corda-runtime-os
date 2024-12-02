@@ -74,7 +74,13 @@ class VerificationWorker @Activate constructor(
         )
         Health.configure(webServer, lifecycleRegistry)
 
-        configureTracing("Verification Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
+        logger.info("Trace tags captured from the CLI: ${params.defaultParams.extraTraceTags}")
+        configureTracing(
+            "Verification Worker",
+            params.defaultParams.zipkinTraceUrl,
+            params.defaultParams.traceSamplesPerSecond,
+            params.defaultParams.extraTraceTags
+        )
 
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,

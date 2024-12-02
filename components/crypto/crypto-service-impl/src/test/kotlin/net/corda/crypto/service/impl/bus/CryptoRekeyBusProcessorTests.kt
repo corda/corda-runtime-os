@@ -6,8 +6,8 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.CryptoService
-import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.KeyRotationKeyType
 import net.corda.crypto.core.KeyRotationMetadataValues
 import net.corda.crypto.core.KeyRotationRecordType
@@ -188,7 +188,7 @@ class CryptoRekeyBusProcessorTests {
         verify(rewrapPublisher, times(1)).publish(any())
         assertThat(rewrapPublishCapture.allValues).hasSize(1)
 
-        val allTenants = virtualNodeTenantIds + CryptoTenants.CRYPTO
+        val allTenants = virtualNodeTenantIds + ClusterCryptoDb.SCHEMA_NAME
         assertThat(rewrapPublishCapture.firstValue).hasSize(allTenants.size)
 
         verify(stateManager, times(1)).delete(any())
@@ -244,7 +244,7 @@ class CryptoRekeyBusProcessorTests {
         verify(rewrapPublisher, times(1)).publish(any())
         assertThat(rewrapPublishCapture.allValues).hasSize(1)
 
-        val allTenantsExceptFirst = virtualNodeTenantIds.drop(1) + CryptoTenants.CRYPTO
+        val allTenantsExceptFirst = virtualNodeTenantIds.drop(1) + ClusterCryptoDb.SCHEMA_NAME
         assertThat(rewrapPublishCapture.firstValue).hasSize(allTenantsExceptFirst.size)
     }
 
@@ -302,7 +302,7 @@ class CryptoRekeyBusProcessorTests {
             on { create(tenantId1) } doReturn repo1
             on { create(tenantId2) } doReturn repo2
             on { create(tenantId3) } doReturn repo3
-            on { create(CryptoTenants.CRYPTO) } doReturn repo2
+            on { create(ClusterCryptoDb.SCHEMA_NAME) } doReturn repo2
         }
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(

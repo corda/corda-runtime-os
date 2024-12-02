@@ -1,0 +1,120 @@
+@Library('corda-shared-build-pipeline-steps@5.3') _
+
+import com.r3.build.agents.KubernetesAgent
+import com.r3.build.enums.BuildEnvironment
+import com.r3.build.enums.KubernetesCluster
+import com.r3.build.utils.GitUtils
+
+Map config = [
+        dailyBuildCron: '''\
+                TZ=Europe/London
+                H 04 * * 1-5
+        '''.stripIndent(),
+        gradleTestAdditionalArgs: '',
+        gradleTestPerformanceTuning: '-Dscan.tag.corda-runtime-gradle-plugin --build-cache -Si',
+        gradleTestTarget: ':tools:corda-runtime-gradle-plugin:cordaRuntimeGradlePluginSmokeTest',
+        enableNotifications: false,
+        slackChannel: '#corda-corda5-build-notifications',
+]
+
+GitUtils gitUtils = new GitUtils(this)
+KubernetesAgent k8s = new KubernetesAgent(
+        BuildEnvironment.AMD64_LINUX_JAVA17,
+        KubernetesCluster.JenkinsAgents,
+        3
+).withDocker()
+
+pipeline {
+    agent {
+        kubernetes {
+            cloud k8s.buildCluster.cloudName
+            yaml k8s.JSON
+            yamlMergeStrategy merge() // important to keep tolerations from the inherited template
+            label k8s.jenkinsLabel
+            showRawYaml false
+            defaultContainer k8s.defaultContainer.name
+        }
+    }
+
+    triggers {
+        cron(gitUtils.isReleaseBranch() ? config.dailyBuildCron : '')
+    }
+
+    environment {
+        ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
+        CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
+        CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
+        GRADLE_USER_HOME = '/host_tmp/gradle'
+    }
+
+    parameters {
+        string(name: 'COMMIT_TO_CHECKOUT', defaultValue: '', description: 'Commit ID to check out of SCM - leave blank to take head of current branch')
+        string(name: 'CORDA_IMAGE_TAG', defaultValue: '', description: 'Tag for Corda images to be used in the test')
+    }
+
+    options {
+        buildDiscarder(logRotator(daysToKeepStr: '30', artifactDaysToKeepStr: '30'))
+        timestamps()
+    }
+
+    stages {
+        stage('check out') {
+            steps {
+                script {
+                    gitUtils.checkoutGitRevisionOfTriggeringJob(params.COMMIT_TO_CHECKOUT)
+                }
+            }
+        }
+        stage('Prep') {
+            steps {
+                sh label: 'Check that docker engine is available', script: 'docker info'
+                sh 'docker login corda-os-docker.software.r3.com -u "${CORDA_ARTIFACTORY_USERNAME}" -p "${CORDA_ARTIFACTORY_PASSWORD}"'
+            }
+        }
+        stage('Test') {
+            environment {
+                CORDA_IMAGE_TAG = "${params.CORDA_IMAGE_TAG}"
+            }
+            steps {
+                script {
+                    gradlew(
+                        config.gradleTestTarget,
+                        config.gradleTestPerformanceTuning,
+                        config.gradleTestAdditionalArgs,
+                    )
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            findBuildScans()
+            step([$class: 'ClaimPublisher'])
+        }
+        failure {
+            script {
+                if (config.enableNotifications) {
+                    sendSlackNotifications("danger", "BUILD FAILURE", false, "${config.slackChannel}")
+                }
+            }
+        }
+        aborted {
+            script {
+                if (config.enableNotifications) {
+                    sendSlackNotifications(BuildConstants.SLACK_ABORT_BUILD_COLOR, "BUILD ABORTED - Aborted Builds may be a result of a timeout please investigate", true, "${config.slackChannel}")
+                }
+            }
+        }
+    }
+}
+
+def gradlew(String... args) {
+    allArgs = args.join(' ')
+    sh "./gradlew ${allArgs}"
+}

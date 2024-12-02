@@ -26,7 +26,7 @@ class LoggingInterceptor private constructor(private val testAppender: TestAppen
         }
     }
 
-    private class TestAppender: AbstractAppender("TestAppender", null, null, false, null) {
+    private class TestAppender : AbstractAppender("TestAppender", null, null, false, null) {
 
         val messages = ConcurrentLinkedQueue<String>()
         val levels = mutableListOf<Level>()

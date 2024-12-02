@@ -5,12 +5,18 @@ import net.corda.rest.ResponseCode
 /**
  * Indicates a requested resource is unavailable.
  *
- * @param message the exception message
+ * @param title the exception title
+ * @param exceptionDetails contains cause and reason
  */
-class ServiceUnavailableException(message: String) : HttpApiException(ResponseCode.SERVICE_UNAVAILABLE, message) {
+class ServiceUnavailableException(title: String, exceptionDetails: ExceptionDetails? = null) :
+    HttpApiException(ResponseCode.SERVICE_UNAVAILABLE, title, exceptionDetails = exceptionDetails) {
     /**
      * @param resource The resource which is unavailable.
      * @param id The ID of the resource.
      */
-    constructor(resource: Any, id: String) : this("$resource '$id' is unavailable.")
+    constructor(
+        resource: Any,
+        id: String,
+        exceptionDetails: ExceptionDetails? = null
+    ) : this("$resource '$id' is unavailable.", exceptionDetails)
 }

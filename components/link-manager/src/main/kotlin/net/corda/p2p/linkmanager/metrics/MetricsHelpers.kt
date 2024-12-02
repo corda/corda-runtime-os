@@ -1,15 +1,18 @@
 package net.corda.p2p.linkmanager.metrics
 
+import io.micrometer.core.instrument.Counter
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
+import net.corda.data.p2p.event.SessionDirection
 import net.corda.metrics.CordaMetrics
 import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.virtualnode.HoldingIdentity
+import java.time.Duration
+import java.time.Instant
 
 const val P2P_SUBSYSTEM = "p2p"
 const val SESSION_MESSAGE_TYPE = "SessionMessage"
-const val HEARTBEAT_MESSAGE = "HeartbeatMessage"
 
 fun recordOutboundMessagesMetric(message: AuthenticatedMessage) {
     message.header.let {
@@ -28,11 +31,6 @@ fun recordOutboundMessagesMetric(message: OutboundUnauthenticatedMessage) {
 fun recordOutboundSessionMessagesMetric(sourceVnode: HoldingIdentity) {
     recordOutboundMessagesMetric(sourceVnode.groupId,
         P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
-}
-
-fun recordOutboundHeartbeatMessagesMetric(sourceVnode: HoldingIdentity) {
-    recordOutboundMessagesMetric(sourceVnode.groupId,
-        P2P_SUBSYSTEM, HEARTBEAT_MESSAGE)
 }
 
 fun recordOutboundSessionMessagesMetric(sourceVnode: net.corda.data.identity.HoldingIdentity) {
@@ -64,10 +62,6 @@ fun recordInboundSessionMessagesMetric(datapoints: Int = 1) {
     }
 }
 
-fun recordInboundHeartbeatMessagesMetric(destinationVnode: HoldingIdentity) {
-    recordInboundMessagesMetric(destinationVnode.groupId, P2P_SUBSYSTEM, HEARTBEAT_MESSAGE)
-}
-
 private fun recordInboundMessagesMetric(group: String?, subsystem: String, messageType: String) {
     val builder = CordaMetrics.Metric.InboundMessageCount.builder()
     listOf(
@@ -81,14 +75,21 @@ private fun recordInboundMessagesMetric(group: String?, subsystem: String, messa
     builder.build().increment()
 }
 
-fun recordOutboundSessionTimeoutMetric(source: HoldingIdentity) {
-    CordaMetrics.Metric.OutboundSessionTimeoutCount.builder()
+fun recordSessionTimeoutMetric(source: HoldingIdentity, direction: SessionDirection) {
+    CordaMetrics.Metric.SessionTimeoutCount.builder()
+        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
         .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
         .build().increment()
 }
 
-fun recordInboundSessionTimeoutMetric(source: HoldingIdentity) {
-    CordaMetrics.Metric.InboundSessionTimeoutCount.builder()
-        .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
-        .build().increment()
+fun recordSessionCreationTime(startTime: Instant) {
+    CordaMetrics.Metric.SessionCreationTime.builder()
+        .build()
+        .record(Duration.between(startTime, Instant.now()))
+}
+
+fun recordP2PMetric(metric: CordaMetrics.Metric<Counter>, direction: SessionDirection, incrementBy: Double = 1.0) {
+    metric.builder()
+        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
+        .build().increment(incrementBy)
 }

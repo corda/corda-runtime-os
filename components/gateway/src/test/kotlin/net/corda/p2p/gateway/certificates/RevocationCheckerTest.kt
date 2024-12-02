@@ -33,7 +33,7 @@ class RevocationCheckerTest {
     }
     private val mockDominoTile = Mockito.mockConstruction(RPCSubscriptionDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        (context.arguments()[1] as  () -> RPCSubscription<RevocationCheckRequest, RevocationCheckResponse>)()
+        (context.arguments()[1] as () -> RPCSubscription<RevocationCheckRequest, RevocationCheckResponse>)()
     }
     init {
         RevocationChecker(subscriptionFactory, mock(), mock(), mock())

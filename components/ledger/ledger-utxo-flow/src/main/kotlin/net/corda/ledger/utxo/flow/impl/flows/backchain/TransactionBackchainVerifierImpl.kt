@@ -46,7 +46,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
             val (transaction, status) = utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(
                 transactionId,
                 UNVERIFIED
-            ) ?: throw CordaRuntimeException("Transaction does not exist locally")
+            ) ?: throw CordaRuntimeException("Transaction ($UNVERIFIED) with id: $transactionId does not exist locally")
             when (status) {
                 INVALID -> {
                     log.warn(

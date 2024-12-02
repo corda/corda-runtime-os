@@ -1,7 +1,6 @@
 package net.corda.rest.ws
 
 import java.lang.Exception
-import java.util.concurrent.Future
 
 /**
  * Channel to facilitate full duplex (i.e. two-way communication) like WebSockets protocol.
@@ -16,14 +15,14 @@ interface DuplexChannel : AutoCloseable {
     val id: String
 
     /**
-     * Allows to asynchronously send a message to the remote side
+     * Allows to synchronously send a message to the remote side
      */
-    fun send(message: String): Future<Void>
+    fun send(message: String)
 
     /**
-     * Allows to asynchronously send a message to the remote side
+     * Allows to synchronously send a message to the remote side
      */
-    fun send(message: Any): Future<Void>
+    fun send(message: Any)
 
     /**
      * Allows to close this communication channel

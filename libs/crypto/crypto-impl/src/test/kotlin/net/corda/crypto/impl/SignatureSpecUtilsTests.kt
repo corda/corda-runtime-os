@@ -5,6 +5,7 @@ import net.corda.crypto.cipher.suite.ParameterizedSignatureSpec
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.utilities.toByteArray
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -34,7 +35,7 @@ class SignatureSpecUtilsTests {
             signatureName = "NONEwithECDSA",
             customDigestName = DigestAlgorithmName.SHA2_256
         )
-        val data = UUID.randomUUID().toString().toByteArray()
+        val data = UUID.randomUUID().toByteArray()
         val expected = MessageDigest.getInstance("SHA-256").digest(data)
         assertArrayEquals(expected, spec.getSigningData(digestService, data))
     }
@@ -46,7 +47,7 @@ class SignatureSpecUtilsTests {
             DigestAlgorithmName.SHA2_256,
             mock()
         )
-        val data = UUID.randomUUID().toString().toByteArray()
+        val data = UUID.randomUUID().toByteArray()
         val expected = MessageDigest.getInstance("SHA-256").digest(data)
         assertArrayEquals(expected, spec.getSigningData(digestService, data))
     }
@@ -54,7 +55,7 @@ class SignatureSpecUtilsTests {
     @Test
     fun `getSigningData should return original byte array for SignatureSpec`() {
         val spec = SignatureSpecs.ECDSA_SHA256
-        val data = UUID.randomUUID().toString().toByteArray()
+        val data = UUID.randomUUID().toByteArray()
         assertArrayEquals(data, spec.getSigningData(digestService, data))
     }
 
@@ -70,7 +71,7 @@ class SignatureSpecUtilsTests {
                 1
             )
         )
-        val data = UUID.randomUUID().toString().toByteArray()
+        val data = UUID.randomUUID().toByteArray()
         assertArrayEquals(data, spec.getSigningData(digestService, data))
     }
 

@@ -1,7 +1,7 @@
 package net.corda.libs.virtualnode.endpoints.v1.types
 
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
-import net.corda.libs.external.messaging.entities.RouteConfiguration
+import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.RouteConfiguration
 import net.corda.virtualnode.OperationalStatus
 
 /**

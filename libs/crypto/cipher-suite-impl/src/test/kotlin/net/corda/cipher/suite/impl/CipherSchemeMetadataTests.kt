@@ -1,24 +1,5 @@
 package net.corda.cipher.suite.impl
 
-import java.io.ByteArrayOutputStream
-import java.io.OutputStream
-import java.math.BigInteger
-import java.security.KeyPair
-import java.security.KeyStore
-import java.security.PublicKey
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
-import java.security.spec.AlgorithmParameterSpec
-import java.security.spec.MGF1ParameterSpec
-import java.security.spec.PSSParameterSpec
-import java.time.Duration
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.Date
-import java.util.UUID
-import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNotNull
 import net.corda.cipher.suite.impl.infra.generateKeyPair
 import net.corda.cipher.suite.impl.infra.inferSignatureSpecOrCreateDefault
 import net.corda.cipher.suite.impl.infra.signData
@@ -32,6 +13,7 @@ import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.crypto.impl.CompositeKeyImpl
 import net.corda.crypto.impl.CompositeKeyProviderImpl
 import net.corda.crypto.impl.CordaSecureRandomService
+import net.corda.utilities.toByteArray
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.COMPOSITE_KEY_CODE_NAME
@@ -68,6 +50,25 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.mock
+import java.io.ByteArrayOutputStream
+import java.io.OutputStream
+import java.math.BigInteger
+import java.security.KeyPair
+import java.security.KeyStore
+import java.security.PublicKey
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
+import java.security.spec.AlgorithmParameterSpec
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
+import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.Date
+import java.util.UUID
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 
 class CipherSchemeMetadataTests {
     companion object {
@@ -314,7 +315,7 @@ class CipherSchemeMetadataTests {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == RSA_CODE_NAME
         }.get()[0] as KeyPair
         listOf("SHA-256", "SHA-384", "SHA-512").forEach {
-            val data = UUID.randomUUID().toString().toByteArray()
+            val data = UUID.randomUUID().toByteArray()
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec)
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
@@ -329,7 +330,7 @@ class CipherSchemeMetadataTests {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == ECDSA_SECP256R1_CODE_NAME
         }.get()[0] as KeyPair
         listOf("SHA-256", "SHA-384", "SHA-512").forEach {
-            val data = UUID.randomUUID().toString().toByteArray()
+            val data = UUID.randomUUID().toByteArray()
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec)
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
@@ -344,7 +345,7 @@ class CipherSchemeMetadataTests {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == ECDSA_SECP256K1_CODE_NAME
         }.get()[0] as KeyPair
         listOf("SHA-256", "SHA-384", "SHA-512").forEach {
-            val data = UUID.randomUUID().toString().toByteArray()
+            val data = UUID.randomUUID().toByteArray()
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec)
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
@@ -358,7 +359,7 @@ class CipherSchemeMetadataTests {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == EDDSA_ED25519_CODE_NAME
         }.get()[0] as KeyPair
         listOf("NONE").forEach {
-            val data = UUID.randomUUID().toString().toByteArray()
+            val data = UUID.randomUUID().toByteArray()
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec)
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
@@ -372,7 +373,7 @@ class CipherSchemeMetadataTests {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == SM2_CODE_NAME
         }.get()[0] as KeyPair
         listOf("SM3", "SHA-256").forEach {
-            val data = UUID.randomUUID().toString().toByteArray()
+            val data = UUID.randomUUID().toByteArray()
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec)
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
@@ -386,7 +387,7 @@ class CipherSchemeMetadataTests {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == SPHINCS256_CODE_NAME
         }.get()[0] as KeyPair
         listOf("SHA-512").forEach {
-            val data = UUID.randomUUID().toString().toByteArray()
+            val data = UUID.randomUUID().toByteArray()
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec)
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
@@ -400,7 +401,7 @@ class CipherSchemeMetadataTests {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == GOST3410_GOST3411_CODE_NAME
         }.get()[0] as KeyPair
         listOf("GOST3411").forEach {
-            val data = UUID.randomUUID().toString().toByteArray()
+            val data = UUID.randomUUID().toByteArray()
             val signatureSpec = schemeMetadata.inferSignatureSpec(keyPair.public, DigestAlgorithmName(it))
             assertNotNull(signatureSpec, "digest=$it")
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
@@ -535,7 +536,7 @@ class CipherSchemeMetadataTests {
         val decodedPublicKey = schemeMetadata.decodePublicKey(encodedPublicKey)
         assertEquals(keyPair.public.algorithm, decodedPublicKey.algorithm)
         assertEquals(decodedPublicKey, keyPair.public)
-        val data = UUID.randomUUID().toString().toByteArray(Charsets.UTF_8)
+        val data = UUID.randomUUID().toByteArray()
         val signatureSpec = schemeMetadata.inferSignatureSpecOrCreateDefault(
             decodedPublicKey,
             DigestAlgorithmName.SHA2_256
@@ -629,7 +630,7 @@ nOEL3FPCmO4TaDct7E0=
         val encodedPublicKey = schemeMetadata.encodeAsByteArray(keyPair.public)
         val decodedPublicKey = schemeMetadata.decodePublicKey(encodedPublicKey)
         assertEquals(decodedPublicKey, keyPair.public)
-        val data = UUID.randomUUID().toString().toByteArray(Charsets.UTF_8)
+        val data = UUID.randomUUID().toByteArray()
         val signatureSpec = schemeMetadata.inferSignatureSpecOrCreateDefault(decodedPublicKey, DigestAlgorithmName.SHA2_256)
         val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
         kotlin.test.assertTrue(

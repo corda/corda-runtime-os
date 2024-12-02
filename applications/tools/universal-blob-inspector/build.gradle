@@ -1,0 +1,45 @@
+apply plugin: 'java'
+apply plugin: 'kotlin'
+apply plugin: 'corda.common-publishing'
+
+description "Corda Universal Blob Inspector"
+
+dependencies {
+    // Use the Kotlin standard library.
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
+
+    // AMQP support
+    implementation "org.apache.qpid:proton-j:$protonjVersion"
+
+    // Snappy (de)compression
+    implementation libs.snappy.java
+
+    // Command line parsing
+    implementation "info.picocli:picocli:$picocliVersion"
+
+    implementation libs.jackson.databind
+
+    testImplementation libs.bundles.test
+}
+
+ext {
+    cordaEnableFormatting = true
+}
+
+tasks.named('jar', Jar) {
+    destinationDirectory = layout.buildDirectory.dir('bin')
+    archiveBaseName = "corda-universal-blob-inspector"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+    manifest {
+        attributes["Main-Class"] = 'net.corda.blobinspector.AppKt'
+    }
+
+    from {
+        configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+test {
+    systemProperty("JARVersion", version)
+}

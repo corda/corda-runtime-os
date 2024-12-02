@@ -9,12 +9,6 @@ class Certificates {
         val daleKeyStoreFile = this::class.java.classLoader.getResource("sslkeystore_dale.jks")!!
         val ipKeyStore = this::class.java.classLoader.getResource("sslkeystore_127.0.0.1.jks")!!
 
-        val truststoreCertificateWithRevocationPem = this::class.java.classLoader
-                                                            .getResource("truststore/ca_with_revocation_certificate.pem")!!
-        // A revoked certificate from TinyCert
-        val bobKeyStoreFile = this::class.java.classLoader.getResource("sslkeystore_bob.jks")!!
-        val bobKeyStorePem = this::class.java.classLoader.getResource("certificate_bob.pem")!!
-
         val c4TruststoreCertificatePem = this::class.java.classLoader.getResource("truststore_c4/cordarootca.pem")!!
         val c4KeyStoreFile = this::class.java.classLoader.getResource("sslkeystore_c4.jks")!!
 

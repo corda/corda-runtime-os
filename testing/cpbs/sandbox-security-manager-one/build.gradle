@@ -28,6 +28,6 @@ dependencies {
     cordaProvided 'org.osgi:osgi.core'
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-application'
-    cordaProvided 'org.slf4j:slf4j-api'
+    cordaProvided libs.slf4j.api
     cordapp project(':testing:cpbs:sandbox-security-manager-two')
 }

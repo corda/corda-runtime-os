@@ -93,7 +93,7 @@ class HostnameMatcherTest {
         val alias = "alias"
         val certificate = mock<X509Certificate> {
             on { subjectAlternativeNames } doReturn listOf(
-                listOf(GeneralName.dNSName, hostName)
+                listOf(GeneralName.dNSName, hostName),
             )
         }
         val keyStore = mock<KeyStore> {
@@ -103,7 +103,7 @@ class HostnameMatcherTest {
         val matcher = HostnameMatcher(keyStore)
 
         matcher.matches(
-            SNIHostName("alice.net")
+            SNIHostName("alice.net"),
         )
 
         assertThat(matcher.aliasMatch(alias)).isEqualTo(HostnameMatcher.MatchType.C5)
@@ -126,7 +126,7 @@ class HostnameMatcherTest {
         val matcher = HostnameMatcher(keyStore)
 
         matcher.matches(
-            SNIHostName(calculatedSNI)
+            SNIHostName(calculatedSNI),
         )
 
         assertThat(matcher.aliasMatch(alias)).isEqualTo(HostnameMatcher.MatchType.C4)

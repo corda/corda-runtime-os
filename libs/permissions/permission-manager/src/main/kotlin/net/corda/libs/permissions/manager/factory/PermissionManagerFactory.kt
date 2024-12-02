@@ -36,6 +36,7 @@ interface PermissionManagerFactory {
      * Create a service for performing basic authentication utilizing the permission management cache.
      */
     fun createBasicAuthenticationService(
+        rbacConfig: SmartConfig,
         permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>
     ): BasicAuthenticationService
 }

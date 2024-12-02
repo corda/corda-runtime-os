@@ -30,7 +30,7 @@ Both headers must be provided otherwise the system will treat the ID as missing 
 ```shell
 TRACE_ID=`openssl rand -hex 16` # 16 bytes, 128 bits
 SPAN_ID=`openssl rand -hex 8`   #  8 bytes,  64 bits
-curl --insecure -u admin:admin --header "X-B3-TraceId: $TRACE_ID" --header "X-B3-SpanId: $SPAN_ID"  https://localhost:8888/api/v1/flow/$HOLDING_ID/r1
+curl --insecure -u admin:admin --header "X-B3-TraceId: $TRACE_ID" --header "X-B3-SpanId: $SPAN_ID"  https://localhost:8888/api/v5_3/flow/$HOLDING_ID/r1
 ```
 
 ## How to use
@@ -75,12 +75,8 @@ Here we describe how to run the combined worker with a Kafka message bus and a t
     ```
 4. Create the required topics by building and executing the `topic` plugin:
     ```bash
-    ./gradlew :tools:plugins:topic-config:clean :tools:plugins:topic-config:cliPluginTask
-    cd ../corda-cli-plugin-host/
-    ./gradlew assemble
-    cp ../corda-runtime-os/tools/plugins/topic-config/build/libs/topic-config-cli-plugin-*.jar ./build/plugins/
-    ./build/generatedScripts/corda-cli.sh topic -b=localhost:9092 create connect
-    cd ../corda-runtime-os/
+    ./gradlew :tools:corda-cli:clean :tools:corda-cli:build
+    ./tools/corda-cli/build/cli/corda-cli.sh topic -b=localhost:9092 create connect
     ```
 5. Open a terminal in `corda-runtime-os/metrics` and run `docker compose up`
 6. Build combined worker with kafka support:

@@ -13,6 +13,7 @@ import org.apache.kafka.common.resource.PatternType
 import org.apache.kafka.common.resource.ResourcePattern
 import org.apache.kafka.common.resource.ResourceType
 import com.fasterxml.jackson.module.kotlin.readValue
+import net.corda.sdk.bootstrap.topicconfig.TopicConfigCreator
 import org.apache.kafka.clients.admin.AlterConfigOp
 import org.apache.kafka.clients.admin.ConfigEntry
 import org.apache.kafka.common.config.ConfigResource
@@ -87,7 +88,7 @@ class CreateConnect : Runnable {
         Thread.currentThread().contextClassLoader = contextCL
     }
 
-    private fun createTopicsWithRetry(client: Admin, topicConfigs: List<Create.PreviewTopicConfiguration>) {
+    private fun createTopicsWithRetry(client: Admin, topicConfigs: List<TopicConfigCreator.PreviewTopicConfiguration>) {
         val topics = getTopics(topicConfigs).toMutableMap()
         println("Creating topics: ${topics.keys.joinToString { it }}")
         val end = LocalDateTime.now().plusSeconds(wait)
@@ -125,7 +126,7 @@ class CreateConnect : Runnable {
         }
     }
 
-    private fun updateTopics(client: Admin, topicConfigs: List<Create.PreviewTopicConfiguration>) {
+    private fun updateTopics(client: Admin, topicConfigs: List<TopicConfigCreator.PreviewTopicConfiguration>) {
         println("Updating topics: ${topicConfigs.map{ it.name }.joinToString { it }}")
         val update = topicConfigs.associate { topicConfig ->
             ConfigResource(ConfigResource.Type.TOPIC, topicConfig.name) to topicConfig.config.map { entry ->
@@ -144,7 +145,7 @@ class CreateConnect : Runnable {
         }
     }
 
-    fun getAclBindings(acls: List<Create.PreviewTopicACL>): List<AclBinding> {
+    fun getAclBindings(acls: List<TopicConfigCreator.PreviewTopicACL>): List<AclBinding> {
         return acls.flatMap { acl ->
             val pattern = ResourcePattern(ResourceType.TOPIC, acl.topic, PatternType.LITERAL)
             val aclEntries = acl.users.flatMap { user ->
@@ -156,16 +157,16 @@ class CreateConnect : Runnable {
         }
     }
 
-    fun getTopics(topicConfigs: List<Create.PreviewTopicConfiguration>) =
-        topicConfigs.associate { topicConfig: Create.PreviewTopicConfiguration ->
+    fun getTopics(topicConfigs: List<TopicConfigCreator.PreviewTopicConfiguration>) =
+        topicConfigs.associate { topicConfig: TopicConfigCreator.PreviewTopicConfiguration ->
             topicConfig.name to NewTopic(topicConfig.name, topicConfig.partitions, topicConfig.replicas)
                 .configs(topicConfig.config)
         }
 
-    fun getGeneratedTopicConfigs(): Create.PreviewTopicConfigurations = if (configFilePath == null) {
+    fun getGeneratedTopicConfigs(): TopicConfigCreator.PreviewTopicConfigurations = if (configFilePath == null) {
         create!!.getTopicConfigsForPreview()
     } else {
         // Simply read the info from provided file, applying any overrides
-        create!!.applyOverrides(create!!.mapper.readValue(Files.readString(Paths.get(configFilePath!!))))
+        create!!.applyOverrides(create!!.topicConfigCreator.mapper.readValue(Files.readString(Paths.get(configFilePath!!))))
     }
 }

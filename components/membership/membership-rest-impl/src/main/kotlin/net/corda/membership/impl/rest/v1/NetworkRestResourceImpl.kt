@@ -15,6 +15,7 @@ import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
@@ -69,16 +70,25 @@ class NetworkRestResourceImpl @Activate constructor(
                 alternativeSessionKeys.map { it.toSessionKey() },
             )
         } catch (e: CertificatesResourceNotFoundException) {
-            throw ResourceNotFoundException(e.message)
+            throw ResourceNotFoundException(
+                e::class.java.simpleName,
+                ExceptionDetails(e::class.java.name, e.message)
+            )
         } catch (e: BadRequestException) {
             logger.warn("Could not $operation", e)
             throw e
         } catch (e: CordaRPCAPIPartitionException) {
             logger.warn("Could not $operation", e)
-            throw ServiceUnavailableException("Could not $operation: Repartition Event!")
+            throw ServiceUnavailableException(
+                e::class.java.simpleName,
+                ExceptionDetails(e::class.java.name, "Could not $operation: Repartition Event!")
+            )
         } catch (e: Throwable) {
             logger.warn("Could not publish to locally hosted identities", e)
-            throw InternalServerException("Could not import certificate: ${e.message}")
+            throw InternalServerException(
+                title = e::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(e::class.java.name, "Could not import certificate: ${e.message}")
+            )
         }
     }
 

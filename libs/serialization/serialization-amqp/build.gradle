@@ -39,7 +39,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation libs.guava
     implementation "org.apache.qpid:proton-j:$protonjVersion"
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
 
     testImplementation project(':libs:crypto:cipher-suite')
     testImplementation project(':libs:crypto:cipher-suite-impl')
@@ -74,6 +74,7 @@ dependencies {
     integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.osgi'
     }
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

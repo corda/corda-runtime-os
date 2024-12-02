@@ -91,29 +91,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
         coordinator.stop()
     }
 
-    @Deprecated("Deprecated in favour of lookupV51")
     override fun lookup(
-        holdingIdentityShortHash: String,
-        commonName: String?,
-        organization: String?,
-        organizationUnit: String?,
-        locality: String?,
-        state: String?,
-        country: String?,
-        statuses: List<String>,
-    ) = impl.lookup(
-        ShortHash.parseOrThrow(holdingIdentityShortHash),
-        commonName,
-        organization,
-        organizationUnit,
-        locality,
-        state,
-        country,
-        statuses.toSet(),
-        false
-    )
-
-    override fun lookupV51(
         holdingIdentityShortHash: String,
         commonName: String?,
         organization: String?,

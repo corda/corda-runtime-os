@@ -2,6 +2,8 @@ package net.corda.p2p.linkmanager.sessions.metadata
 
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.State
+import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
@@ -9,11 +11,20 @@ import net.corda.virtualnode.HoldingIdentity
 import java.time.Duration
 import java.time.Instant
 
+/**
+ * Possible session statuses for outbound sessions.
+ * Reflects where we are in the Session negotiation process.
+ */
 internal enum class OutboundSessionStatus {
     SentInitiatorHello,
     SentInitiatorHandshake,
     SessionReady,
 }
+
+/**
+ * Possible session statuses for inbound sessions.
+ * Reflects where we are in the Session negotiation process.
+ */
 internal enum class InboundSessionStatus {
     SentResponderHello,
     SentResponderHandshake,
@@ -22,6 +33,7 @@ internal enum class InboundSessionStatus {
 /**
  * [InboundSessionMetadata] represents the metadata stored in the State Manager for an inbound session.
  *
+ * @param commonData The common metadata of the session.
  * @param status Where we are in the Session negotiation process.
  */
 internal data class InboundSessionMetadata(
@@ -59,7 +71,14 @@ internal data class InboundSessionMetadata(
 /**
  * [OutboundSessionMetadata] represents the metadata stored in the State Manager for an outbound session.
  *
+ * @param commonData The common metadata of the session.
+ * @param sessionId The ID of the session. Outbound sessions are keyed by counterparty information, so
+ * session IDs are stored in the metadata.
  * @param status Where we are in the Session negotiation process.
+ * @param serial Serial of the destination's member information.
+ * @param membershipStatus The status of the destination's member information.
+ * @param communicationWithMgm Boolean value which flags if the session is between MGM and member.
+ * @param initiationTimestamp Timestamp when the session was initiated.
  */
 internal data class OutboundSessionMetadata(
     val commonData: CommonMetadata,
@@ -68,6 +87,7 @@ internal data class OutboundSessionMetadata(
     val serial: Long,
     val membershipStatus: MembershipStatusFilter,
     val communicationWithMgm: Boolean,
+    val initiationTimestamp: Instant,
 ) {
     companion object {
         private const val STATUS = "status"
@@ -75,6 +95,7 @@ internal data class OutboundSessionMetadata(
         private const val MEMBERSHIP_STATUS = "membershipStatus"
         private const val COMMUNICATION_WITH_MGM = "communicationWithMgm"
         private const val SESSION_ID = "sessionId"
+        private const val INITIATION_TIMESTAMP_MILLIS = "initiationTimestampMillis"
 
         fun Metadata.toOutbound(): OutboundSessionMetadata {
             return OutboundSessionMetadata(
@@ -84,6 +105,7 @@ internal data class OutboundSessionMetadata(
                 (this[SERIAL] as Number).toLong(),
                 this[MEMBERSHIP_STATUS].toString().membershipStatusFromString(),
                 this[COMMUNICATION_WITH_MGM].toString().toBoolean(),
+                Instant.ofEpochMilli((this[INITIATION_TIMESTAMP_MILLIS] as Number).toLong()),
             )
         }
 
@@ -94,6 +116,8 @@ internal data class OutboundSessionMetadata(
         private fun String.membershipStatusFromString(): MembershipStatusFilter {
             return MembershipStatusFilter.values().first { it.toString() == this }
         }
+
+        fun Metadata.isOutbound(): Boolean = this[SESSION_ID] != null
     }
 
     fun lastSendExpired(clock: Clock): Boolean {
@@ -113,6 +137,7 @@ internal data class OutboundSessionMetadata(
                     MEMBERSHIP_STATUS to this.membershipStatus.toString(),
                     COMMUNICATION_WITH_MGM to this.communicationWithMgm,
                     SESSION_ID to this.sessionId,
+                    INITIATION_TIMESTAMP_MILLIS to this.initiationTimestamp.toEpochMilli(),
                 ),
         )
     }
@@ -121,6 +146,8 @@ internal data class OutboundSessionMetadata(
 /**
  * [CommonMetadata] stores the common metadata in [OutboundSessionMetadata] and [InboundSessionMetadata].
  *
+ * @param source The identity of the initiator.
+ * @param destination The identity of the recipient.
  * @param lastSendTimestamp The last time a session negotiation message was sent.
  * @param expiry When the Session Expires and should be rotated.
  */
@@ -165,4 +192,15 @@ internal data class CommonMetadata(
     fun sessionExpired(clock: Clock): Boolean {
         return clock.instant() > expiry
     }
+}
+
+/**
+ * Reads the counterparties from the state.
+ */
+internal fun State.toCounterparties(): SessionManager.Counterparties {
+    val common = this.metadata.toCommonMetadata()
+    return SessionManager.Counterparties(
+        ourId = common.source,
+        counterpartyId = common.destination,
+    )
 }

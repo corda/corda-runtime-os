@@ -17,22 +17,27 @@ import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.Entity
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.InvalidStateChangeException
+import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
@@ -40,13 +45,13 @@ import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -63,6 +68,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+import java.util.concurrent.TimeoutException
 import javax.persistence.PessimisticLockException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -112,8 +118,6 @@ class MGMRestResourceTest {
     private val initialTime = Instant.parse("2007-12-03T00:00:00.00Z")
     private val manualDeclinationReason = REASON
     private val suspensionActivationParameters = SuspensionActivationParameters(subject, 1, REASON)
-    private val deprecatedSuspensionActivationParameters =
-        net.corda.membership.rest.v1.types.request.SuspensionActivationParameters(subject, 1, REASON)
     private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
@@ -173,6 +177,28 @@ class MGMRestResourceTest {
             whenever(mgmResourceClient.generateGroupPolicy(any())).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
+                mgmRestResource.generateGroupPolicy(HOLDING_IDENTITY_ID)
+            }
+        }
+
+        @Test
+        fun `generateGroupPolicy throws service unavailable after a timeout`() {
+            startService()
+            val error = ServiceNotReadyException(TimeoutException())
+            whenever(mgmResourceClient.generateGroupPolicy(any())).doThrow(error)
+
+            assertThrows<ServiceUnavailableException> {
+                mgmRestResource.generateGroupPolicy(HOLDING_IDENTITY_ID)
+            }
+        }
+
+        @Test
+        fun `generateGroupPolicy throws service unavailable after partition exception`() {
+            startService()
+            val error = CordaRPCAPIPartitionException("")
+            whenever(mgmResourceClient.generateGroupPolicy(any())).doThrow(error)
+
+            assertThrows<ServiceUnavailableException> {
                 mgmRestResource.generateGroupPolicy(HOLDING_IDENTITY_ID)
             }
         }
@@ -258,11 +284,11 @@ class MGMRestResourceTest {
         }
 
         @Test
-        fun `addGroupApprovalRule throws bad request for duplicate rule`() {
+        fun `addGroupApprovalRule throws resource already exists for duplicate rule`() {
             startService()
-            whenever(mgmResourceClient.addApprovalRule(any(), any())).doThrow(mock<MembershipPersistenceException>())
+            whenever(mgmResourceClient.addApprovalRule(any(), any())).doThrow(mock<ConflictPersistenceException>())
 
-            assertThrows<BadRequestException> {
+            assertThrows<ResourceAlreadyExistsException> {
                 mgmRestResource.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL))
             }
 
@@ -313,7 +339,7 @@ class MGMRestResourceTest {
             startService()
             whenever(mgmResourceClient.deleteApprovalRule(any(), any(), eq(STANDARD))).doThrow(mock<MembershipPersistenceException>())
 
-            assertThrows<ResourceNotFoundException> {
+            assertThrows<InternalServerException> {
                 mgmRestResource.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
             }
 
@@ -339,6 +365,18 @@ class MGMRestResourceTest {
             assertThrows<BadRequestException> {
                 mgmRestResource.deleteGroupApprovalRule(INVALID_SHORT_HASH, RULE_ID)
             }
+
+            stopService()
+        }
+
+        @Test
+        fun `deleteGroupApprovalRule throws not found if the rule ID can not be found`() {
+            startService()
+            whenever(mgmResourceClient.deleteApprovalRule(any(), any(), any())).doThrow(mock<NotFoundEntityPersistenceException>())
+
+            assertThatThrownBy {
+                mgmRestResource.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
+            }.isInstanceOf(ResourceNotFoundException::class.java)
 
             stopService()
         }
@@ -888,7 +926,7 @@ class MGMRestResourceTest {
         fun `it throws bad request for duplicate rule`() {
             onCallingClientService().doThrow(mock<MembershipPersistenceException>())
 
-            assertThrows<BadRequestException> {
+            assertThrows<InternalServerException> {
                 callFunctionUnderTest(
                     HOLDING_IDENTITY_ID,
                     ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL)
@@ -1045,7 +1083,7 @@ class MGMRestResourceTest {
         fun `deleteGroupApprovalRule throws resource not found for non-existent rule`() {
             whenCallingClientService().doThrow(mock<MembershipPersistenceException>())
 
-            assertThrows<ResourceNotFoundException> {
+            assertThrows<InternalServerException> {
                 callFunctionUnderTest(HOLDING_IDENTITY_ID, RULE_ID)
             }
         }
@@ -1282,19 +1320,6 @@ class MGMRestResourceTest {
         }
 
         @Test
-        fun `deprecated suspendMember delegates correctly to mgm resource client`() {
-            @Suppress("deprecation")
-            mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, deprecatedSuspensionActivationParameters)
-
-            verify(mgmResourceClient).suspendMember(
-                (ShortHash.of(HOLDING_IDENTITY_ID)),
-                MemberX500Name.parse(subject),
-                SERIAL,
-                REASON
-            )
-        }
-
-        @Test
         fun `suspendMember throws resource not found for invalid member`() {
             whenever(
                 mgmResourceClient.suspendMember(
@@ -1425,14 +1450,6 @@ class MGMRestResourceTest {
                 mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
             }
         }
-
-        @Test
-        fun `deprecatedSuspendMember does not throw when serial number is null`() {
-            assertDoesNotThrow {
-                @Suppress("DEPRECATION")
-                mgmRestResource.deprecatedSuspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
-            }
-        }
     }
 
     @Nested
@@ -1446,19 +1463,6 @@ class MGMRestResourceTest {
         @Test
         fun `activateMember delegates correctly to mgm resource client`() {
             mgmRestResource.activateMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
-
-            verify(mgmResourceClient).activateMember(
-                (ShortHash.of(HOLDING_IDENTITY_ID)),
-                MemberX500Name.parse(subject),
-                SERIAL,
-                REASON
-            )
-        }
-
-        @Test
-        fun `deprecated activateMember delegates correctly to mgm resource client`() {
-            @Suppress("deprecation")
-            mgmRestResource.activateMember(HOLDING_IDENTITY_ID, deprecatedSuspensionActivationParameters)
 
             verify(mgmResourceClient).activateMember(
                 (ShortHash.of(HOLDING_IDENTITY_ID)),
@@ -1597,14 +1601,6 @@ class MGMRestResourceTest {
         fun `activateMember throws BadRequestException when serial number is null`() {
             assertThrows<BadRequestException> {
                 mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
-            }
-        }
-
-        @Test
-        fun `deprecatedActivateMember does not throw when serial number is null`() {
-            assertDoesNotThrow {
-                @Suppress("DEPRECATION")
-                mgmRestResource.deprecatedActivateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
             }
         }
     }

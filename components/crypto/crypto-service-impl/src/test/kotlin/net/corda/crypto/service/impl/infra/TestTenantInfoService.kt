@@ -7,6 +7,7 @@ import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
+import net.corda.utilities.toByteArray
 import net.corda.v5.base.util.EncodingUtils
 import java.time.Instant
 import java.util.UUID
@@ -66,7 +67,7 @@ class TestTenantInfoService: TenantInfoService {
     }
 
     private fun generateRandomShortAlias() =
-        EncodingUtils.toHex(UUID.randomUUID().toString().toByteArray()).take(12)
+        EncodingUtils.toHex(UUID.randomUUID().toByteArray()).take(12)
 
 }
 

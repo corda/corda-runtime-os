@@ -2,23 +2,36 @@ package net.corda.libs.permissions.manager.impl
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.permissions.ChangeDetails
+import net.corda.data.permissions.Group
 import net.corda.data.permissions.Property
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.User
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.data.permissions.management.user.AddPropertyToUserRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.ChangeUserParentGroupIdRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.data.permissions.management.user.DeleteUserRequest
+import net.corda.data.permissions.management.user.RemovePropertyFromUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.permissions.common.exception.EntityNotFoundException
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
+import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.ChangeUserParentIdDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
+import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
+import net.corda.libs.permissions.manager.request.GetUserPropertiesRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
+import net.corda.libs.permissions.manager.request.GetUsersByPropertyRequestDto
+import net.corda.libs.permissions.manager.request.RemovePropertyFromUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
+import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.permissions.password.PasswordHash
@@ -29,6 +42,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -39,7 +53,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.IllegalArgumentException
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -77,8 +90,16 @@ class PermissionUserManagerImplTest {
         parentGroup = parentGroup
     )
 
+    private val deleteUserRequestDto = DeleteUserRequestDto(requestedBy = requestUserName, loginName = "loginname123")
     private val userCreationTime = Instant.now()
     private val getUserRequestDto = GetUserRequestDto(requestedBy = requestUserName, loginName = "loginname123")
+    private val getUserPropertiesRequestDto =
+        GetUserPropertiesRequestDto(requestedBy = requestUserName, loginName = "loginname123")
+    private val getUsersByPropertyRequestDto = GetUsersByPropertyRequestDto(
+        requestedBy = requestUserName,
+        propertyKey = "email",
+        propertyValue = "a@b.com"
+    )
     private val changeUserPasswordDto = ChangeUserPasswordDto("requestedBy", "loginname123", "mypassword")
     private val userProperty = Property(
         UUID.randomUUID().toString(),
@@ -147,7 +168,10 @@ class PermissionUserManagerImplTest {
         assertEquals("hashedPass", capturedCreateUserRequest.initialHashedPassword)
         assertEquals("randomSalt", capturedCreateUserRequest.saltValue)
         assertNotNull(capturedCreateUserRequest.passwordExpiry)
-        assertEquals(createUserRequestDto.passwordExpiry!!.toEpochMilli(), capturedCreateUserRequest.passwordExpiry.toEpochMilli())
+        assertEquals(
+            createUserRequestDto.passwordExpiry!!.toEpochMilli(),
+            capturedCreateUserRequest.passwordExpiry.toEpochMilli()
+        )
         assertEquals(createUserRequestDto.parentGroup, capturedCreateUserRequest.parentGroupId)
 
         assertEquals(fullName, result.fullName)
@@ -214,6 +238,36 @@ class PermissionUserManagerImplTest {
     }
 
     @Test
+    fun `delete a user sends rpc request and converts result`() {
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(defaultTimeout)).thenReturn(permissionManagementResponse)
+
+        val requestCaptor = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
+
+        val result = manager.deleteUser(deleteUserRequestDto)
+
+        val capturedPermissionManagementRequest = requestCaptor.firstValue
+        assertEquals(requestUserName, capturedPermissionManagementRequest.requestUserId)
+        assertEquals(null, capturedPermissionManagementRequest.virtualNodeId)
+
+        val capturedCreateUserRequest = capturedPermissionManagementRequest.request as DeleteUserRequest
+        assertEquals(deleteUserRequestDto.loginName, capturedCreateUserRequest.loginName)
+
+        assertEquals(fullName, result.fullName)
+        assertEquals(avroUser.enabled, result.enabled)
+        assertEquals(avroUser.lastChangeDetails.updateTimestamp, result.lastUpdatedTimestamp)
+        assertEquals(false, result.ssoAuth)
+        assertEquals(avroUser.parentGroupId, result.parentGroup)
+        assertEquals(1, result.properties.size)
+
+        val property = result.properties.first()
+        assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
+        assertEquals(userProperty.key, property.key)
+        assertEquals(userProperty.value, property.value)
+    }
+
+    @Test
     fun `get a user uses the cache and converts avro user to dto`() {
         whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
 
@@ -240,6 +294,53 @@ class PermissionUserManagerImplTest {
         val result = manager.getUser(getUserRequestDto)
 
         assertNull(result)
+    }
+
+    @Test
+    fun `change user's parent group sends rpc request and converts result to response dto`() {
+        val loginName = UUID.randomUUID().toString()
+        val newParentGroupId = UUID.randomUUID().toString()
+        val avroUser = User(
+            "userId", 0,
+            ChangeDetails(
+                Instant.now()
+            ),
+            loginName, "fullName", true, "hashedPass", "salt", Instant.now(), false, newParentGroupId, emptyList(), emptyList()
+        )
+        val avroGroup = Group(
+            UUID.randomUUID().toString(),
+            0,
+            ChangeDetails(Instant.now()),
+            "groupName",
+            newParentGroupId,
+            emptyList(),
+            emptyList()
+        )
+
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(defaultTimeout)).thenReturn(PermissionManagementResponse(avroUser))
+        whenever(permissionManagementCache.getUser(loginName)).thenReturn(avroUser)
+        whenever(permissionManagementCache.getGroup(newParentGroupId)).thenReturn(avroGroup)
+
+        val requestCaptor = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
+
+        val changeUserParentIdDto = ChangeUserParentIdDto("requestedBy", loginName, newParentGroupId)
+        val result = manager.changeUserParentGroup(changeUserParentIdDto)
+
+        val capturedPermissionManagementRequest = requestCaptor.firstValue
+        assertEquals("requestedBy", capturedPermissionManagementRequest.requestUserId)
+        assertNull(capturedPermissionManagementRequest.virtualNodeId)
+
+        val capturedChangeUserParentGroupIdRequest = capturedPermissionManagementRequest.request as ChangeUserParentGroupIdRequest
+        assertEquals(loginName, capturedChangeUserParentGroupIdRequest.loginName)
+        assertEquals(newParentGroupId, capturedChangeUserParentGroupIdRequest.newParentGroupId)
+
+        assertEquals("userId", result.id)
+        assertEquals(loginName, result.loginName)
+        assertEquals(newParentGroupId, result.parentGroup)
+        assertTrue(result.properties.isEmpty())
+        assertTrue(result.roles.isEmpty())
     }
 
     @Test
@@ -391,5 +492,143 @@ class PermissionUserManagerImplTest {
         }
 
         assertEquals("Invalid user.", e.message)
+    }
+
+    @Test
+    fun `add property to user sends rpc request`() {
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(defaultTimeout)).thenReturn(permissionManagementResponse)
+
+        val capture = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
+
+        val requestDto = AddPropertyToUserRequestDto("requestUserId", "user-login1", mapOf("email" to "a@b.com"))
+        val result = manager.addPropertyToUser(requestDto)
+        assertEquals("requestUserId", capture.firstValue.requestUserId)
+        assertNull(capture.firstValue.virtualNodeId)
+
+        val capturedRequest = capture.firstValue.request as AddPropertyToUserRequest
+        assertEquals("user-login1", capturedRequest.loginName)
+        assertEquals(mapOf("email" to "a@b.com"), capturedRequest.properties)
+
+        assertEquals("user-login1", result.loginName)
+        assertEquals(1, result.properties.size)
+        assertEquals("email", result.properties.first().key)
+        assertEquals("a@b.com", result.properties.first().value)
+    }
+
+    @Test
+    fun `add property to user throws if exception is returned`() {
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(defaultTimeout)).thenThrow(IllegalArgumentException("Invalid user."))
+
+        val capture = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
+
+        val requestDto = AddPropertyToUserRequestDto("requestUserId", "user-login1", mapOf("email" to "a@b.com"))
+
+        val e = assertThrows<IllegalArgumentException> {
+            manager.addPropertyToUser(requestDto)
+        }
+
+        assertEquals("Invalid user.", e.message)
+    }
+
+    @Test
+    fun `remove property from user sends rpc request and converts result to response dto`() {
+        val avroUser = User(
+            UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "user-login1", fullName, true,
+            "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, emptyList(),
+            emptyList()
+        )
+        val permissionManagementResponse = PermissionManagementResponse(avroUser)
+
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(defaultTimeout)).thenReturn(permissionManagementResponse)
+
+        val capture = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
+
+        val requestDto = RemovePropertyFromUserRequestDto("requestUserId", "user-login1", "email")
+        val result = manager.removePropertyFromUser(requestDto)
+
+        assertEquals("requestUserId", capture.firstValue.requestUserId)
+        assertNull(capture.firstValue.virtualNodeId)
+
+        val capturedRequest = capture.firstValue.request as RemovePropertyFromUserRequest
+        assertEquals("user-login1", capturedRequest.loginName)
+        assertEquals("email", capturedRequest.propertyKey)
+        assertEquals("user-login1", result.loginName)
+        assertEquals(0, result.properties.size)
+    }
+
+    @Test
+    fun `remove property from user throws if exception is returned`() {
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(defaultTimeout)).thenThrow(IllegalArgumentException("Invalid user."))
+
+        val capture = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
+
+        val requestDto = RemovePropertyFromUserRequestDto("requestUserId", "user-login1", "email")
+
+        val e = assertThrows<IllegalArgumentException> {
+            manager.removePropertyFromUser(requestDto)
+        }
+
+        assertEquals("Invalid user.", e.message)
+    }
+
+    @Test
+    fun `get user properties using the cache`() {
+        whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
+        val result = manager.getUserProperties(getUserPropertiesRequestDto)
+        assertNotNull(result)
+        assertEquals(userProperty.lastChangeDetails.updateTimestamp, result.first().lastChangedTimestamp)
+        assertEquals(userProperty.key, result.first().key)
+        assertEquals(userProperty.value, result.first().value)
+    }
+
+    @Test
+    fun `get user properties throws when user does not exist`() {
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(defaultTimeout)).thenThrow(EntityNotFoundException("Invalid user."))
+
+        val capture = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
+
+        val requestDto = GetUserPropertiesRequestDto("requestUserId", "user-login1")
+
+        val e = assertThrows<EntityNotFoundException> {
+            manager.getUserProperties(requestDto)
+        }
+        assertEquals("Invalid user.", e.message)
+    }
+
+    @Test
+    fun `get users by property using the cache`() {
+        whenever(permissionManagementCache.getUsersByProperty("email", "a@b.com")).thenReturn(setOf(avroUser))
+        val result = manager.getUsersByProperty(getUsersByPropertyRequestDto).first()
+
+        assertNotNull(result)
+        assertEquals(fullName, result.fullName)
+        assertEquals(avroUser.enabled, result.enabled)
+        assertEquals(avroUser.lastChangeDetails.updateTimestamp, result.lastUpdatedTimestamp)
+        assertEquals(avroUser.ssoAuth, result.ssoAuth)
+        assertEquals(avroUser.parentGroupId, result.parentGroup)
+        assertEquals(1, result.properties.size)
+
+        val property = result.properties.first()
+        assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
+        assertEquals(userProperty.key, property.key)
+        assertEquals(userProperty.value, property.value)
+    }
+
+    @Test
+    fun `get users by property returns empty set when property does not exist`() {
+        whenever(permissionManagementCache.getUsersByProperty("invalid-key", "invalid-value")).thenReturn(null)
+
+        val result = manager.getUsersByProperty(getUsersByPropertyRequestDto)
+        assertEquals(emptySet<UserResponseDto>(), result)
     }
 }

@@ -1,5 +1,9 @@
 package net.corda.cli.plugins.preinstall
 
+import net.corda.sdk.preinstall.checker.CompositeChecker
+import net.corda.sdk.preinstall.checker.KafkaChecker
+import net.corda.sdk.preinstall.checker.LimitsChecker
+import net.corda.sdk.preinstall.checker.PostgresChecker
 import picocli.CommandLine
 import java.util.concurrent.Callable
 
@@ -27,33 +31,12 @@ class RunAll : Callable<Int> {
     // Suppress Detekt's spread operator warning. The array copy here is minor and so performance decrease is negligible.
     @SuppressWarnings("SpreadOperator")
     override fun call(): Int {
-        val report = PreInstallPlugin.Report()
-
-        val limitsCMD = CheckLimits()
-        limitsCMD.path = path
-
-        val postgresCMD = CheckPostgres()
-        postgresCMD.path = path
-        namespace?.let{ postgresCMD.namespace = it }
-
-        val kafkaCMD = CheckKafka()
-        kafkaCMD.path = path
-        namespace?.let{ kafkaCMD.namespace = it }
-        kafkaCMD.timeout = timeout
-
-        limitsCMD.call()
-        postgresCMD.call()
-        kafkaCMD.call()
-
-        report.addEntries(limitsCMD.report)
-        report.addEntries(postgresCMD.report)
-        report.addEntries(kafkaCMD.report)
-
-        return if (report.testsPassed()) {
-            0
-        } else {
-            1
+        val checker = CompositeChecker().apply {
+            addChecker(LimitsChecker(path))
+            addChecker(PostgresChecker(path, namespace))
+            addChecker(KafkaChecker(path, namespace, timeout))
         }
-    }
 
+        return checker.check()
+    }
 }

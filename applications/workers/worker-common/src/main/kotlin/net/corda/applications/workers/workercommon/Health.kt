@@ -1,7 +1,7 @@
 package net.corda.applications.workers.workercommon
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.javalin.core.util.Header
+import io.javalin.http.Header
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.rest.ResponseCode

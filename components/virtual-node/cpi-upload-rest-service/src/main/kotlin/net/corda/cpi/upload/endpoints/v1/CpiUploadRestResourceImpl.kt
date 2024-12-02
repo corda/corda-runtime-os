@@ -1,19 +1,12 @@
 package net.corda.cpi.upload.endpoints.v1
 
 import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
-import net.corda.crypto.core.toCorda
 import net.corda.cpi.upload.endpoints.common.CpiUploadRestResourceHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.core.toCorda
 import net.corda.data.chunking.UploadStatus
 import net.corda.libs.configuration.validation.ConfigurationValidationException
-import net.corda.rest.HttpFileUpload
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.InternalServerException
-import net.corda.rest.exception.InvalidInputDataException
-import net.corda.rest.exception.ResourceAlreadyExistsException
-import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
@@ -22,6 +15,14 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.utilities.trace
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
@@ -101,10 +102,25 @@ class CpiUploadRestResourceImpl @Activate constructor(
         // DuplicateCpiUploadException only contains the "resource" in the error message,
         // i.e. "name version (groupId)"
         when (ex.errorType) {
-            ValidationException::class.java.name -> throw BadRequestException(ex.errorMessage, details)
-            ConfigurationValidationException::class.java.name -> throw BadRequestException(ex.errorMessage, details)
-            DuplicateCpiUploadException::class.java.name -> throw ResourceAlreadyExistsException(ex.errorMessage)
-            else -> throw InternalServerException(ex.toString(), details)
+            ValidationException::class.java.name -> throw BadRequestException(
+                ValidationException::class.java.simpleName,
+                details,
+                ExceptionDetails(ex.errorType, ex.errorMessage)
+            )
+
+            ConfigurationValidationException::class.java.name -> throw BadRequestException(
+                ConfigurationValidationException::class.java.simpleName,
+                details,
+                ExceptionDetails(ex.errorType, ex.errorMessage)
+            )
+            DuplicateCpiUploadException::class.java.name -> throw ResourceAlreadyExistsException(
+                DuplicateCpiUploadException::class.java.simpleName,
+                ExceptionDetails(ex.errorType, ex.errorMessage)
+            )
+            else -> throw InternalServerException(
+                details = details,
+                exceptionDetails = ExceptionDetails(ex.errorType, ex.errorMessage)
+            )
         }
     }
 

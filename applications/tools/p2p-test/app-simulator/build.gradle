@@ -20,7 +20,7 @@ dependencies {
     implementation "net.corda:corda-topic-schema:$cordaApiVersion"
     implementation libs.typesafe.config
     implementation "info.picocli:picocli:$picocliVersion"
-    implementation "org.slf4j:slf4j-api"
+    implementation libs.slf4j.api
     implementation "net.corda:corda-base"
     implementation project(":components:kafka-topic-admin")
     implementation project(":libs:configuration:configuration-core")

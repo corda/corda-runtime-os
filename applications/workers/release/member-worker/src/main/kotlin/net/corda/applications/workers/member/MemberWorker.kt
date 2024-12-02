@@ -67,7 +67,13 @@ class MemberWorker @Activate constructor(
         )
         Health.configure(webServer, lifecycleRegistry)
 
-        configureTracing("Member Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
+        logger.info("Trace tags captured from the CLI: ${params.defaultParams.extraTraceTags}")
+        configureTracing(
+            "Member Worker",
+            params.defaultParams.zipkinTraceUrl,
+            params.defaultParams.traceSamplesPerSecond,
+            params.defaultParams.extraTraceTags
+        )
         webServer.start(params.defaultParams.workerServerPort)
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,

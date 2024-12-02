@@ -21,8 +21,10 @@ import net.corda.ledger.utxo.token.cache.entities.internal.CachedTokenImpl
 import net.corda.ledger.utxo.token.cache.entities.internal.PoolCacheStateImpl
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.utilities.time.Clock
+import net.corda.v5.ledger.utxo.token.selection.Strategy
 import java.math.BigDecimal
 import java.math.BigInteger
+import net.corda.data.ledger.utxo.token.selection.data.Strategy as StrategyAvro
 
 class EntityConverterImpl(
     private val serviceConfiguration: ServiceConfiguration,
@@ -43,7 +45,8 @@ class EntityConverterImpl(
             amountToBigDecimal(tokenClaimQuery.targetAmount),
             tokenClaimQuery.tagRegex,
             tokenClaimQuery.ownerHash,
-            toTokenPoolKey(avroPoolKey)
+            toTokenPoolKey(avroPoolKey),
+            tokenClaimQuery.strategy?.toCorda()
         )
     }
 
@@ -108,5 +111,10 @@ class EntityConverterImpl(
             avroTokenPoolKey.notaryX500Name,
             avroTokenPoolKey.symbol
         )
+    }
+
+    private fun StrategyAvro.toCorda() = when (this) {
+        StrategyAvro.RANDOM -> Strategy.RANDOM
+        StrategyAvro.PRIORITY -> Strategy.PRIORITY
     }
 }

@@ -64,8 +64,10 @@ import net.corda.membership.impl.persistence.service.handler.PersistenceHandlerS
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -364,6 +366,48 @@ class MembershipPersistenceRPCProcessorTest {
 
         assertThat((responseFuture.get()?.payload as? PersistenceFailedResponse)?.errorKind)
             .isEqualTo(ErrorKind.INVALID_ENTITY_UPDATE)
+    }
+
+    @Test
+    fun `NotFoundEntityPersistenceException will return NOT_FOUND error`() {
+        val handlerServices = mock<PersistenceHandlerServices> {
+            on { clock } doReturn clock
+        }
+        val handlerFactories = mock<HandlerFactories> {
+            on { handle(any()) } doThrow NotFoundEntityPersistenceException("")
+            on { persistenceHandlerServices } doReturn handlerServices
+        }
+        val processor = MembershipPersistenceRPCProcessor(
+            handlerFactories,
+        )
+
+        val rq = MembershipPersistenceRequest(rqContext, Unit)
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat((responseFuture.get()?.payload as? PersistenceFailedResponse)?.errorKind)
+            .isEqualTo(ErrorKind.NOT_FOUND)
+    }
+
+    @Test
+    fun `ConflictPersistenceException will return CONFLICT error`() {
+        val handlerServices = mock<PersistenceHandlerServices> {
+            on { clock } doReturn clock
+        }
+        val handlerFactories = mock<HandlerFactories> {
+            on { handle(any()) } doThrow ConflictPersistenceException("")
+            on { persistenceHandlerServices } doReturn handlerServices
+        }
+        val processor = MembershipPersistenceRPCProcessor(
+            handlerFactories,
+        )
+
+        val rq = MembershipPersistenceRequest(rqContext, Unit)
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat((responseFuture.get()?.payload as? PersistenceFailedResponse)?.errorKind)
+            .isEqualTo(ErrorKind.CONFLICT)
     }
 
     @Test

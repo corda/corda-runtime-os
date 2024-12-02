@@ -26,7 +26,7 @@ import net.corda.rest.annotations.RestQueryParameter
  * The API allows you to generate the group policy for a membership group, required for new members to join the group.
  */
 @HttpRestResource(
-    name = "MGM API",
+    name = "MGM",
     description = "The MGM API consists of a number of endpoints used to manage membership groups. A membership group" +
         " is a logical grouping of a number of Corda Identities to communicate and transact with one another with" +
         " a specific set of CorDapps. The API allows you to generate the group policy for a membership group," +
@@ -436,37 +436,6 @@ interface MGMRestResource : RestResource {
      * ```
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
-     * @param suspensionParams Parameters for suspending a member. See [DeprecatedSuspensionActivationParameters] for more details.
-     */
-    @Deprecated("Deprecated in favour of suspendMember")
-    @HttpPOST(
-        path = "{holdingIdentityShortHash}/suspend",
-        minVersion = RestApiVersion.C5_0,
-        maxVersion = RestApiVersion.C5_0,
-        description = "The suspend endpoint enables you to suspend a member. The v1 version of this endpoint is deprecated in favour of " +
-            "later versions. Later versions mandate that the serial number is specified in the request body."
-    )
-    fun deprecatedSuspendMember(
-        @RestPathParameter(
-            description = "The holding identity ID of the MGM of the membership group"
-        )
-        holdingIdentityShortHash: String,
-        @ClientRequestBodyParameter(
-            description = "Parameters for suspending a member."
-        )
-        suspensionParams: SuspensionActivationParameters
-    )
-
-    /**
-     * The [suspendMember] method enables you to suspend a member. A suspended member is blocked from communicating
-     * with other members of the group, and will not see any updates related to the group or the other members.
-     *
-     * Example usage:
-     * ```
-     * mgmOps.suspendMember("58B6030FABDD", SuspendMemberParameters("O=Alice, L=London, C=GB"))
-     * ```
-     *
-     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
      * @param suspensionParams Parameters for suspending a member. See [SuspensionActivationParameters] for more details.
      */
     @HttpPOST(
@@ -483,40 +452,6 @@ interface MGMRestResource : RestResource {
             description = "Parameters for suspending a member."
         )
         suspensionParams: SuspensionActivationParameters
-    )
-
-    /**
-     * The [deprecatedActivateMember] method enables you to activate a previously suspended member. An activated member is
-     * allowed to communicate with other members of the group again, and is able to receive updates related to the
-     * group or the other members.
-     *
-     * Example usage:
-     * ```
-     * mgmOps.activateMember("58B6030FABDD", SuspendMemberParameters("O=Alice, L=London, C=GB"))
-     * ```
-     *
-     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
-     * @param activationParams Parameters for activating a member. See [SuspensionActivationParameters] for more details.
-     */
-    @HttpPOST(
-        path = "{holdingIdentityShortHash}/activate",
-        minVersion = RestApiVersion.C5_0,
-        maxVersion = RestApiVersion.C5_0,
-        description = "This endpoint enables you to activate a previously suspended member. The v1 version of this " +
-            "endpoint is deprecated in favour of later versions. Later versions mandate that the serial number " +
-            "is specified in the request body."
-    )
-    @Deprecated("Deprecated in favour of activateMember")
-    fun deprecatedActivateMember(
-        @RestPathParameter(
-            description = "The holding identity ID of the MGM of the membership group"
-        )
-        holdingIdentityShortHash: String,
-
-        @ClientRequestBodyParameter(
-            description = "Parameters for suspending or activating a member."
-        )
-        activationParams: SuspensionActivationParameters
     )
 
     /**

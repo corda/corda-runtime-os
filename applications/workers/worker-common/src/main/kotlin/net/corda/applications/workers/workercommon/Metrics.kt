@@ -1,6 +1,6 @@
 package net.corda.applications.workers.workercommon
 
-import io.javalin.core.util.Header
+import io.javalin.http.Header
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmHeapPressureMetrics

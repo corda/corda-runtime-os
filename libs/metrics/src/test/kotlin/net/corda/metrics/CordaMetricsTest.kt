@@ -28,7 +28,7 @@ class CordaMetricsTest {
         CordaMetrics.configure(
             meterSourceName,
             registry,
-            ("corda_p2p_session_(inbound|outbound)|" +
+            ("corda_p2p_session_cached|" +
                     "corda_p2p_message_outbound_total|" +
                     "corda_membership_memberlist_cache_size|" +
                     "corda_flow_execution_time_seconds_(count|sum|max)|" +
@@ -52,7 +52,7 @@ class CordaMetricsTest {
     @Test
     fun `gauge with computed values`() {
         val items = mutableListOf<String>()
-        val gauge = CordaMetrics.Metric.OutboundSessionCount(items::size).builder().build()
+        val gauge = CordaMetrics.Metric.EstimatedSessionCacheSize(items::size).builder().build()
         assertThat(CordaMetrics.registry.meters)
             .hasSize(1)
             .element(0).isEqualTo(gauge).has(singleValueOf(0))
@@ -63,7 +63,7 @@ class CordaMetricsTest {
         items += "Goodbye, Cruel Metrics!"
         assertThat(gauge).has(singleValueOf(2))
 
-        val gaugeId = CordaMetrics.Metric.OutboundSessionCount { Double.NaN }.builder().buildPreFilterId()
+        val gaugeId = CordaMetrics.Metric.EstimatedSessionCacheSize { Double.NaN }.builder().buildPreFilterId()
         CordaMetrics.registry.removeByPreFilterId(gaugeId)
 
         assertThat(CordaMetrics.registry.meters).isEmpty()
@@ -92,19 +92,19 @@ class CordaMetricsTest {
     @Test
     fun `gauges with tags`() {
         val things = mutableListOf<String>()
-        val thingsGauge = CordaMetrics.Metric.InboundSessionCount(things::size).builder()
+        val thingsGauge = CordaMetrics.Metric.EstimatedSessionCacheSize(things::size).builder()
             .withTag(MembershipGroup, "things")
             .build()
 
         val stuff = mutableListOf<String>()
-        val stuffGauge = CordaMetrics.Metric.InboundSessionCount(stuff::size).builder()
+        val stuffGauge = CordaMetrics.Metric.EstimatedSessionCacheSize(stuff::size).builder()
             .withTag(MembershipGroup, "stuff")
             .build()
 
         assertThat(CordaMetrics.registry.meters)
             .containsExactlyInAnyOrder(thingsGauge, stuffGauge)
 
-        val thingsGaugeId = CordaMetrics.Metric.InboundSessionCount { Double.NaN }.builder()
+        val thingsGaugeId = CordaMetrics.Metric.EstimatedSessionCacheSize { Double.NaN }.builder()
             .withTag(MembershipGroup, "things")
             .buildPreFilterId()
         CordaMetrics.registry.removeByPreFilterId(thingsGaugeId)

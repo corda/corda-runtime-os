@@ -1,5 +1,4 @@
-The keystore files used for the p2p integration tests have been created using either www.tinycert.org in order to have a working
-OCSP responder or openssl when there was no need to test revocation.
+The keystore files used for the p2p integration tests have been created using openssl when there was no need to test revocation.
 
 # Overview of existing keystores
 
@@ -7,11 +6,6 @@ OCSP responder or openssl when there was no need to test revocation.
     - status: OK
     - CN: Alice
     - Alternates: www.alice.net, alice.net
-
-- sslkeystore_bob.jks
-    - status: REVOKED
-    - CN: Bob
-    - Alternates: www.bob.net, bob.net
 
 - sslkeystore_chip.jks
     - status: OK
@@ -27,7 +21,7 @@ OCSP responder or openssl when there was no need to test revocation.
     - CN: 127.0.0.1
     - Alternates: 127.0.0.1 (as an IP not a DNS name)
 
-For sslkeystore_alice.jks and sslkeystore_bob.jks, we also stored the certificates into certificate_alice.pem and certificate_bob.pem respectively.
+For sslkeystore_alice.jks we also stored the certificates into certificate_alice.pem.
 
 The sslkeystore_c5.jks store contains the following subject alternate names. It is used for the HostnameMatcher unit tests.
 ```

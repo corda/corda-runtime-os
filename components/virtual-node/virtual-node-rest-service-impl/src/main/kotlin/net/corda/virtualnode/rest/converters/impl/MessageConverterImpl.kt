@@ -1,5 +1,9 @@
 package net.corda.virtualnode.rest.converters.impl
 
+import net.corda.libs.external.messaging.entities.InactiveResponseType
+import net.corda.libs.external.messaging.entities.Route
+import net.corda.libs.external.messaging.entities.RouteConfiguration
+import net.corda.libs.external.messaging.entities.Routes
 import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteConfigSerializer
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus
@@ -9,6 +13,10 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier as CpiIdentifierRestR
 import net.corda.libs.packaging.core.CpiIdentifier as CpiIdentifierDto
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityRestResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo as VirtualNodeInfoRestResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.InactiveResponseType as InactiveResponseTypeRestResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.Route as RouteRestResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.RouteConfiguration as RouteConfigurationRestResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.Routes as RoutesRestResponse
 import net.corda.virtualnode.HoldingIdentity as HoldingIdentityDto
 import net.corda.virtualnode.VirtualNodeInfo as VirtualNodeInfoDto
 
@@ -49,7 +57,7 @@ class MessageConverterImpl(
                 flowOperationalStatus,
                 vaultDbOperationalStatus,
                 operationInProgress,
-                routeConfig
+                routeConfig?.toEndpointType()
             )
         }
     }
@@ -141,4 +149,30 @@ class MessageConverterImpl(
 
     private fun CpiIdentifierDto.toEndpointType(): CpiIdentifierRestResponse =
         CpiIdentifierRestResponse(name, version, signerSummaryHash.toString())
+
+    private fun RouteConfiguration.toEndpointType(): RouteConfigurationRestResponse =
+        RouteConfigurationRestResponse(
+            currentRoutes.toEndpointType(),
+            previousVersionRoutes.map { it.toEndpointType() }
+        )
+
+    private fun Routes.toEndpointType(): RoutesRestResponse =
+        RoutesRestResponse(
+            cpiIdentifier.toEndpointType(),
+            routes.map { it.toEndpointType() }
+        )
+
+    private fun Route.toEndpointType(): RouteRestResponse =
+        RouteRestResponse(
+            channelName,
+            externalReceiveTopicName,
+            active,
+            inactiveResponseType.toEndpointType()
+        )
+
+    private fun InactiveResponseType.toEndpointType(): InactiveResponseTypeRestResponse =
+        when (this) {
+            InactiveResponseType.ERROR -> InactiveResponseTypeRestResponse.ERROR
+            InactiveResponseType.IGNORE -> InactiveResponseTypeRestResponse.IGNORE
+        }
 }

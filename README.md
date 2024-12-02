@@ -12,9 +12,9 @@ Corda is a scalable, permissioned peer-to-peer (P2P) distributed ledger technolo
 
 Corda is developed and maintained by [R3](https://r3.com), and is made available under the Apache 2.0 license.
 
-This repo contains the code that will evolve to become the Corda 5 release. For the current Corda 4 codebase, head over to the [Corda 4 repo](https://github.com/corda/corda).
+This repo contains the Corda 5 source code. For the Corda 4 codebase, head over to the [Corda 4 repo](https://github.com/corda/corda).
 
-We encourage you to use this code to explore how Corda 5 will work, rebuild it, and experiment with deploying it locally. We'd love your comments and feedback! But be warned it is pre-release software and is not yet intended to facilitate full CorDapp development. 
+We encourage you to use this code to explore how Corda 5 works, rebuild it, and experiment with deploying it locally. We'd love your comments and feedback!
 
 Note that there is a large engineering team at R3 working on this codebase so if you see something wrong or missing, we encourage you to contact us before working on any significant PRs of your own: it's possible we may already be working on the same thing or we may have tips on how best to structure your work to maximise the chance of it being merged into the codebase.
 
@@ -22,7 +22,6 @@ The best way to stay up-to-date with Corda is to monitor the following resources
 
  * Slack - [cordaledger.slack.com](https://cordaledger.slack.com)
  * Our Blog - [corda.net/blog/](https://www.corda.net/blog/)
- * Community Forum - [community.r3.com](https://community.r3.com)
   
 <h2>Getting Started</h2>
 

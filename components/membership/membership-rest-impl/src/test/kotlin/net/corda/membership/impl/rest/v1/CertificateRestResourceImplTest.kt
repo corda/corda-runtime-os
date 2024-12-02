@@ -210,7 +210,9 @@ class CertificateRestResourceImplTest {
                 )
             }
 
-            assertThat(details.message).isEqualTo("Could not find key with ID $keyId for $holdingIdentityShortHash: Repartition Event!")
+            assertThat(
+                details.exceptionDetails!!.reason
+            ).isEqualTo("Could not find key with ID $keyId for $holdingIdentityShortHash: Repartition Event!")
         }
 
         @Test
@@ -893,7 +895,7 @@ class CertificateRestResourceImplTest {
                 certificatesOps.importCertificateChain("p2p-tls", null, "alias", listOf(certificate))
             }
 
-            assertThat(details.message).isEqualTo("Could not import certificate: Repartition Event!")
+            assertThat(details.exceptionDetails!!.reason).isEqualTo("Could not import certificate: Repartition Event!")
         }
     }
 
@@ -969,7 +971,7 @@ class CertificateRestResourceImplTest {
                 )
             }
 
-            assertThat(details.message).isEqualTo("Could not get certificate aliases: Repartition Event!")
+            assertThat(details.exceptionDetails!!.reason).isEqualTo("Could not get certificate aliases: Repartition Event!")
         }
     }
 
@@ -1065,7 +1067,7 @@ class CertificateRestResourceImplTest {
                 )
             }
 
-            assertThat(details.message).isEqualTo("Could not get certificate chain: Repartition Event!")
+            assertThat(details.exceptionDetails!!.reason).isEqualTo("Could not get certificate chain: Repartition Event!")
         }
     }
 }

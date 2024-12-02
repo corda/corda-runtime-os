@@ -87,7 +87,7 @@ class TransactionBackchainReceiverFlowV1Test {
             on { getInt(BACKCHAIN_BATCH_CONFIG_PATH) } doReturn BACKCHAIN_BATCH_DEFAULT_SIZE
         }
         whenever(flowConfigService.getConfig(ConfigKeys.UTXO_LEDGER_CONFIG)).thenReturn(utxoConfig)
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(emptyMap())
     }
 
@@ -98,7 +98,7 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `transaction will not be requested if it is present in the database (VERIFIED) and DB data will not be in the topological sort`() {
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(mapOf(TX_ID_1 to VERIFIED))
 
         whenever(session.sendAndReceive(eq(List::class.java), eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_2))))).thenReturn(
@@ -144,7 +144,7 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `transaction that is in the DB and referenced by multiple transactions - one in DB and one retrievable will only be retrieved once`() {
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(
                 mapOf(
                     TX_ID_1 to UNVERIFIED,
@@ -234,7 +234,7 @@ class TransactionBackchainReceiverFlowV1Test {
     @Test
     fun `transaction will be requested if it is present in the database (UNVERIFIED) and its group params are not known`() {
         // Have a transaction with TX_ID_2 that is unverified, but it's in the database and has dependencies
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(mapOf(TX_ID_2 to UNVERIFIED))
 
         whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(eq(TX_ID_2), eq(UNVERIFIED)))
@@ -294,7 +294,7 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `dependency of dependency of transaction will be fetched if it is in the database but group params not known`() {
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(
                 mapOf(
                     TX_ID_1 to UNVERIFIED,
@@ -416,7 +416,7 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `transaction will not be requested if it is present in the database (UNVERIFIED) but their dependencies will be`() {
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(mapOf(TX_ID_2 to UNVERIFIED))
 
         whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(eq(TX_ID_2), eq(UNVERIFIED)))
@@ -470,7 +470,7 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `flow will throw exception if any of the transactions are invalid`() {
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(
                 mapOf(
                     TX_ID_2 to UNVERIFIED,
@@ -507,7 +507,7 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `dependency of dependency of transaction will not be fetched if it is in the database`() {
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(
                 mapOf(
                     TX_ID_1 to UNVERIFIED,
@@ -589,7 +589,7 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `dependency of dependency of transaction will be fetched if it is not in the database`() {
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(
                 mapOf(
                     TX_ID_1 to UNVERIFIED,
@@ -679,7 +679,7 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `if transaction status changed to invalid from unverified exception will be thrown`() {
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(
                 mapOf(
                     TX_ID_1 to UNVERIFIED,
@@ -708,7 +708,7 @@ class TransactionBackchainReceiverFlowV1Test {
             .findSignedTransactionWithStatus(eq(TX_ID_1), eq(UNVERIFIED))
 
         verify(utxoLedgerPersistenceService, times(1))
-            .findTransactionIdsAndStatuses(eq(listOf(TX_ID_1)))
+            .findSignedTransactionIdsAndStatuses(eq(listOf(TX_ID_1)))
     }
 
     /**
@@ -717,7 +717,7 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `if transaction status was unverified then it disappeared from the DB it will be retrieved`() {
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(
                 mapOf(
                     TX_ID_1 to UNVERIFIED,
@@ -763,7 +763,7 @@ class TransactionBackchainReceiverFlowV1Test {
             .findSignedTransactionWithStatus(eq(TX_ID_1), eq(UNVERIFIED))
 
         verify(utxoLedgerPersistenceService, times(1))
-            .findTransactionIdsAndStatuses(eq(listOf(TX_ID_1)))
+            .findSignedTransactionIdsAndStatuses(eq(listOf(TX_ID_1)))
 
         verify(session, times(1)).sendAndReceive(
             eq(List::class.java),
@@ -777,7 +777,7 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `if transaction status was unverified then its status could not be fetched it will be retrieved`() {
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(
                 mapOf(
                     TX_ID_1 to UNVERIFIED,
@@ -823,7 +823,7 @@ class TransactionBackchainReceiverFlowV1Test {
             .findSignedTransactionWithStatus(eq(TX_ID_1), eq(UNVERIFIED))
 
         verify(utxoLedgerPersistenceService, times(1))
-            .findTransactionIdsAndStatuses(eq(listOf(TX_ID_1)))
+            .findSignedTransactionIdsAndStatuses(eq(listOf(TX_ID_1)))
 
         verify(session, times(1)).sendAndReceive(
             eq(List::class.java),
@@ -837,7 +837,7 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `if transaction status changed to verified from unverified it will not be retrieved`() {
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(
                 mapOf(
                     TX_ID_1 to UNVERIFIED,
@@ -859,7 +859,7 @@ class TransactionBackchainReceiverFlowV1Test {
             .findSignedTransactionWithStatus(eq(TX_ID_1), eq(UNVERIFIED))
 
         verify(utxoLedgerPersistenceService, times(1))
-            .findTransactionIdsAndStatuses(eq(listOf(TX_ID_1)))
+            .findSignedTransactionIdsAndStatuses(eq(listOf(TX_ID_1)))
 
         verify(session, never())
             .sendAndReceive(eq(List::class.java), any())
@@ -871,7 +871,7 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `if transaction's dependency status changed to verified from unverified it will not be retrieved`() {
-        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+        whenever(utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(any()))
             .thenReturn(
                 mapOf(
                     TX_ID_1 to UNVERIFIED,

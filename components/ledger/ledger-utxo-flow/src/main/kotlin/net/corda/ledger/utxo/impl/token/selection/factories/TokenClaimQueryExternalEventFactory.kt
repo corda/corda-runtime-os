@@ -13,6 +13,7 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.token.query.TokenClaimCriteriaParameters
 import net.corda.ledger.utxo.impl.token.selection.services.TokenClaimCheckpointService
 import net.corda.schema.Schemas
+import net.corda.v5.ledger.utxo.token.selection.Strategy
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -52,6 +53,7 @@ class TokenClaimQueryExternalEventFactory @Activate constructor(
                 criteria.targetAmount.scale(),
                 ByteBuffer.wrap(criteria.targetAmount.unscaledValue().toByteArray())
             )
+            this.strategy = parameters.tokenClaimCriteria.strategy?.toAvro()
         }
 
         return ExternalEventRecord(Schemas.Services.TOKEN_CACHE_EVENT, key, TokenPoolCacheEvent(key, claimQuery))
@@ -69,5 +71,10 @@ class TokenClaimQueryExternalEventFactory @Activate constructor(
             response.poolKey,
             response.claimedTokens.map { tokenClaimFactory.createClaimedToken(response.poolKey, it) }
         )
+    }
+
+    private fun Strategy.toAvro() = when (this) {
+        Strategy.RANDOM -> net.corda.data.ledger.utxo.token.selection.data.Strategy.RANDOM
+        Strategy.PRIORITY -> net.corda.data.ledger.utxo.token.selection.data.Strategy.PRIORITY
     }
 }

@@ -4,6 +4,7 @@ import net.corda.data.permissions.management.permission.BulkCreatePermissionsRes
 import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.libs.permissions.manager.common.PermissionTypeDto
 import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
+import net.corda.libs.permissions.manager.response.GroupResponseDto
 import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.libs.permissions.manager.response.PermissionSummaryResponseDto
@@ -12,9 +13,11 @@ import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
+import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.PermissionAssociation as AvroPermissionAssociation
 import net.corda.data.permissions.PermissionType as AvroPermissionType
+import net.corda.data.permissions.Property as AvroProperty
 import net.corda.data.permissions.Role as AvroRole
 import net.corda.data.permissions.User as AvroUser
 import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
@@ -50,7 +53,7 @@ fun AvroUser.convertToResponseDto(): UserResponseDto {
                 it.key,
                 it.value
             )
-        },
+        }.toSet(),
         roleAssociations.map {
             RoleAssociationResponseDto(it.roleId, it.changeDetails.updateTimestamp)
         }
@@ -65,6 +68,26 @@ fun AvroRole.convertToResponseDto(): RoleResponseDto {
         name,
         groupVisibility,
         permissions.map { it.convertToResponseDto() }
+    )
+}
+
+fun AvroGroup.convertToResponseDto(): GroupResponseDto {
+    return GroupResponseDto(
+        id,
+        lastChangeDetails.updateTimestamp,
+        version,
+        name,
+        parentGroupId,
+        properties.map {
+            PropertyResponseDto(
+                it.lastChangeDetails.updateTimestamp,
+                it.key,
+                it.value
+            )
+        },
+        roleAssociations.map {
+            RoleAssociationResponseDto(it.roleId, it.changeDetails.updateTimestamp)
+        }
     )
 }
 
@@ -106,6 +129,14 @@ fun AvroPermission.convertToResponseDto(): PermissionResponseDto {
         virtualNode,
         permissionType.toResponseDtoType(),
         permissionString
+    )
+}
+
+fun AvroProperty.convertToResponseDto(): PropertyResponseDto {
+    return PropertyResponseDto(
+        lastChangeDetails.updateTimestamp,
+        key,
+        value
     )
 }
 

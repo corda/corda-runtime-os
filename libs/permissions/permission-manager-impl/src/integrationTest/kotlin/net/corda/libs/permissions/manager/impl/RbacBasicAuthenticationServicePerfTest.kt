@@ -2,8 +2,10 @@ package net.corda.libs.permissions.manager.impl
 
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.User
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.permissions.password.impl.PasswordServiceImpl
+import net.corda.utilities.time.UTCClock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -14,6 +16,7 @@ import org.mockito.kotlin.whenever
 import org.slf4j.LoggerFactory
 import java.security.SecureRandom
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.stream.Collectors
 
@@ -26,11 +29,17 @@ class RbacBasicAuthenticationServicePerfTest {
         const val PERF_THRESHOLD_MS = 10_000L
     }
 
+    private val rbacConfig = mock<SmartConfig>()
+
     private val passwordService = PasswordServiceImpl(SecureRandom())
 
     private val passwordString = "password"
 
     private val passwordHash = passwordService.saltAndHash(passwordString)
+
+    private val passwordExpiry = Instant.now().plus(1L, ChronoUnit.DAYS)
+
+    private val clock = UTCClock()
 
     private val permissionManagementCache = mock<PermissionManagementCache>().apply {
         whenever(this.getUser(any())).then { invocation ->
@@ -44,7 +53,7 @@ class RbacBasicAuthenticationServicePerfTest {
                 true,
                 passwordHash.value,
                 passwordHash.salt,
-                null,
+                passwordExpiry,
                 false,
                 null,
                 null,
@@ -55,6 +64,8 @@ class RbacBasicAuthenticationServicePerfTest {
 
     private val rbacBasicAuthenticationService =
         RbacBasicAuthenticationService(
+            rbacConfig,
+            clock,
             AtomicReference(permissionManagementCache),
             passwordService
         )
@@ -62,8 +73,18 @@ class RbacBasicAuthenticationServicePerfTest {
     @Test
     fun singleThreadedTest() {
         // Warm-up
-        assertTrue(rbacBasicAuthenticationService.authenticateUser(userLogons.first(), passwordString.toCharArray()))
-        assertFalse(rbacBasicAuthenticationService.authenticateUser(userLogons.first(), "wrongPassword".toCharArray()))
+        assertTrue(
+            rbacBasicAuthenticationService.authenticateUser(
+                userLogons.first(),
+                passwordString.toCharArray()
+            ).authenticationSuccess
+        )
+        assertFalse(
+            rbacBasicAuthenticationService.authenticateUser(
+                userLogons.first(),
+                "wrongPassword".toCharArray()
+            ).authenticationSuccess
+        )
 
         // Measure time
         val start = System.currentTimeMillis()
@@ -71,7 +92,7 @@ class RbacBasicAuthenticationServicePerfTest {
             rbacBasicAuthenticationService.authenticateUser(
                 userLogons[iterCount % userLogons.size],
                 passwordString.toCharArray()
-            )
+            ).authenticationSuccess
         }
         val end = System.currentTimeMillis()
 
@@ -86,8 +107,18 @@ class RbacBasicAuthenticationServicePerfTest {
     @Test
     fun multiThreadedTest() {
         // Warm-up
-        assertTrue(rbacBasicAuthenticationService.authenticateUser(userLogons.first(), passwordString.toCharArray()))
-        assertFalse(rbacBasicAuthenticationService.authenticateUser(userLogons.first(), "wrongPassword".toCharArray()))
+        assertTrue(
+            rbacBasicAuthenticationService.authenticateUser(
+                userLogons.first(),
+                passwordString.toCharArray()
+            ).authenticationSuccess
+        )
+        assertFalse(
+            rbacBasicAuthenticationService.authenticateUser(
+                userLogons.first(),
+                "wrongPassword".toCharArray()
+            ).authenticationSuccess
+        )
 
         // Measure time
         val start = System.currentTimeMillis()
@@ -95,7 +126,7 @@ class RbacBasicAuthenticationServicePerfTest {
             rbacBasicAuthenticationService.authenticateUser(
                 userLogons[iterCount % userLogons.size],
                 passwordString.toCharArray()
-            )
+            ).authenticationSuccess
         }.collect(Collectors.toList())
         val end = System.currentTimeMillis()
 

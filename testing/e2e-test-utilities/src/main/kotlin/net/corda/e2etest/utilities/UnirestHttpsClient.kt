@@ -1,20 +1,23 @@
 package net.corda.e2etest.utilities
 
+import kong.unirest.core.Unirest
 import kong.unirest.core.Headers
 import kong.unirest.core.MultipartBody
-import kong.unirest.core.Unirest
 import net.corda.tracing.addTraceContextToHttpRequest
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.net.URI
 import java.net.http.HttpRequest
 
 class UnirestHttpsClient(private val endpoint: URI, private val username: String, private val password: String)  :
     HttpsClient {
     private companion object {
+        val logger: Logger = LoggerFactory.getLogger(UnirestHttpsClient::class.java)
+
         fun Headers.toInternal(): List<Pair<String, String>> {
             return all().map { it.name to it.value }
         }
     }
-
     init {
         configureUnirest()
     }
@@ -109,3 +112,4 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
         return this
     }
 }
+

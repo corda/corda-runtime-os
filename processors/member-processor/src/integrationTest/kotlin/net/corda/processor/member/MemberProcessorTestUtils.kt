@@ -13,7 +13,6 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
@@ -114,6 +113,37 @@ class MemberProcessorTestUtils {
         fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig(
             listOf(KeyDerivationParameters("master-key-pass", "master-key-salt")),
         )
+
+        fun makeStateManagerConfig(dbParams: SmartConfig): SmartConfig {
+            val poolConfigProperties = mapOf(
+                "maxSize" to "5",
+                "minSize" to "0",
+                "idleTimeoutSeconds" to "120",
+                "maxLifetimeSeconds" to "1800",
+                "keepAliveTimeSeconds" to "0",
+                "validationTimeoutSeconds" to "5",
+            )
+
+            val poolConfig = ConfigFactory.parseMap(
+                mapOf(
+                    "keyRotation" to mapOf(
+                        "database" to mapOf(
+                            "pool" to poolConfigProperties
+                        )
+                    )
+                )
+            )
+
+            return smartConfigFactory.create(
+                ConfigFactory.parseMap(
+                    mapOf(
+                        "keyRotation" to dbParams.root().unwrapped()
+                    )
+                ).withFallback(
+                    poolConfig
+                )
+            )
+        }
 
         fun makeMessagingConfig(): SmartConfig =
             smartConfigFactory.create(
@@ -298,8 +328,8 @@ class MemberProcessorTestUtils {
         fun Publisher.publishDefaultCryptoConf(cryptoConfig: SmartConfig) =
             publishConf(ConfigKeys.CRYPTO_CONFIG, cryptoConfig.root().render())
 
-        fun Publisher.publishEmptyStateManagerConf() =
-            publishConf(ConfigKeys.STATE_MANAGER_CONFIG, SmartConfigImpl.empty().root().render())
+        fun Publisher.publishStatemanagerConfig(statemanagerConfig: SmartConfig) =
+            publishConf(ConfigKeys.STATE_MANAGER_CONFIG, statemanagerConfig.root().render())
 
         fun Publisher.publishGatewayConfig() =
             publishConf(

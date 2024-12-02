@@ -26,5 +26,5 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-application'
-    cordaProvided 'org.slf4j:slf4j-api'
+    cordaProvided libs.slf4j.api
 }

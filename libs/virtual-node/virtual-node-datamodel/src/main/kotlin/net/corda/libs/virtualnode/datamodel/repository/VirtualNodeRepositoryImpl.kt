@@ -13,6 +13,7 @@ import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
 import net.corda.orm.utils.transaction
+import net.corda.orm.utils.use
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
@@ -58,30 +59,31 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             ?.toVirtualNodeInfo()
     }
 
-    override fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): List<VirtualNodeOperationDto> {
-        entityManager.transaction {
+    override fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): VirtualNodeOperationDto {
+        entityManager.use {
             val operationStatuses = entityManager.createQuery(
                 "from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId " +
                     "order by latestUpdateTimestamp desc",
                 VirtualNodeOperationEntity::class.java
             )
                 .setParameter("requestId", requestId)
+                .setMaxResults(1)
                 .resultList
 
             if (operationStatuses.isEmpty()) {
                 throw VirtualNodeOperationNotFoundException(requestId)
             }
 
-            return operationStatuses.map {
+            return with(operationStatuses.first()) {
                 VirtualNodeOperationDto(
-                    it.requestId,
-                    it.data,
-                    it.operationType.name,
-                    it.requestTimestamp,
-                    it.latestUpdateTimestamp,
-                    it.heartbeatTimestamp,
-                    it.state.name,
-                    it.errors
+                    requestId = requestId,
+                    requestData = data,
+                    operationType = operationType.name,
+                    requestTimestamp = requestTimestamp,
+                    latestUpdateTimestamp = latestUpdateTimestamp,
+                    heartbeatTimestamp = heartbeatTimestamp,
+                    state = state.name,
+                    errors = errors
                 )
             }
         }
@@ -91,7 +93,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         entityManager.merge(
             with(operation) {
                 VirtualNodeOperationEntity(
-                    id = requestId,
+                    id = UUID.randomUUID().toString(),
                     requestId = requestId,
                     data = requestData,
                     state = enumValueOf(state),

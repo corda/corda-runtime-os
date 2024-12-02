@@ -1,6 +1,7 @@
 package net.corda.db.testkit
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -30,12 +31,24 @@ class TestDbInfo(
         fun createConfig() = TestDbInfo(name = CordaDb.CordaCluster.persistenceUnitName)
     }
 
-    val config: SmartConfig = configFactory.create(
-        DbUtils.createConfig(
-            inMemoryDbName = name,
-            schemaName = schemaName
+    val config: SmartConfig = run {
+        var config = configFactory.create(
+            DbUtils.createConfig(
+                inMemoryDbName = name,
+                schemaName = schemaName
+            )
         )
-    )
+
+        if (!DbUtils.isInMemory) {
+            val jdbcDriverConfig =
+                ConfigFactory.empty()
+                    .withValue("database.jdbc.driver", ConfigValueFactory.fromAnyRef("org.postgresql.Driver"))
+            config = config.withFallback(
+                jdbcDriverConfig
+            )
+        }
+        config
+    }
 
     val emConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration(
         inMemoryDbName = name,

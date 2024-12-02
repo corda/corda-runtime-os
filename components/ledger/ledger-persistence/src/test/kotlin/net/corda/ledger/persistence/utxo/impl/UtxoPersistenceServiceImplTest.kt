@@ -8,12 +8,13 @@ import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
+import net.corda.ledger.libs.persistence.json.DefaultContractStateVaultJsonFactory
+import net.corda.ledger.libs.persistence.utxo.CustomRepresentation
+import net.corda.ledger.libs.persistence.utxo.UtxoRepository
+import net.corda.ledger.libs.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.libs.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryRegistryImpl
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
-import net.corda.ledger.persistence.utxo.CustomRepresentation
-import net.corda.ledger.persistence.utxo.UtxoRepository
-import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -27,6 +28,8 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.assertj.core.api.Assertions.assertThat
+import org.hibernate.Session
+import org.hibernate.internal.SessionImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -36,8 +39,8 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.lang.IllegalArgumentException
 import java.security.PublicKey
+import java.sql.Connection
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -72,8 +75,16 @@ class UtxoPersistenceServiceImplTest {
         registerJsonFactory(InvalidStateJsonFactory() as ContractStateVaultJsonFactory<ContractState>)
     }
 
+    private val connectionMock = mock<Connection> {
+    }
+
+    private val mockSession = mock<SessionImpl> {
+        on { connection() } doReturn mock()
+    }
+
     private val mockEm = mock<EntityManager> {
         on { transaction } doReturn mock()
+        on { unwrap(Session::class.java) } doReturn mockSession
     }
 
     private val mockEmFactory = mock<EntityManagerFactory> {
@@ -81,7 +92,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     private val persistenceService = UtxoPersistenceServiceImpl(
-        mockEmFactory,
+        { connectionMock },
         mockRepository,
         mock(),
         mockDigestService,
@@ -139,7 +150,7 @@ class UtxoPersistenceServiceImplTest {
         whenever(emptyDefaultContractStateVaultJsonFactory.create(any(), any())).thenReturn("")
 
         val singlePersistenceService = UtxoPersistenceServiceImpl(
-            mockEmFactory,
+            { connectionMock },
             mockRepository,
             mock(),
             mockDigestService,
@@ -235,7 +246,7 @@ class UtxoPersistenceServiceImplTest {
     @Test
     fun `Persisting a transaction while zero JSON factories are registered will result still store the default state json`() {
         val emptyPersistenceService = UtxoPersistenceServiceImpl(
-            mockEmFactory,
+            { connectionMock },
             mockRepository,
             mock(),
             mockDigestService,
@@ -280,7 +291,7 @@ class UtxoPersistenceServiceImplTest {
         }
 
         val persistenceService = UtxoPersistenceServiceImpl(
-            mockEmFactory,
+            { connectionMock },
             mockRepository,
             mock(),
             mockDigestService,

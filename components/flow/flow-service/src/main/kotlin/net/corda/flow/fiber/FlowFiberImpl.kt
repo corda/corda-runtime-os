@@ -67,6 +67,12 @@ class FlowFiberImpl(
 
     @Suspendable
     override fun run() {
+        // This is the entry point of a Quasar fiber. In order to keep the traceId present in the MDC
+        // the method markInScope must be called. The call must be the first thing to be done to ensure
+        // any generated logs contain the trace id which helps people find the relevant logs when troubleshooting an issue.
+        // Keep in mind the traceId is managed by a third-party library
+        flowFiberExecutionContext?.traceContext?.markInScope()
+
         try {
             setCurrentSandboxGroupContext()
             // Ensure run() does not exit via any means without completing the future, in order not to indefinitely block
@@ -74,6 +80,12 @@ class FlowFiberImpl(
             // consumed by that too, so if they are rethrown from here we do not get process termination or any other form
             // of critical error handling for free, only undefined behaviour.
             try {
+                // CORE-20281: Adding for debugging purposes to diagnose issue.
+                try {
+                    getExecutionContext().currentSandboxGroupContext.get()
+                } catch (e: IllegalStateException) {
+                    log.warn("Cannot get SandboxGroupContext in thread ${Thread.currentThread().name}")
+                }
                 runFlow()
             } catch (e: FlowContinuationErrorException) {
                 // This exception happened because the flow fiber discovered it had failed for some already handled reason
@@ -295,10 +307,12 @@ class FlowFiberImpl(
     private fun setCurrentSandboxGroupContext() {
         val context = getExecutionContext()
         context.currentSandboxGroupContext.set(context.sandboxGroupContext)
+        log.info("Set SandboxGroupContext in thread ${Thread.currentThread().name}")
     }
 
     private fun removeCurrentSandboxGroupContext() {
         getExecutionContext().currentSandboxGroupContext.remove()
+        log.info("Removed SandboxGroupContext from thread ${Thread.currentThread().name}")
     }
 
     private fun initialiseThreadContext() {

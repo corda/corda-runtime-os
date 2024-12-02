@@ -1,10 +1,11 @@
 package net.corda.rest.server.impl.context
 
-import io.javalin.core.security.BasicAuthCredentials
-import io.javalin.core.util.Header
+import io.javalin.http.Header
 import io.javalin.http.UploadedFile
-import io.javalin.http.util.ContextUtil
-import io.javalin.plugin.json.JsonMapper
+import io.javalin.http.servlet.getBasicAuthCredentials
+import io.javalin.json.JsonMapper
+import io.javalin.security.BasicAuthCredentials
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 
 /**
@@ -82,10 +83,15 @@ interface ClientRequestContext {
      */
     fun addWwwAuthenticateHeaders(restAuthProvider: RestAuthenticationProvider) {}
 
+    /**
+     * Add warning header value to the response to warn the user that their password will expire soon.
+     */
+    fun addPasswordExpiryHeader(expiryStatus: PasswordExpiryStatus) {}
+
     fun getResourceAccessString(): String {
         // Examples of strings will look like:
-        // GET:/api/v1/permission/getpermission?id=c048679a-9654-4359-befc-9d2d22695a43
-        // POST:/api/v1/user/createuser
+        // GET:/api/v5_3/permission/getpermission?id=c048679a-9654-4359-befc-9d2d22695a43
+        // POST:/api/v5_3/user/createuser
         return method + METHOD_SEPARATOR + path.trimEnd('/') + if (!queryString.isNullOrBlank()) "?$queryString" else ""
     }
 
@@ -95,7 +101,7 @@ interface ClientRequestContext {
      * Returns a Boolean which is true if there is an Authorization header with
      * Basic auth credentials. Returns false otherwise.
      */
-    fun basicAuthCredentialsExist(): Boolean = ContextUtil.hasBasicAuthCredentials(header(Header.AUTHORIZATION))
+    fun basicAuthCredentialsExist(): Boolean = getBasicAuthCredentials() != null
 
     /**
      * Gets basic-auth credentials from the request, or throws.
@@ -103,5 +109,8 @@ interface ClientRequestContext {
      * Returns a wrapper object [BasicAuthCredentials] which contains the
      * Base64 decoded username and password from the Authorization header.
      */
-    fun basicAuthCredentials(): BasicAuthCredentials = ContextUtil.getBasicAuthCredentials(header(Header.AUTHORIZATION))
+    fun basicAuthCredentials(): BasicAuthCredentials = getBasicAuthCredentials()!!
+
+    private fun getBasicAuthCredentials() =
+        getBasicAuthCredentials(header(Header.AUTHORIZATION))
 }

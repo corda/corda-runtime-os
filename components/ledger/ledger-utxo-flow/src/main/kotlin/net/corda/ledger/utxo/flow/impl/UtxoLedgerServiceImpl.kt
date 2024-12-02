@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl
 
+import net.corda.flow.application.services.FlowCheckpointService
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
@@ -18,6 +18,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.persistence.VaultNamedParameterizedQueryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoBaselinedTransactionBuilder
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionWithDependencies
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
@@ -54,6 +55,14 @@ import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 import java.time.Instant
 
+/**
+ * A service implementation class which is typically injected in to any cordApp which wishes to interact with
+ * the UTXO ledger.
+ *
+ * Therefore, the methods of this class are always running from within flow sandboxes, and are subject
+ * to the limitations of flows. Since flows use Quasar, every method that can block must be annotated @Suspendable.
+ */
+
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [UtxoLedgerService::class, UsedByFlow::class], scope = PROTOTYPE)
 class UtxoLedgerServiceImpl @Activate constructor(
@@ -69,7 +78,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory,
     @Reference(service = UtxoLedgerTransactionVerificationService::class)
     private val transactionVerificationService: UtxoLedgerTransactionVerificationService,
-    @Reference(service = FlowFiberService::class) private val flowFiberService: FlowFiberService
+    @Reference(service = FlowCheckpointService::class) private val flowCheckpointService: FlowCheckpointService,
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
@@ -140,11 +149,15 @@ class UtxoLedgerServiceImpl @Activate constructor(
     override fun findFilteredTransactionsAndSignatures(
         signedTransaction: UtxoSignedTransaction
     ): Map<SecureHash, UtxoFilteredTransactionAndSignatures> {
-        return utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
-            signedTransaction.inputStateRefs + signedTransaction.referenceStateRefs,
-            signedTransaction.notaryKey,
-            signedTransaction.notaryName
-        )
+        return if (signedTransaction is UtxoSignedTransactionWithDependencies) {
+            signedTransaction.filteredDependencies.associateBy { it.filteredTransaction.id }
+        } else {
+            utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
+                signedTransaction.inputStateRefs + signedTransaction.referenceStateRefs,
+                signedTransaction.notaryKey,
+                signedTransaction.notaryName
+            )
+        }
     }
 
     @Suspendable
@@ -152,10 +165,19 @@ class UtxoLedgerServiceImpl @Activate constructor(
         signedTransaction: UtxoSignedTransaction,
         sessions: List<FlowSession>
     ): FinalizationResult {
-        /*
-        Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
-        Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
-         */
+        // Called from user flows when it is time to verify, sign and distribute a transaction.
+        //
+        // `signedTransaction` has various bits of data for the transaction. It is self-signed by the originator
+        // at this point, and includes a list of the public keys of other parties that should be used to sign
+        // the transaction.
+        //
+        // `sessions` has one entry for each other virtual node that should receive the transaction,
+        // and potentially sign it; they need to call in via `receiveFinality`. It is also possible that
+        // the other vnodes running `receiveFinality` will simply observe the transaction.
+        //
+        // Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
+        // Creating the executing the SubFlow must be independent otherwise the security manager causes issues
+        // with Quasar, since it is designed to stop arbitrary reflection on classes in the system.
         val utxoFinalityFlow = try {
             @Suppress("deprecation", "removal")
             java.security.AccessController.doPrivileged(
@@ -178,6 +200,14 @@ class UtxoLedgerServiceImpl @Activate constructor(
         session: FlowSession,
         validator: UtxoTransactionValidator
     ): FinalizationResult {
+        // Called by flows in user corDapps that wish to participate in finality, to perform their own checks and
+        // potentially then counter sign them. Works by starting a new receive finality flow to do the work;
+        // see UtxoReceiveFinalityFlowV1.
+        //
+        // `session` provides the ability to receive the transaction from the counterparty who initiated the finalize,
+        // and later send back to the counterparty who initiated the finalize, as well as providing access to the
+        // X500Name of the counterparty.
+
         val utxoReceiveFinalityFlow = try {
             @Suppress("deprecation", "removal")
             java.security.AccessController.doPrivileged(
@@ -203,7 +233,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
             offset = 0,
             resultClass,
             clock,
-            flowFiberService
+            flowCheckpointService
         )
     }
 

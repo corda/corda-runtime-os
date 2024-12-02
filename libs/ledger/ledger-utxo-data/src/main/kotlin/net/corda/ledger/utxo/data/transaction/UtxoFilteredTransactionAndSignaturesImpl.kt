@@ -8,10 +8,10 @@ import net.corda.v5.membership.NotaryInfo
 
 data class UtxoFilteredTransactionAndSignaturesImpl(
     private val filteredTransaction: UtxoFilteredTransaction,
-    private val signatures: List<DigitalSignatureAndMetadata>
+    private val signatures: Set<DigitalSignatureAndMetadata>
 ) : UtxoFilteredTransactionAndSignatures {
     override fun getFilteredTransaction(): UtxoFilteredTransaction = filteredTransaction
-    override fun getSignatures(): List<DigitalSignatureAndMetadata> = signatures
+    override fun getSignatures(): List<DigitalSignatureAndMetadata> = signatures.toList()
 }
 
 fun UtxoFilteredTransactionAndSignatures.verifyFilteredTransactionAndSignatures(

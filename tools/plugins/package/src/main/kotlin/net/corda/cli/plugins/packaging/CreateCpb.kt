@@ -12,8 +12,8 @@ import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
-import net.corda.cli.plugins.packaging.signing.SigningHelpers
 import net.corda.cli.plugins.packaging.signing.SigningOptions
+import net.corda.sdk.packaging.signing.CpxSigner
 import picocli.CommandLine
 
 @Command(
@@ -61,14 +61,10 @@ class CreateCpb : Runnable {
             buildUnsignedCpb(unsignedCpb, cpks)
             val cpbPath = requireFileDoesNotExist(outputCpbFileName)
 
-            SigningHelpers.sign(
+            CpxSigner.sign(
                 unsignedCpb,
                 cpbPath,
-                signingOptions.keyStoreFileName,
-                signingOptions.keyStorePass,
-                signingOptions.keyAlias,
-                signingOptions.sigFile,
-                signingOptions.tsaUrl
+                signingOptions.asSigningOptionsSdk,
             )
         } finally {
             Files.deleteIfExists(unsignedCpb)

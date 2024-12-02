@@ -3,18 +3,12 @@ package net.corda.rest.server.impl
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.ArraySchema
-import io.swagger.v3.oas.models.media.BooleanSchema
 import io.swagger.v3.oas.models.media.ComposedSchema
-import io.swagger.v3.oas.models.media.IntegerSchema
-import io.swagger.v3.oas.models.media.NumberSchema
-import io.swagger.v3.oas.models.media.ObjectSchema
 import io.swagger.v3.oas.models.media.Schema
-import io.swagger.v3.oas.models.media.StringSchema
 import kong.unirest.core.HttpStatus
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.internal.OptionalDependency
 import net.corda.rest.server.impl.utils.compact
-import net.corda.rest.test.CalendarRestResourceImpl
 import net.corda.rest.test.ObjectsInJsonEndpointImpl
 import net.corda.rest.test.TestEntityRestResourceImpl
 import net.corda.rest.test.TestFileUploadImpl
@@ -52,7 +46,6 @@ class RestServerOpenApiTest : RestServerTestBase() {
         fun setUpBeforeClass() {
             server = RestServerImpl(
                 listOf(
-                    CalendarRestResourceImpl(),
                     TestHealthCheckAPIImpl(),
                     TestEntityRestResourceImpl(),
                     TestFileUploadImpl(),
@@ -89,33 +82,6 @@ class RestServerOpenApiTest : RestServerTestBase() {
         assertFalse(body.contains("null,"))
 
         val openAPI = Json.mapper().readValue(body, OpenAPI::class.java)
-
-        val path = openAPI.paths["/calendar/daysoftheyear"]
-        assertNotNull(path)
-
-        val requestBody = path.post.requestBody
-        assertTrue(requestBody.content.containsKey("application/json"))
-
-        val mediaType = requestBody.content["application/json"]
-        assertNotNull(mediaType)
-        assertEquals("#/components/schemas/DaysOfTheYearWrapperRequest", mediaType.schema.`$ref`)
-
-        val responseOk = path.post.responses["200"]
-        assertNotNull(responseOk)
-        // need to assert that FiniteDurableReturnResult is generated as a referenced schema rather than inline content
-        assertEquals(
-            "#/components/schemas/FiniteDurableReturnResult_of_CalendarDay",
-            responseOk.content["application/json"]!!.schema.`$ref`
-        )
-
-        val compactBody = body.compact()
-
-        // need to assert "items" by contains this way because when serializing the Schema is not delegated to ArraySchema
-        assertThat(compactBody).contains(finiteDurableReturnResultRef.compact())
-        assertThat(compactBody).contains(schemaDef.compact())
-
-        assertTrue(openAPI.components.schemas.containsKey("FiniteDurableReturnResult_of_CalendarDay"))
-        assertThat(compactBody).contains(finiteDurableReturnResultSchemaWithCalendarDayRef.compact())
 
         assertTrue(openAPI.components.schemas.containsKey("TimeCallDto"))
         val timeCallDto = openAPI.components.schemas["TimeCallDto"]
@@ -215,7 +181,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertNull(this.nullable)
 
             val contentProperty = this.properties["content"]
-            assertThat(contentProperty?.description).isEqualTo("Can be any value - string, number, boolean, array or object.")
+            assertThat(contentProperty?.description).isEqualTo("Either nested JSON object or a valid JSON-escaped string.")
         }
 
         with(openAPI.components.schemas["EchoResponse"]) {
@@ -223,7 +189,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertNull(this.nullable)
 
             val contentProperty = this.properties["content"]
-            assertThat(contentProperty?.description).isEqualTo("Can be any value - string, number, boolean, array or object.")
+            assertThat(contentProperty?.description).isEqualTo("Either nested JSON object or a valid JSON-escaped string.")
         }
     }
 
@@ -242,7 +208,10 @@ class RestServerOpenApiTest : RestServerTestBase() {
         with(openAPI.paths["/fileupload/upload"]) {
             assertNotNull(this)
             val multipartFormData = post.requestBody.content["multipart/form-data"]
-            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertNotNull(
+                multipartFormData,
+                "Multipart file upload should be under multipart form-data content in request body."
+            )
             assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
             assertEquals(1, multipartFormData.schema.properties.size)
             val file = multipartFormData.schema.properties["file"]
@@ -256,7 +225,10 @@ class RestServerOpenApiTest : RestServerTestBase() {
         with(openAPI.paths["/fileupload/uploadwithname"]) {
             assertNotNull(this)
             val multipartFormData = post.requestBody.content["multipart/form-data"]
-            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertNotNull(
+                multipartFormData,
+                "Multipart file upload should be under multipart form-data content in request body."
+            )
             assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
             assertEquals(2, multipartFormData.schema.properties.size)
             val fileName = multipartFormData.schema.properties["name"]
@@ -274,7 +246,10 @@ class RestServerOpenApiTest : RestServerTestBase() {
         with(openAPI.paths["/fileupload/uploadwithoutparameterannotations"]) {
             assertNotNull(this)
             val multipartFormData = post.requestBody.content["multipart/form-data"]
-            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertNotNull(
+                multipartFormData,
+                "Multipart file upload should be under multipart form-data content in request body."
+            )
             assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
             assertEquals(2, multipartFormData.schema.properties.size)
             val fileName = multipartFormData.schema.properties["fileName"]
@@ -292,7 +267,10 @@ class RestServerOpenApiTest : RestServerTestBase() {
         with(openAPI.paths["/fileupload/fileuploadobject"]) {
             assertNotNull(this)
             val multipartFormData = post.requestBody.content["multipart/form-data"]
-            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertNotNull(
+                multipartFormData,
+                "Multipart file upload should be under multipart form-data content in request body."
+            )
             assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
             assertEquals(1, multipartFormData.schema.properties.size)
             val file = multipartFormData.schema.properties["file"]
@@ -306,7 +284,10 @@ class RestServerOpenApiTest : RestServerTestBase() {
         with(openAPI.paths["/fileupload/multifileuploadobject"]) {
             assertNotNull(this)
             val multipartFormData = post.requestBody.content["multipart/form-data"]
-            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertNotNull(
+                multipartFormData,
+                "Multipart file upload should be under multipart form-data content in request body."
+            )
             assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
             assertEquals(2, multipartFormData.schema.properties.size)
             val file1 = multipartFormData.schema.properties["file1"]
@@ -314,19 +295,30 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertEquals("string", file1.type, "Multipart file type should be a string.")
             assertEquals("binary", file1.format, "Multipart file format should be binary.")
             assertFalse(file1.nullable)
-            assertEquals("A content of the file to upload.", file1.description, "File upload should have a description.")
+            assertEquals(
+                "A content of the file to upload.",
+                file1.description,
+                "File upload should have a description."
+            )
             val file2 = multipartFormData.schema.properties["file2"]
             assertNotNull(file2)
             assertEquals("string", file2.type, "Multipart file type should be a string.")
             assertEquals("binary", file2.format, "Multipart file format should be binary.")
             assertFalse(file2.nullable)
-            assertEquals("A content of the file to upload.", file2.description, "File upload should have a description.")
+            assertEquals(
+                "A content of the file to upload.",
+                file2.description,
+                "File upload should have a description."
+            )
         }
 
         with(openAPI.paths["/fileupload/multiinputstreamfileupload"]) {
             assertNotNull(this)
             val multipartFormData = post.requestBody.content["multipart/form-data"]
-            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertNotNull(
+                multipartFormData,
+                "Multipart file upload should be under multipart form-data content in request body."
+            )
             assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
             assertEquals(2, multipartFormData.schema.properties.size)
             val file1 = multipartFormData.schema.properties["file1"]
@@ -334,19 +326,30 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertEquals("string", file1.type, "Multipart file type should be a string.")
             assertEquals("binary", file1.format, "Multipart file format should be binary.")
             assertFalse(file1.nullable)
-            assertEquals("A content of the file to upload.", file1.description, "File upload should have a description.")
+            assertEquals(
+                "A content of the file to upload.",
+                file1.description,
+                "File upload should have a description."
+            )
             val file2 = multipartFormData.schema.properties["file2"]
             assertNotNull(file2)
             assertEquals("string", file2.type, "Multipart file type should be a string.")
             assertEquals("binary", file2.format, "Multipart file format should be binary.")
             assertFalse(file2.nullable)
-            assertEquals("A content of the file to upload.", file2.description, "File upload should have a description.")
+            assertEquals(
+                "A content of the file to upload.",
+                file2.description,
+                "File upload should have a description."
+            )
         }
 
         with(openAPI.paths["/fileupload/fileuploadobjectlist"]) {
             assertNotNull(this)
             val multipartFormData = post.requestBody.content["multipart/form-data"]
-            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertNotNull(
+                multipartFormData,
+                "Multipart file upload should be under multipart form-data content in request body."
+            )
             assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
             assertEquals(1, multipartFormData.schema.properties.size)
             val files = multipartFormData.schema.properties["files"]
@@ -364,7 +367,10 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertEquals("tenant", queryParam.name)
             assertFalse(queryParam.required)
             val multipartFormData = post.requestBody.content["multipart/form-data"]
-            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertNotNull(
+                multipartFormData,
+                "Multipart file upload should be under multipart form-data content in request body."
+            )
             assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
             assertEquals(1, multipartFormData.schema.properties.size)
             val file = multipartFormData.schema.properties["file"]
@@ -381,7 +387,10 @@ class RestServerOpenApiTest : RestServerTestBase() {
             val queryParam = post.parameters.first()
             assertEquals("tenant", queryParam.name)
             val multipartFormData = post.requestBody.content["multipart/form-data"]
-            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertNotNull(
+                multipartFormData,
+                "Multipart file upload should be under multipart form-data content in request body."
+            )
             assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
             assertEquals(1, multipartFormData.schema.properties.size)
             val file = multipartFormData.schema.properties["file"]
@@ -395,7 +404,10 @@ class RestServerOpenApiTest : RestServerTestBase() {
         with(openAPI.paths["/fileupload/uploadwithnameinannotation"]) {
             assertNotNull(this)
             val multipartFormData = post.requestBody.content["multipart/form-data"]
-            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertNotNull(
+                multipartFormData,
+                "Multipart file upload should be under multipart form-data content in request body."
+            )
             assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
             assertEquals(1, multipartFormData.schema.properties.size)
             val file = multipartFormData.schema.properties["differentName"]
@@ -416,24 +428,11 @@ class RestServerOpenApiTest : RestServerTestBase() {
 
         fun assertJsonObject(jsonObject: Schema<*>?, nullable: Boolean? = false) {
             assertNotNull(jsonObject)
-            assertNull(jsonObject.type)
+            assertEquals("object", jsonObject.type)
             assertNull(jsonObject.format)
-            assertEquals("Can be any value - string, number, boolean, array or object.", jsonObject.description)
+            assertEquals("Either nested JSON object or a valid JSON-escaped string.", jsonObject.description)
             assertEquals("{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}", jsonObject.example)
             assertEquals(nullable, jsonObject.nullable)
-            val composedSchema = jsonObject as ComposedSchema
-            assertTrue(
-                composedSchema.anyOf.containsAll(
-                    setOf(
-                        StringSchema(),
-                        NumberSchema(),
-                        IntegerSchema(),
-                        BooleanSchema(),
-                        ArraySchema(),
-                        ObjectSchema()
-                    )
-                )
-            )
         }
 
         with(openAPI.paths["/objects-in-json-endpoint/create-with-one-object"]) {
@@ -497,7 +496,16 @@ class RestServerOpenApiTest : RestServerTestBase() {
     fun `GET swagger UI should return html with reference to swagger json`() {
         val apiSpec = client.call(GET, WebRequest<Any>("swagger"))
         assertEquals(HttpStatus.OK, apiSpec.responseStatus)
-        assertEquals("text/html", apiSpec.headers["content-type"])
+        assertEquals("text/html;charset=utf-8", apiSpec.headers["content-type"])
+        val expected = """url: "/${context.basePath}/${apiVersion.versionPath}/swagger.json""""
+        assertTrue(apiSpec.body!!.contains(expected))
+    }
+
+    @Test
+    fun `GET swagger UI with trailing slash in path should return html with reference to swagger json without trailing slash`() {
+        val apiSpec = client.call(GET, WebRequest<Any>("swagger/"))
+        assertEquals(HttpStatus.OK, apiSpec.responseStatus)
+        assertEquals("text/html;charset=utf-8", apiSpec.headers["content-type"])
         val expected = """url: "/${context.basePath}/${apiVersion.versionPath}/swagger.json""""
         assertTrue(apiSpec.body!!.contains(expected))
     }
@@ -507,8 +515,9 @@ class RestServerOpenApiTest : RestServerTestBase() {
         val baseClient = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/")
         val swaggerUIversion = OptionalDependency.SWAGGERUI.version
         val swagger = baseClient.call(GET, WebRequest<Any>("api/${apiVersion.versionPath}/swagger"))
-        val swaggerUIBundleJS = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
-        val swaggerUIcss = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
+        val swaggerUIBundleJS =
+            baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
+        val swaggerUIcss = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui.css"))
 
         assertEquals(HttpStatus.OK, swagger.responseStatus)
         assertEquals(HttpStatus.OK, swaggerUIBundleJS.responseStatus)
@@ -533,40 +542,5 @@ class RestServerOpenApiTest : RestServerTestBase() {
           }
         }
       }
-    """.trimIndent()
-
-    private val finiteDurableReturnResultSchemaWithCalendarDayRef = """"FiniteDurableReturnResult_of_CalendarDay" : {
-        "required" : [ "isLastResult", "positionedValues" ],
-        "type" : "object",
-        "properties" : {
-          "isLastResult" : {
-            "type" : "boolean",
-            "nullable" : false,
-            "example" : true
-          },
-          "positionedValues" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "type" : "object",
-              "properties" : {
-                "position" : {
-                  "type" : "integer",
-                  "format" : "int64",
-                  "nullable" : false,
-                  "example" : 0
-                },
-                "value" : {
-                  "${"$"}ref" : "#/components/schemas/CalendarDay"
-                }
-              },
-              "example" : "No example available for this type"
-            }
-          }
-    """.trimIndent()
-
-    private val finiteDurableReturnResultRef = """
-         ref" : "#/components/schemas/FiniteDurableReturnResult_of_CalendarDay
     """.trimIndent()
 }

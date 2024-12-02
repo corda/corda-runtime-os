@@ -27,7 +27,7 @@ import java.time.Instant
 
 @InitiatingFlow(protocol = "utxo-flow-protocol")
 class UtxoDemoFlow : ClientStartableFlow {
-    data class InputMessage(val input: String, val members: List<String>, val notary: String?)
+    data class InputMessage(val input: String, val members: List<String>, val notary: String?, val priority: Long? = null)
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -62,7 +62,8 @@ class UtxoDemoFlow : ClientStartableFlow {
             val testUtxoState = TestUtxoState(
                 request.input,
                 members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first(),
-                request.members + listOf(myInfo.name.toString())
+                request.members + listOf(myInfo.name.toString()),
+                request.priority
             )
 
             val notary = if (request.notary == null) {

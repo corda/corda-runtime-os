@@ -42,7 +42,7 @@ class ConnectionManagerTest {
                     null,
                     trustStore,
                     null,
-                )
+                ),
             )
 
         assertThat(client).isEqualTo(mockedClient.constructed().first())
@@ -59,7 +59,7 @@ class ConnectionManagerTest {
                     null,
                     trustStore,
                     null,
-                )
+                ),
             )
         val client2 = connectionManager
             .acquire(
@@ -69,7 +69,7 @@ class ConnectionManagerTest {
                     null,
                     trustStore,
                     null,
-                )
+                ),
             )
 
         assertThat(client1).isNotSameAs(client2)
@@ -89,7 +89,7 @@ class ConnectionManagerTest {
                     null,
                     trustStore,
                     null,
-                )
+                ),
             )
         val client2 = connectionManager
             .acquire(
@@ -99,7 +99,7 @@ class ConnectionManagerTest {
                     null,
                     trustStore,
                     null,
-                )
+                ),
             )
 
         assertThat(client1).isSameAs(client2)
@@ -117,7 +117,7 @@ class ConnectionManagerTest {
                     null,
                     trustStore,
                     null,
-                )
+                ),
             )
         val client2 = connectionManager
             .acquire(
@@ -127,7 +127,7 @@ class ConnectionManagerTest {
                     null,
                     trustStore,
                     null,
-                )
+                ),
             )
 
         assertThat(client1).isNotSameAs(client2)
@@ -148,7 +148,7 @@ class ConnectionManagerTest {
                     null,
                     trustStore,
                     null,
-                )
+                ),
             )
 
         connectionManager.close()
@@ -161,7 +161,7 @@ class ConnectionManagerTest {
                     null,
                     trustStore,
                     null,
-                )
+                ),
             )
         assertThat(client1).isNotSameAs(client2)
     }
@@ -181,7 +181,7 @@ class ConnectionManagerTest {
                     null,
                     trustStore,
                     null,
-                )
+                ),
             )
 
         connectionManager.close()

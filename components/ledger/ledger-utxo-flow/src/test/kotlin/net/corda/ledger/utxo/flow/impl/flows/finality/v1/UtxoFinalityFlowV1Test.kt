@@ -322,8 +322,7 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED, emptyList())
         verify(persistenceService).persistTransactionSignatures(
             TX_ID,
-            1,
-            listOf(signatureAlice2, signatureBob)
+            setOf(signatureAlice1, signatureAlice2, signatureBob)
         )
         verify(persistenceService).persist(notarizedTx, TransactionStatus.VERIFIED, listOf(0))
 
@@ -412,8 +411,7 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             TX_ID,
-            1,
-            listOf(signatureAlice2, signatureBob)
+            setOf(signatureAlice1, signatureAlice2, signatureBob)
         )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
@@ -512,8 +510,7 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             TX_ID,
-            1,
-            listOf(signatureAlice2, signatureBob)
+            setOf(signatureAlice1, signatureAlice2, signatureBob)
         )
         verify(persistenceService).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.INVALID), any())
@@ -596,8 +593,7 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             TX_ID,
-            1,
-            listOf(signatureAlice2, signatureBob)
+            setOf(signatureAlice1, signatureAlice2, signatureBob)
         )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.INVALID), any())
@@ -691,8 +687,7 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             TX_ID,
-            1,
-            listOf(signatureAlice2, signatureBob)
+            setOf(signatureAlice1, signatureAlice2, signatureBob)
         )
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
@@ -780,8 +775,7 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             TX_ID,
-            1,
-            listOf(signatureAlice2, signatureBob)
+            setOf(signatureAlice1, signatureAlice2, signatureBob)
         )
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
@@ -870,8 +864,7 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             TX_ID,
-            1,
-            listOf(signatureAlice2, signatureBob)
+            setOf(signatureAlice1, signatureAlice2, signatureBob)
         )
         verify(persistenceService).persist(txAfterBobSignature, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
@@ -947,8 +940,7 @@ class UtxoFinalityFlowV1Test {
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persistTransactionSignatures(
             TX_ID,
-            1,
-            listOf(signatureBob)
+            setOf(signatureAlice1, signatureBob)
         )
         verify(persistenceService).persist(notarizedTx, TransactionStatus.VERIFIED)
 
@@ -1458,6 +1450,66 @@ class UtxoFinalityFlowV1Test {
         callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
 
         verify(flowEngine, timeout(100).atLeastOnce()).subFlow(any<TransactionBackchainSenderFlow>())
+    }
+
+    @Test
+    fun `do not persist existing transaction signatures when receiving signatures from peers`() {
+        whenever(initialTx.getMissingSignatories()).thenReturn(
+            setOf(
+                publicKeyAlice1,
+                publicKeyAlice2,
+                publicKeyBob
+            )
+        )
+
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
+            mapOf(
+                sessionAlice to Payload.Success(
+                    listOf(
+                        signatureAlice1,
+                        signatureAlice2
+                    )
+                ),
+                sessionBob to Payload.Success(
+                    listOf(
+                        signatureBob
+                    )
+                )
+            )
+        )
+
+        whenever(initialTx.signatures).thenReturn(listOf(signature0, signatureAlice2))
+        val txAfterAlice1Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(initialTx.addSignature(signatureAlice1)).thenReturn(txAfterAlice1Signature)
+        val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
+        val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.id).thenReturn(TX_ID)
+        whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
+        whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
+        whenever(txAfterBobSignature.addSignature(signatureNotary)).thenReturn(notarizedTx)
+
+        whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+        whenever(notarizedTx.outputStateAndRefs).thenReturn(listOf(stateAndRef))
+
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
+
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyAlice1))).thenReturn(true)
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyBob))).thenReturn(true)
+
+        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
+
+        verify(persistenceService).persistTransactionSignatures(
+            TX_ID,
+            setOf(signatureAlice1, signatureBob)
+        )
     }
 
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {

@@ -11,7 +11,8 @@ class CordaLifecycleHelper {
     fun startCombinedWorkerWithDockerCompose(
         pidFilePath: String,
         composeFilePath: String,
-        dockerProjectName: String
+        dockerProjectName: String,
+        cordaRuntimeVersion: String
     ) : Process {
         if (!File(composeFilePath).exists()) {
             throw CordaRuntimeGradlePluginException("Unable to locate compose file: $composeFilePath")
@@ -28,6 +29,7 @@ class CordaLifecycleHelper {
             "up",
             "--force-recreate"
         )
+        cordaProcessBuilder.environment()["CORDA_RUNTIME_VERSION"] = cordaRuntimeVersion
         cordaProcessBuilder.redirectErrorStream(true)
         val cordaProcess = cordaProcessBuilder.start()
         pidStore.print(cordaProcess.pid())

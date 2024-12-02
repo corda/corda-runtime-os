@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.delegated.signing.Alias
 import net.corda.crypto.delegated.signing.CertificateChain
@@ -29,7 +30,6 @@ import java.security.cert.CertificateFactory
 import java.util.Objects
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.configuration.read.ConfigurationReadService
 
 @Suppress("LongParameterList")
 internal class DynamicKeyStore(
@@ -41,8 +41,8 @@ internal class DynamicKeyStore(
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
     private val keyStoreFactory: (
         DelegatedSigner,
-        DelegatedCertificateStore
-    ) -> KeyStoreFactory = { signer, certificatesStore ->  KeyStoreFactory(signer, certificatesStore) },
+        DelegatedCertificateStore,
+    ) -> KeyStoreFactory = { signer, certificatesStore -> KeyStoreFactory(signer, certificatesStore) },
 ) : DelegatedCertificateStore, LifecycleWithDominoTile, DelegatedSigner {
 
     companion object {
@@ -62,7 +62,7 @@ internal class DynamicKeyStore(
     inner class ClientKeyStore(
         private val certificates: CertificateChain,
         private val tenantId: String,
-    ): DelegatedCertificateStore, DelegatedSigner {
+    ) : DelegatedCertificateStore, DelegatedSigner {
         val keyStore by lazy {
             keyStoreFactory(this, this).createDelegatedKeyStore()
         }
@@ -73,7 +73,7 @@ internal class DynamicKeyStore(
         }
 
         override fun sign(publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {
-            if(publicKey != expectedPublicKey) {
+            if (publicKey != expectedPublicKey) {
                 throw InvalidKeyException("Unknown public key")
             }
             return cryptoOpsClient.sign(tenantId, publicKey, spec, data).bytes
@@ -81,12 +81,14 @@ internal class DynamicKeyStore(
 
         override fun hashCode() = Objects.hash(certificates, tenantId)
         override fun equals(other: Any?) =
-            ((other is ClientKeyStore) &&
+            (
+                (other is ClientKeyStore) &&
                     (other.certificates == certificates) &&
-                    (other.tenantId == tenantId))
+                    (other.tenantId == tenantId)
+                )
     }
 
-    fun getClientKeyStore(clientIdentity: HoldingIdentity) : ClientKeyStore?  =
+    fun getClientKeyStore(clientIdentity: HoldingIdentity): ClientKeyStore? =
         holdingIdentityToClientKeyStore[clientIdentity]
 
     private val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_CERTIFICATES)
@@ -94,7 +96,7 @@ internal class DynamicKeyStore(
         subscriptionFactory.createCompactedSubscription(
             subscriptionConfig,
             Processor(),
-            messagingConfiguration
+            messagingConfiguration,
         )
     }
 
@@ -112,7 +114,7 @@ internal class DynamicKeyStore(
     private val blockingDominoTile = BlockingDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        ready
+        ready,
     )
 
     override val dominoTile = ComplexDominoTile(
@@ -121,12 +123,12 @@ internal class DynamicKeyStore(
         dependentChildren = listOf(
             subscriptionTile.coordinatorName,
             LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
-            blockingDominoTile.coordinatorName
+            blockingDominoTile.coordinatorName,
         ),
         managedChildren = listOf(
             subscriptionTile.toNamedLifecycle(),
             NamedLifecycle.of(cryptoOpsClient),
-            blockingDominoTile.toNamedLifecycle()
+            blockingDominoTile.toNamedLifecycle(),
         ),
     )
 
@@ -150,7 +152,7 @@ internal class DynamicKeyStore(
                             entry.value.tenantId,
                         )
                     }
-                }
+                },
             )
             logger.info("Received initial set of TLS certificates for the following identities: ${currentData.keys}.")
             ready.complete(Unit)
@@ -168,7 +170,7 @@ internal class DynamicKeyStore(
                         publicKeyToTenantId.remove(publicKey)
                     }
                 }
-                if(oldValue != null) {
+                if (oldValue != null) {
                     holdingIdentityToClientKeyStore.remove(oldValue.holdingIdentity)
                 }
                 logger.info("TLS certificate removed for the following identities: ${currentData.keys}.")

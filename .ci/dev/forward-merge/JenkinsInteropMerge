@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.2') _
+@Library('corda-shared-build-pipeline-steps@5.3') _
 
 /*
  * Forward merge any changes in current branch to the branch with following version.

@@ -22,15 +22,17 @@ class UtxoLedgerTransactionVerifier(
     override val subjectClass: String = UtxoLedgerTransaction::class.simpleName!!
 
     fun verify() {
-        verifyMetadata(transaction.metadata)
-        verifyPlatformChecks()
+        verifyMetadata(transaction.metadata) // cheap check this transaction is UTXO
+        verifyPlatformChecks() // cheap local checks about state overlaps and notaries
+
+        // Now do the much more expensive sandbox checks requiring sandboxes
         verifyContracts(transactionFactory, transaction, holdingIdentity, injectService)
     }
 
     private fun verifyPlatformChecks() {
         /**
          * These checks are shared with [UtxoTransactionBuilderVerifier] verification.
-         * They do not require backchain resolution.
+         * They do not require backchain resolution; they are all surface level, very fast checks.
          */
         verifySignatories(transaction.signatories)
         verifyInputsAndOutputs(transaction.inputStateRefs, transaction.outputContractStates)

@@ -22,8 +22,8 @@ class HttpServerChannelHandler(
     private val serverListener: HttpServerListener,
     private val maxRequestSize: Long,
     private val urlPaths: Collection<String>,
-    private val logger: Logger
-): BaseHttpChannelHandler(serverListener, logger, HandlerType.SERVER) {
+    private val logger: Logger,
+) : BaseHttpChannelHandler(serverListener, logger, HandlerType.SERVER) {
 
     private var responseCode: HttpResponseStatus? = null
 
@@ -35,10 +35,12 @@ class HttpServerChannelHandler(
         if (msg is HttpRequest) {
             responseCode = msg.validate(maxRequestSize, urlPaths)
             if (responseCode != HttpResponseStatus.OK) {
-                logger.warn ("Received invalid HTTP request from ${ctx.channel().remoteAddress()}\n" +
+                logger.warn(
+                    "Received invalid HTTP request from ${ctx.channel().remoteAddress()}\n" +
                         "Protocol version: ${msg.protocolVersion()}\n" +
-                        "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
-                        "Request URI: ${msg.uri()}\n and the response code was $responseCode.")
+                        "Hostname: ${msg.headers()[HttpHeaderNames.HOST] ?: "unknown"}\n" +
+                        "Request URI: ${msg.uri()}\n and the response code was $responseCode.",
+                )
 
                 val response = createResponse(null, responseCode!!)
                 // if validation failed, we eagerly close the connection in a blocking fashion so that we do not process anything more.
@@ -47,11 +49,13 @@ class HttpServerChannelHandler(
                 return
             }
 
-            logger.debug { "Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
+            logger.debug {
+                "Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
                     "Protocol version: ${msg.protocolVersion()}\n" +
-                    "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
+                    "Hostname: ${msg.headers()[HttpHeaderNames.HOST] ?: "unknown"}\n" +
                     "Request URI: ${msg.uri()}\n" +
-                    "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n" }
+                    "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n"
+            }
 
             // initialise byte array to read the request into
             allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
@@ -68,8 +72,10 @@ class HttpServerChannelHandler(
                 try {
                     readBytesIntoBodyBuffer(content)
                 } catch (e: IndexOutOfBoundsException) {
-                    logger.error("Cannot read request body into buffer. " +
-                            "It exceeded space specified in ${HttpHeaderNames.CONTENT_LENGTH} header.")
+                    logger.error(
+                        "Cannot read request body into buffer. " +
+                            "It exceeded space specified in ${HttpHeaderNames.CONTENT_LENGTH} header.",
+                    )
                     val response = createResponse(null, HttpResponseStatus.BAD_REQUEST)
                     ctx.writeAndFlush(response).get()
                     ctx.close().get()
@@ -90,9 +96,7 @@ class HttpServerChannelHandler(
             releaseBodyBuffer()
             responseCode = null
         }
-
     }
-
 
     private fun send100Continue(ctx: ChannelHandlerContext) {
         val response = DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE, Unpooled.EMPTY_BUFFER)

@@ -37,6 +37,7 @@ In the sender mode, the configuration file should have the following form:
         ourGroupId: "group-1",
         loadGenerationType: "CONTINUOUS",  
         // totalNumberOfMessages: 1000 - only required when loadGenerationType = ONE_OFF
+        // timeFrame: 1 -only required when loadGenerationType = TIME_BASED
         batchSize: 10,
         interBatchDelay: 0ms,
         messageSizeBytes: 10000,
@@ -45,14 +46,15 @@ In the sender mode, the configuration file should have the following form:
 }
 ```
 
-The `loadGenerationType` can have two values:
+The `loadGenerationType` can have three values:
 * `ONE_OFF`: this is a one-off generation of load. It will generate a specific number of messages (as specified by `totalNumberOfMessages`) and then stop.
 * `CONTINUOUS`: this is a continuous generation of load. It will send messages in a closed loop (i.e. send messages, wait until they are delivered to Kafka and metadata written to DB, send next batch etc.) until the application is stopped.
+* `TIME_BASED`: this is a one-off generation of load. It will generate messages for a specific period of time (as specified by `timeFrame`) and then stop.
 
 The following configuration options are optional:
 * `dbParams`: if this option is specified, the simulator will also write some metadata for each message (e.g. message ID, sender ID) to the specified database.
 * `messageSizeBytes`: this is the size of the payload for the generated messages (random data will be generated). Default: 10KB.
-* `parallelClients`: this is the number of parallel clients/threads used to send messages. Default: 1. Note: each client will send `totalNumberOfMessages` individually.
+* `parallelClients`: this is the number of parallel clients/threads used to send messages. Default: 1. Note: each client will send `totalNumberOfMessages` individually or keep sending messages for `timeFrame` period.
 * `interBatchDelay`: the delay introduced between each batch of messages. Default: no delay.
 * `batchSize`: the number of messages sent in parallel on every batch. Default: 50.
 * `expireAfterTime`: the time after which the message will expire. This is used to calculate the TTL of the generated messages, which corresponds to the current time plus the duration specified by `expireAfterTime`. If not specified, no TTL is added to the message. Default: not specified.

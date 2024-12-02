@@ -78,7 +78,13 @@ class FlowMapperWorker @Activate constructor(
         )
         Health.configure(webServer, lifecycleRegistry)
 
-        configureTracing("Flow Mapper Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
+        logger.info("Trace tags captured from the CLI: ${params.defaultParams.extraTraceTags}")
+        configureTracing(
+            "Flow Mapper Worker",
+            params.defaultParams.zipkinTraceUrl,
+            params.defaultParams.traceSamplesPerSecond,
+            params.defaultParams.extraTraceTags
+        )
         webServer.start(params.defaultParams.workerServerPort)
 
         val extraConfigs = mutableListOf<Config>()

@@ -1,5 +1,6 @@
 package net.corda.rest.test.utils
 
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.security.AuthServiceId
 import net.corda.rest.security.read.Password
@@ -33,7 +34,10 @@ class FakeSecurityManager : RestSecurityManager {
 
     val checksExecuted: List<SecurityCheck> = _checksExecuted
 
-    private inner class RecordKeepingSubject(override val principal: String) : AuthorizingSubject {
+    private inner class RecordKeepingSubject(
+        override val principal: String,
+        override val expiryStatus: PasswordExpiryStatus = PasswordExpiryStatus.ACTIVE
+    ) : AuthorizingSubject {
         override fun isPermitted(action: String, vararg arguments: String): Boolean {
             _checksExecuted.add(SecurityCheck(action, arguments.asList()))
             return true
@@ -48,7 +52,7 @@ class FakeSecurityManager : RestSecurityManager {
         }
     }
 
-    override fun buildSubject(principal: String): AuthorizingSubject {
+    override fun buildSubject(principal: String, expiryStatus: PasswordExpiryStatus): AuthorizingSubject {
         return RecordKeepingSubject(FakeSecurityManager::class.java.simpleName)
     }
 

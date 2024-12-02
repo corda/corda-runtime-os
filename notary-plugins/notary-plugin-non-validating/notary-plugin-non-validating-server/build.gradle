@@ -23,7 +23,7 @@ dependencies {
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-notary-plugin'
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    cordaProvided 'org.slf4j:slf4j-api'
+    cordaProvided libs.slf4j.api
 
     // Common package pulled in as transitive dependency through API
     cordapp project(":notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api")

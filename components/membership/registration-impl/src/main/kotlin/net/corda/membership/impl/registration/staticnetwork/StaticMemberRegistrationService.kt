@@ -293,9 +293,7 @@ class StaticMemberRegistrationService(
 
             persistGroupParameters(memberInfo, staticMemberList, membershipGroupReader)
 
-            persistRegistrationRequest(registrationId, memberInfo)
-
-            return emptyList()
+            return persistRegistrationRequest(registrationId, memberInfo)
         } catch (e: InvalidMembershipRegistrationException) {
             registrationLogger.warn("Registration failed. Reason:", e)
             throw e
@@ -355,10 +353,10 @@ class StaticMemberRegistrationService(
         }
     }
 
-    private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) {
+    private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo): Collection<Record<*, *>> {
         val memberContext = serialize(memberInfo.memberProvidedContext.toAvro())
         val registrationContext = serialize(KeyValuePairList(emptyList()))
-        persistenceClient.persistRegistrationRequest(
+        return persistenceClient.persistRegistrationRequest(
             viewOwningIdentity = memberInfo.holdingIdentity,
             registrationRequest = RegistrationRequest(
                 status = RegistrationStatus.APPROVED,
@@ -381,8 +379,8 @@ class StaticMemberRegistrationService(
                     CryptoSignatureSpec("", null, null)
                 ),
                 serial = 0L,
-            )
-        ).getOrThrow()
+            ),
+        ).createAsyncCommands()
     }
 
     private fun validateNotaryDetails(

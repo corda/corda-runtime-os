@@ -15,6 +15,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     testRuntimeOnly 'org.osgi:osgi.core'
 }

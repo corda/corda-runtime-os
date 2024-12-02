@@ -28,6 +28,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.security.CURRENT_REST_CONTEXT
@@ -213,7 +214,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
         logger.warn(
             "Remote request failed with exception of type ${exception.errorType}: ${exception.errorMessage}"
         )
-        return InternalServerException(exception.errorMessage)
+        return InternalServerException(exceptionDetails = ExceptionDetails(exception.errorType, exception.errorMessage))
     }
 
     // Mandatory lifecycle methods - def to coordinator

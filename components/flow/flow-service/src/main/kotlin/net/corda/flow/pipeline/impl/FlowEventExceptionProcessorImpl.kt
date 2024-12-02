@@ -153,12 +153,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         }
     }
 
-    private fun createFlowKilledStatusRecord(checkpoint: FlowCheckpoint, message: String?): List<Record<*, *>> {
-        return createStatusRecord(checkpoint.flowId) {
-            flowMessageFactory.createFlowKilledStatusMessage(checkpoint, message)
-        }
-    }
-
     /**
      * Remove cached flow fiber for this checkpoint, if it exists.
      */

@@ -47,6 +47,6 @@ the default values inside the code.
 From a terminal, run the jar providing the `-f` and `-p` arguments if necessary. Example:
 
 ```shell
-java -jar metrics-webserver-5.2.0.jar -f metrics.txt -p 3000
+java -jar metrics-webserver-5.3.0.jar -f metrics.txt -p 3000
 ```
 

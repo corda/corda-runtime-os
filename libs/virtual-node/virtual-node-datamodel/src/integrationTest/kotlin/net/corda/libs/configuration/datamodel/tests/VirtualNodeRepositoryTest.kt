@@ -150,10 +150,9 @@ class VirtualNodeRepositoryTest {
             VirtualNodeRepositoryImpl().findVirtualNodeOperationByRequestId(it, requestId)
         }
 
-        assertThat(virtualNodeOperation).isNotEmpty
-        assertNotNull(virtualNodeOperation[0].operationType)
-        assertNotNull(virtualNodeOperation[0].state)
-        assertEquals(virtualNodeOperation[0].requestData, "data")
+        assertNotNull(virtualNodeOperation.operationType)
+        assertNotNull(virtualNodeOperation.state)
+        assertEquals(virtualNodeOperation.requestData, "data")
     }
 
     @Suppress("ForEachOnRange")

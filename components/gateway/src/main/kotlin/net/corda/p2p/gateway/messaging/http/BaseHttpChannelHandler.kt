@@ -16,9 +16,11 @@ import java.net.SocketAddress
 import java.nio.channels.ClosedChannelException
 import javax.net.ssl.SSLException
 
-abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionListener,
-                                      private val logger: Logger,
-                                      private val handlerType: HandlerType): SimpleChannelInboundHandler<HttpObject>() {
+abstract class BaseHttpChannelHandler(
+    private val eventListener: HttpConnectionListener,
+    private val logger: Logger,
+    private val handlerType: HandlerType,
+) : SimpleChannelInboundHandler<HttpObject>() {
 
     private companion object {
         val messagesNotToLog = listOf(
@@ -88,13 +90,15 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
                         cause is SSLException && (cause.message?.contains("unrecognized_name") == true) -> {
                             logger.warn(
                                 "Unrecognized server name error." +
-                                "This is most likely due to mismatch between the certificates subject alternative name and the host name."
+                                    "This is most likely due to mismatch between the certificates" +
+                                    " subject alternative name and the host name.",
                             )
                         }
                         cause is SSLException && (cause.message?.contains("Unrecognized server name indication") == true) -> {
                             logger.warn(
                                 "Unrecognized server name error." +
-                                "This is most likely due to mismatch between the certificates subject alternative name and the host name."
+                                    "This is most likely due to mismatch between the" +
+                                    " certificates subject alternative name and the host name.",
                             )
                         }
                         else -> logger.warn("Handshake failure ${evt.cause().message}", evt.cause())
@@ -118,8 +122,9 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
         val message = cause.message ?: ""
         if (!messagesNotToLog.any {
-            message.contains(it)
-            }) {
+                message.contains(it)
+            }
+        ) {
             logger.warn("Closing channel due to unrecoverable exception ${cause.message}", cause)
         }
         ctx.close()
@@ -134,7 +139,7 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
             NOT_APPLICABLE_TAG_VALUE
         }
 
-        return when(handlerType) {
+        return when (handlerType) {
             HandlerType.SERVER -> getServerCounter(remoteAddressValue, connectionResult)
             HandlerType.CLIENT -> getClientCounter(remoteAddressValue, connectionResult)
         }
@@ -153,10 +158,9 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
             .withTag(CordaMetrics.Tag.DestinationEndpoint, remoteAddress)
             .build()
     }
-
 }
 
 enum class HandlerType {
     CLIENT,
-    SERVER
+    SERVER,
 }

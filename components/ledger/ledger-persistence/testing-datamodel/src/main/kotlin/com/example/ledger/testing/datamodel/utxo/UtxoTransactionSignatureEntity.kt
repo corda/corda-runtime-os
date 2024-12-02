@@ -22,13 +22,10 @@ data class UtxoTransactionSignatureEntity(
     @get:JoinColumn(name = "transaction_id", nullable = false, updatable = false)
     var transaction: UtxoTransactionEntity,
 
-    @get:Id
-    @get:Column(name = "signature_idx", nullable = false)
-    var index: Int,
-
     @get:Column(name = "signature", nullable = false)
     var signature: ByteArray,
 
+    @get:Id
     @get:Column(name = "pub_key_hash", nullable = false)
     var publicKeyHash: String,
 
@@ -42,7 +39,6 @@ data class UtxoTransactionSignatureEntity(
         other as UtxoTransactionSignatureEntity
 
         if (transaction != other.transaction) return false
-        if (index != other.index) return false
         if (!signature.contentEquals(other.signature)) return false
         if (publicKeyHash != other.publicKeyHash) return false
         if (created != other.created) return false
@@ -52,7 +48,6 @@ data class UtxoTransactionSignatureEntity(
 
     override fun hashCode(): Int {
         var result = transaction.hashCode()
-        result = 31 * result + index
         result = 31 * result + signature.contentHashCode()
         result = 31 * result + publicKeyHash.hashCode()
         result = 31 * result + created.hashCode()
@@ -63,5 +58,5 @@ data class UtxoTransactionSignatureEntity(
 @Embeddable
 data class UtxoTransactionSignatureEntityId(
     var transaction: UtxoTransactionEntity,
-    var index: Int
+    var publicKeyHash: String
 ) : Serializable

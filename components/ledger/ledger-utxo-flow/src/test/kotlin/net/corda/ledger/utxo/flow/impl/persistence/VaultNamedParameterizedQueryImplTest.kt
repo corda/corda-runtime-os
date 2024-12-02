@@ -1,9 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
+import net.corda.flow.application.services.FlowCheckpointService
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowFiberExecutionContext
-import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.flow.persistence.query.StableResultSetExecutor
 import net.corda.flow.state.FlowCheckpoint
@@ -63,9 +61,7 @@ class VaultNamedParameterizedQueryImplTest {
     private val clock = mock<Clock>()
     private val resultSetExecutorCaptor = argumentCaptor<StableResultSetExecutor<Any>>()
     private val mapCaptor = argumentCaptor<Map<String, Any>>()
-    private val flowFiberExecutionContext = mock<FlowFiberExecutionContext>()
-    private val flowFiberService = mock<FlowFiberService>()
-    private val flowFiber = mock<FlowFiber>()
+    private val flowCheckpointService = mock<FlowCheckpointService>()
     private val flowCheckpoint = mock<FlowCheckpoint>()
 
     private val query = VaultNamedParameterizedQueryImpl(
@@ -78,7 +74,7 @@ class VaultNamedParameterizedQueryImplTest {
         offset = 0,
         resultClass = Any::class.java,
         clock = clock,
-        flowFiberService = flowFiberService
+        flowCheckpointService = flowCheckpointService
     )
 
     @BeforeEach
@@ -89,9 +85,7 @@ class VaultNamedParameterizedQueryImplTest {
         whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
         whenever(virtualNodeContext.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
         whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
-        whenever(flowFiberService.getExecutingFiber()).thenReturn(flowFiber)
-        whenever(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext)
-        whenever(flowFiberExecutionContext.flowCheckpoint).thenReturn(flowCheckpoint)
+        whenever(flowCheckpointService.getCheckpoint()).thenReturn(flowCheckpoint)
         whenever(flowCheckpoint.readCustomState(UtxoLedgerLastPersistedTimestamp::class.java))
             .thenReturn(null)
     }
@@ -129,7 +123,7 @@ class VaultNamedParameterizedQueryImplTest {
         query.setCreatedTimestampLimit(customTimestamp)
 
         query.execute()
-        verify(flowFiberExecutionContext, never()).flowCheckpoint
+        verify(flowCheckpointService, never()).getCheckpoint()
         assertThat(
             mapCaptor.firstValue
         ).containsAllEntriesOf(mapOf(parameterNameOne to parameterOne, TIMESTAMP_LIMIT_PARAM_NAME to customTimestamp))

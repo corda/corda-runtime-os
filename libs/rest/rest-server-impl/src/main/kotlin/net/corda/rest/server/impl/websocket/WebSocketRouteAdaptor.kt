@@ -21,6 +21,7 @@ import net.corda.rest.ws.DuplexChannel
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode.POLICY_VIOLATION
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 typealias SessionId = String
@@ -51,16 +52,16 @@ internal class WebSocketRouteAdaptor(
     @Suppress("NestedBlockDepth")
     override fun handleConnect(ctx: WsConnectContext) {
         try {
-            channelsBySessionId[ctx.sessionId]?.let {
-                log.info("Session with id ${ctx.sessionId} already exists, overwriting and closing the old session.")
-                it.close("New session overwriting old session with id ${ctx.sessionId}")
+            channelsBySessionId[ctx.sessionId()]?.let {
+                log.info("Session with id ${ctx.sessionId()} already exists, overwriting and closing the old session.")
+                it.close("New session overwriting old session with id ${ctx.sessionId()}")
             }
             log.info("Connected to remote: ${ctx.session.remoteAddress}")
 
-            ServerDuplexChannel(ctx, webSocketCloserService, ctx.sessionId).let { newChannel ->
-                channelsBySessionId[ctx.sessionId] = newChannel
+            ServerDuplexChannel(ctx, webSocketCloserService, ctx.sessionId()).let { newChannel ->
+                channelsBySessionId[ctx.sessionId()] = newChannel
 
-                ctx.session.idleTimeout = webSocketIdleTimeoutMs
+                ctx.session.idleTimeout = Duration.ofMillis(webSocketIdleTimeoutMs)
                 val clientWsRequestContext = ClientWsRequestContext(ctx)
 
                 try {
@@ -95,7 +96,7 @@ internal class WebSocketRouteAdaptor(
             // incoming messages could be malicious. We won't do anything with the message unless an onTextMessage
             // hook has been defined. The hook will be responsible for ensuring the messages respect the protocol
             // and terminate connections when malicious messages arrive.
-            requireNotNull(channelsBySessionId[ctx.sessionId]).onTextMessage?.invoke(ctx.message())
+            requireNotNull(channelsBySessionId[ctx.sessionId()]).onTextMessage?.invoke(ctx.message())
                 ?: log.info("Inbound messages are not supported.")
         } catch (th: Throwable) {
             log.error("Exception during message handling", th)
@@ -105,7 +106,7 @@ internal class WebSocketRouteAdaptor(
     // The handler is called when an error is detected.
     override fun handleError(ctx: WsErrorContext) {
         try {
-            requireNotNull(channelsBySessionId[ctx.sessionId]).onError?.invoke(ctx.error())
+            requireNotNull(channelsBySessionId[ctx.sessionId()]).onError?.invoke(ctx.error())
         } catch (th: Throwable) {
             log.error("Unexpected exception in handleError", th)
         }
@@ -114,7 +115,7 @@ internal class WebSocketRouteAdaptor(
     // The handler is called when a WebSocket client closes the connection.
     override fun handleClose(ctx: WsCloseContext) {
         try {
-            channelsBySessionId.remove(ctx.sessionId)?.onClose?.invoke(ctx.status(), ctx.reason())
+            channelsBySessionId.remove(ctx.sessionId())?.onClose?.invoke(ctx.status(), ctx.reason())
         } catch (th: Throwable) {
             log.error("Unexpected exception in handleClose", th)
         }
