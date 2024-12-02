@@ -42,7 +42,6 @@ import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_START
-import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.tracing.TraceTag
 import net.corda.tracing.addTraceContextToRecord

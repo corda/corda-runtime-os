@@ -1,11 +1,7 @@
 package net.corda.rest.server.impl
 
 import com.google.gson.Gson
-import io.javalin.core.util.Header
-import io.javalin.http.Header.ACCESS_CONTROL_ALLOW_CREDENTIALS
-import io.javalin.http.Header.ACCESS_CONTROL_ALLOW_ORIGIN
-import io.javalin.http.Header.CACHE_CONTROL
-import io.javalin.http.Header.WWW_AUTHENTICATE
+import io.javalin.http.Header
 import kong.unirest.core.HttpStatus
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.apigen.test.TestJavaPrimitivesRestResourceImpl
@@ -122,7 +118,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, sanityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, sanityResponse.responseStatus)
         assertEquals("Sane", sanityResponse.body)
     }
 
@@ -404,7 +400,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             GET,
             WebRequest<Any>("health/sanity")
         )
-        val headerValue = getPathResponse.headers[WWW_AUTHENTICATE.lowercase()]
+        val headerValue = getPathResponse.headers[Header.WWW_AUTHENTICATE.lowercase()]
         assertEquals("Basic realm=\"${UsernamePasswordAuthenticationProvider.REALM_VALUE}\"", headerValue)
     }
 

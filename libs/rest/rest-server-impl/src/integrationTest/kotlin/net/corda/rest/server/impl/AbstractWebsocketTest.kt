@@ -1,8 +1,7 @@
 package net.corda.rest.server.impl
 
-import io.javalin.core.util.Header
-import kong.unirest.core.HttpStatus
 import io.javalin.http.Header
+import kong.unirest.core.HttpStatus
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.tools.HttpVerb

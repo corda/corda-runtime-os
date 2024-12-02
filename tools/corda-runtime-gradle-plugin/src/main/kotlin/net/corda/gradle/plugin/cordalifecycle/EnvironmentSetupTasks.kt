@@ -1,6 +1,5 @@
 package net.corda.gradle.plugin.cordalifecycle
 
-import kong.unirest.core.Unirest
 import net.corda.gradle.plugin.configuration.PluginConfiguration
 import net.corda.gradle.plugin.configuration.ProjectContext
 import net.corda.schema.configuration.ConfigKeys.RootConfigKey
