@@ -1,5 +1,6 @@
 package net.corda.ledger.lib.utxo.flow.impl.transaction
 
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 
 interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder, UtxoTransactionBuilderData {
@@ -21,4 +22,9 @@ interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder, UtxoTransacti
      * But keeps potential duplications in user-defined types. (commands and output states)
      */
     fun append(other: UtxoTransactionBuilderData): UtxoTransactionBuilderInternal
+
+    /**
+     * Privacy salt used in the transaction. If not set, the privacy salt will be generated.
+     */
+    var privacySalt: PrivacySalt?
 }

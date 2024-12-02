@@ -1,5 +1,6 @@
 package net.corda.ledger.lib.utxo.flow.impl.transaction
 
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.lib.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.lib.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
@@ -30,6 +31,8 @@ class UtxoTransactionBuilderImpl(
     override val referenceStateRefs: MutableList<StateRef> = mutableListOf(),
     override val outputStates: MutableList<ContractStateAndEncumbranceTag> = mutableListOf()
 ) : UtxoTransactionBuilderInternal {
+
+    override var privacySalt: PrivacySalt? = null
 
     private var alreadySigned = false
 

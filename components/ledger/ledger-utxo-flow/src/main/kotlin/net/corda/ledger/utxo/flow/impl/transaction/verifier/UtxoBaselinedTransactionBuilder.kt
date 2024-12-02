@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
+import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.lib.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.lib.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.ContractStateAndEncumbranceTag
@@ -40,6 +41,7 @@ class UtxoBaselinedTransactionBuilder private constructor(
         get() = currentTransactionBuilder.referenceStateRefs
     override val outputStates: List<ContractStateAndEncumbranceTag>
         get() = currentTransactionBuilder.outputStates
+    override var privacySalt: PrivacySalt? = null
 
     override fun getNotaryName(): MemberX500Name? = currentTransactionBuilder.notaryName
 

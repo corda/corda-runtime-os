@@ -60,7 +60,7 @@ class UtxoSignedTransactionFactoryImpl(
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
 
-        val privacySalt = privacySaltProviderService.generatePrivacySalt()
+        val privacySalt = utxoTransactionBuilder.privacySalt ?: privacySaltProviderService.generatePrivacySalt()
         val wireTransaction = wireTransactionFactory.create(componentGroups, privacySalt)
 
         utxoLedgerTransactionVerificationService.verify(utxoLedgerTransactionFactory.create(wireTransaction))
