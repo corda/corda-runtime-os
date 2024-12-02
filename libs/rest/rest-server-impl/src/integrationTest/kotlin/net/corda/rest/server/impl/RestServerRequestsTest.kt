@@ -271,7 +271,7 @@ class RestServerRequestsTest : RestServerTestBase() {
         assertEquals("3", helloResponse.body)
 
         // Check that the response returned a deprecation warning in the header
-        assertThat(helloResponse.headers.toMap()["Warning"]!!.contains("299"))
+        assertThat(helloResponse.headers.toMap()["warning"]!!.contains("299"))
 
         // Check that security managed has not been called for GetProtocolVersion which is exempt from permissions check
         assertThat(securityManager.checksExecuted).hasSize(0)
