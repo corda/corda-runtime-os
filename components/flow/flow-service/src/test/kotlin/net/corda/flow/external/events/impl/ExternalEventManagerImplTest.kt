@@ -1,9 +1,5 @@
 package net.corda.flow.external.events.impl
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.stream.Stream
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
@@ -34,7 +30,11 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.stream.Stream
 
 class ExternalEventManagerImplTest {
 
@@ -529,5 +529,36 @@ class ExternalEventManagerImplTest {
         )
 
         assertEquals(null, record)
+    }
+
+    @Test
+    fun `getRetryEvent returns an external event`() {
+        val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+        val key = ByteBuffer.wrap(KEY.toByteArray())
+        val payload = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+
+        val externalEvent = ExternalEvent().apply {
+            this.topic = TOPIC
+            this.key = key
+            this.payload = payload
+            this.timestamp = now.minusSeconds(10)
+        }
+
+        val externalEventState = ExternalEventState().apply {
+            requestId = REQUEST_ID_1
+            eventToSend = externalEvent
+            sendTimestamp = null
+            status = ExternalEventStateStatus(ExternalEventStateType.OK, null)
+        }
+
+        val record = externalEventManager.getRetryEvent(
+            externalEventState,
+            now,
+        )
+
+
+        assertEquals(TOPIC, record.topic)
+        assertEquals(key.array(), record.key)
+        assertEquals(payload.array(), record.value)
     }
 }

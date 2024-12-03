@@ -1,7 +1,7 @@
 package net.corda.e2etest.utilities.config
 
 import com.fasterxml.jackson.databind.JsonNode
-import kong.unirest.UnirestException
+import kong.unirest.core.UnirestException
 import net.corda.e2etest.utilities.ClusterInfo
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions

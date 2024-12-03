@@ -50,10 +50,10 @@ fun generateMockCordaConsumerRecordList(numberOfRecords: Long, topic: String, pa
 /**
  * Generate [recordCount] string key/value records
  */
-fun getStringRecords(recordCount: Int, key: String): List<Record<String, String>> {
+fun getStringRecords(recordCount: Int, key: String, topic: String = "topic"): List<Record<String, String>> {
     val records = mutableListOf<Record<String, String>>()
     for (j in 1..recordCount) {
-        records.add(Record("topic", key, j.toString()))
+        records.add(Record(topic, key, j.toString()))
     }
 
     return records

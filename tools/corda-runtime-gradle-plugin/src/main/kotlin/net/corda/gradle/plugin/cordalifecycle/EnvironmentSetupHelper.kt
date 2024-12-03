@@ -1,6 +1,5 @@
 package net.corda.gradle.plugin.cordalifecycle
 
-import net.corda.sdk.network.config.NetworkConfig
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.gradle.plugin.retryAttempts
 import net.corda.restclient.CordaRestClient
@@ -8,6 +7,7 @@ import net.corda.restclient.generated.models.ConfigSchemaVersion
 import net.corda.restclient.generated.models.UpdateConfigParameters
 import net.corda.schema.configuration.ConfigKeys.RootConfigKey
 import net.corda.sdk.config.ClusterConfig
+import net.corda.sdk.network.config.NetworkConfig
 import java.io.File
 import java.net.Authenticator
 import java.net.PasswordAuthentication

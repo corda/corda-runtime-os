@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl
 
+import kong.unirest.core.HttpStatus
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.TestHealthCheckAPIImpl
 import net.corda.rest.test.utils.TestHttpClientUnirestImpl
@@ -8,7 +9,6 @@ import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb.GET
 import net.corda.rest.tools.HttpVerb.POST
 import net.corda.utilities.NetworkHostAndPort
-import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -62,12 +62,12 @@ class RestServerCaseSensitiveUrlTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
+        assertEquals(HttpStatus.OK, plusOneResponse.responseStatus)
         assertEquals(listOf(2.0, 3.0), plusOneResponse.body)
     }
 
     @Test
-    fun `Uppercase POST will return 301 Moved Permanently`() {
+    fun `Uppercase POST will return 404 Not Found`() {
         val pingResponse = client.call(
             POST,
             WebRequest(
@@ -77,7 +77,7 @@ class RestServerCaseSensitiveUrlTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_MOVED_PERMANENTLY, pingResponse.responseStatus)
+        assertEquals(HttpStatus.NOT_FOUND, pingResponse.responseStatus)
     }
 
     @Test
@@ -93,7 +93,7 @@ class RestServerCaseSensitiveUrlTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
+        assertEquals(HttpStatus.OK, plusOneResponse.responseStatus)
         assertEquals(requestStringValue, plusOneResponse.body)
     }
 
@@ -107,7 +107,7 @@ class RestServerCaseSensitiveUrlTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
+        assertEquals(HttpStatus.OK, plusOneResponse.responseStatus)
         assertEquals(requestStringValue, plusOneResponse.body)
     }
 }

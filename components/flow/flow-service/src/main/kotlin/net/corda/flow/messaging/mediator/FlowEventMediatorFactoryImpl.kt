@@ -1,8 +1,10 @@
 package net.corda.flow.messaging.mediator
 
+import com.typesafe.config.ConfigValueFactory
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.external.ExternalEventRetryRequest
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
@@ -30,6 +32,7 @@ import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.RoutingDestination.Type.ASYNCHRONOUS
 import net.corda.messaging.api.mediator.RoutingDestination.Type.SYNCHRONOUS
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
+import net.corda.messaging.api.mediator.config.RetryConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
@@ -47,12 +50,14 @@ import net.corda.schema.configuration.BootConfig.TOKEN_SELECTION_WORKER_REST_END
 import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.WORKER_MEDIATOR_REPLICAS_FLOW_SESSION
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_CONSUMER_MAX_POLL_RECORDS
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT
 import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.UUID
 
 @Suppress("LongParameterList")
@@ -77,7 +82,9 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         private const val CONSUMER_GROUP = "FlowEventConsumer"
         private const val MESSAGE_BUS_CLIENT = "MessageBusClient"
         private const val RPC_CLIENT = "RpcClient"
-
+        private const val RETRY_TOPIC_POLL_LIMIT = 5
+        private const val RETRY_TOPIC = FLOW_EVENT_TOPIC
+        private const val TOKEN_RETRY = "TokenRetry"
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -123,12 +130,65 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .threadName("flow-event-mediator")
         .stateManager(stateManager)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
+        .retryConfig(RetryConfig(RETRY_TOPIC, ::buildRetryRequest))
         .build()
 
+
+    /**
+     * Build a request to trigger a resend of external events via the flow event pipeline.
+     * Request id is calculated from the previous request payload when possible to allow for some validation in the pipeline.
+     * This validation is an enhancement and not strictly required.
+     * A new Timestamp is set on each request to ensure each request is unique for replay logic handling.
+     * @param key the key of the input record
+     * @param syncRpcRequest the previous sync request which failed.
+     * @return list of output retry events.
+     */
+    private fun buildRetryRequest(key: String, syncRpcRequest: MediatorMessage<Any>) : List<MediatorMessage<Any>> {
+        return try {
+            val requestId = getRequestId(syncRpcRequest)
+            val externalEventRetryRequest = ExternalEventRetryRequest.newBuilder()
+                .setRequestId(requestId)
+                .setTimestamp(Instant.now())
+                .build()
+            val flowEvent = FlowEvent.newBuilder()
+                .setFlowId(key)
+                .setPayload(externalEventRetryRequest)
+                .build()
+            //ensure key is set correctly on new message destined for flow topic
+            val properties = syncRpcRequest.properties.toMutableMap().apply { this["key"] = key }
+            listOf(MediatorMessage(flowEvent, properties))
+        } catch (ex: Exception) {
+            //In this scenario we failed to build the retry event. This will likely result in the flow hanging until the idle processor
+            // kicks in. This shouldn't be possible and is just a safety net.
+            logger.warn("Failed to generate a retry event for key $key. No retry will be triggered.", ex)
+            emptyList()
+        }
+    }
+
+    /**
+     * Determine the external event request id where possible.
+     * Note, some token events have no request id as there is no response.
+     * For these use a hardcoded request id which will be ignored at the validation step.
+     * @param syncRpcRequest the previous request
+     * @return Request ID to set in the retry event.
+     */
+    private fun getRequestId(syncRpcRequest: MediatorMessage<Any>): String {
+        return when (val entityRequest = deserializer.deserialize(syncRpcRequest.payload as ByteArray)) {
+            is EntityRequest -> entityRequest.flowExternalEventContext.requestId
+            is FlowOpsRequest -> entityRequest.flowExternalEventContext.requestId
+            is LedgerPersistenceRequest -> entityRequest.flowExternalEventContext.requestId
+            is TransactionVerificationRequest -> entityRequest.flowExternalEventContext.requestId
+            is UniquenessCheckRequestAvro -> entityRequest.flowExternalEventContext.requestId
+            is TokenPoolCacheEvent -> TOKEN_RETRY
+            else -> "InvalidEntityType"
+        }
+    }
+
     private fun createMediatorConsumerFactories(messagingConfig: SmartConfig, bootConfig: SmartConfig): List<MediatorConsumerFactory> {
+        val retryTopicMessagingConfig = getRetryTopicConfig(messagingConfig)
         val mediatorConsumerFactory: MutableList<MediatorConsumerFactory> = mutableListOf(
             mediatorConsumerFactory(FLOW_START, messagingConfig),
-            mediatorConsumerFactory(FLOW_EVENT_TOPIC, messagingConfig)
+            mediatorConsumerFactory(FLOW_EVENT_TOPIC, retryTopicMessagingConfig)
         )
 
         val mediatorReplicas = bootConfig.getIntOrDefault(WORKER_MEDIATOR_REPLICAS_FLOW_SESSION, 1)
@@ -138,6 +198,10 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         }
 
         return mediatorConsumerFactory
+    }
+
+    private fun getRetryTopicConfig(messagingConfig: SmartConfig): SmartConfig {
+        return messagingConfig.withValue(KAFKA_CONSUMER_MAX_POLL_RECORDS, ConfigValueFactory.fromAnyRef(RETRY_TOPIC_POLL_LIMIT))
     }
 
     private fun mediatorConsumerFactory(
@@ -178,8 +242,9 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
                     rpcEndpoint(VERIFICATION_WORKER_REST_ENDPOINT, VERIFICATION_PATH), SYNCHRONOUS)
                 is UniquenessCheckRequestAvro -> routeTo(rpcClient,
                     rpcEndpoint(UNIQUENESS_WORKER_REST_ENDPOINT, UNIQUENESS_PATH), SYNCHRONOUS)
+                //RETRIES will appear as FlowEvents
                 is FlowEvent -> routeTo(messageBusClient,
-                    FLOW_EVENT_TOPIC, ASYNCHRONOUS)
+                    RETRY_TOPIC, ASYNCHRONOUS)
                 is String -> routeTo(messageBusClient, // Handling external messaging
                     message.properties[MSG_PROP_TOPIC] as String, ASYNCHRONOUS)
                 else -> {

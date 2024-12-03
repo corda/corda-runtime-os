@@ -1,10 +1,8 @@
 package net.corda.rest.server.impl
 
 import com.google.gson.Gson
-import io.javalin.http.Header.ACCESS_CONTROL_ALLOW_CREDENTIALS
-import io.javalin.http.Header.ACCESS_CONTROL_ALLOW_ORIGIN
-import io.javalin.http.Header.CACHE_CONTROL
-import io.javalin.http.Header.WWW_AUTHENTICATE
+import io.javalin.http.Header
+import kong.unirest.core.HttpStatus
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.apigen.test.TestJavaPrimitivesRestResourceImpl
 import net.corda.rest.server.config.models.RestServerSettings
@@ -27,7 +25,6 @@ import net.corda.rest.tools.HttpVerb.GET
 import net.corda.rest.tools.HttpVerb.POST
 import net.corda.rest.tools.HttpVerb.PUT
 import net.corda.utilities.NetworkHostAndPort
-import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
@@ -94,7 +91,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_NOT_FOUND, invalidPathResponse.responseStatus)
+        assertEquals(HttpStatus.NOT_FOUND, invalidPathResponse.responseStatus)
         assertThat((invalidPathResponse.body!!.asMapFromJson()["details"] as Map<*, *>)["url"].toString())
             .contains("/api/${apiVersion.versionPath}/invalidPath")
     }
@@ -107,11 +104,10 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-
-        assertEquals(HttpStatus.SC_OK, getPathResponse.responseStatus)
-        assertEquals("http://localhost", getPathResponse.headers[ACCESS_CONTROL_ALLOW_ORIGIN])
-        assertEquals("true", getPathResponse.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS])
-        assertEquals("no-cache", getPathResponse.headers[CACHE_CONTROL])
+        assertEquals(HttpStatus.OK, getPathResponse.responseStatus)
+        assertEquals("http://localhost", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_ORIGIN.lowercase()])
+        assertEquals("true", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_CREDENTIALS.lowercase()])
+        assertEquals("no-cache", getPathResponse.headers[Header.CACHE_CONTROL.lowercase()])
     }
 
     @Test
@@ -122,15 +118,15 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, sanityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, sanityResponse.responseStatus)
         assertEquals("Sane", sanityResponse.body)
     }
 
     @Test
     fun `POST ping returns Pong with custom deserializer`() {
         fun WebResponse<String>.doAssert() {
-            assertEquals(HttpStatus.SC_OK, responseStatus)
-            assertEquals("application/json", headers["Content-Type"])
+            assertEquals(HttpStatus.OK, responseStatus)
+            assertEquals("application/json", headers["content-type"])
             assertEquals("Pong for str = stringdata", body)
         }
 
@@ -162,7 +158,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, pingResponse.responseStatus)
+        assertEquals(HttpStatus.OK, pingResponse.responseStatus)
         assertEquals("Pong for null", pingResponse.body)
     }
 
@@ -174,7 +170,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_NO_CONTENT, pingResponse.responseStatus)
+        assertEquals(HttpStatus.NO_CONTENT, pingResponse.responseStatus)
         assertEquals("", pingResponse.body)
     }
 
@@ -187,8 +183,8 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
-        assertEquals("application/json", plusOneResponse.headers["Content-Type"])
+        assertEquals(HttpStatus.OK, plusOneResponse.responseStatus)
+        assertEquals("application/json", plusOneResponse.headers["content-type"])
         assertEquals(listOf(2.0, 3.0), plusOneResponse.body)
     }
 
@@ -201,7 +197,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
+        assertEquals(HttpStatus.OK, plusOneResponse.responseStatus)
         assertEquals(emptyList<Double>(), plusOneResponse.body)
     }
 
@@ -214,7 +210,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
+        assertEquals(HttpStatus.OK, plusOneResponse.responseStatus)
         assertEquals(listOf(2.0, 3.0), plusOneResponse.body)
     }
 
@@ -226,7 +222,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals(HttpStatus.OK, helloResponse.responseStatus)
         assertEquals("Hello 1 : world", helloResponse.body)
     }
 
@@ -238,7 +234,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals(HttpStatus.OK, helloResponse.responseStatus)
         assertEquals("Hello null : world", helloResponse.body)
     }
 
@@ -251,7 +247,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals(HttpStatus.OK, helloResponse.responseStatus)
         assertEquals("Hello queryParam: id, pathParam : pathString", helloResponse.body)
 
         // Check full URL received by the Security Manager
@@ -271,11 +267,11 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals(HttpStatus.OK, helloResponse.responseStatus)
         assertEquals("3", helloResponse.body)
 
         // Check that the response returned a deprecation warning in the header
-        assertThat(helloResponse.headers.toMap()["Warning"]!!.contains("299"))
+        assertThat(helloResponse.headers.toMap()["warning"]!!.contains("299"))
 
         // Check that security managed has not been called for GetProtocolVersion which is exempt from permissions check
         assertThat(securityManager.checksExecuted).hasSize(0)
@@ -291,7 +287,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals(HttpStatus.OK, helloResponse.responseStatus)
         assertEquals("Retrieved using id: 1234", helloResponse.body)
 
         // Check full URL received by the Security Manager
@@ -307,7 +303,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals(HttpStatus.OK, helloResponse.responseStatus)
         assertEquals("Hello queryParam: null, pathParam : pathString", helloResponse.body)
     }
 
@@ -319,8 +315,8 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, reverseTextResponse.responseStatus)
-        assertEquals("application/json", reverseTextResponse.headers["Content-Type"])
+        assertEquals(HttpStatus.OK, reverseTextResponse.responseStatus)
+        assertEquals("application/json", reverseTextResponse.headers["content-type"])
         assertEquals("3000000000", reverseTextResponse.body)
     }
 
@@ -332,8 +328,8 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, negateIntResponse.responseStatus)
-        assertEquals("application/json", negateIntResponse.headers["Content-Type"])
+        assertEquals(HttpStatus.OK, negateIntResponse.responseStatus)
+        assertEquals("application/json", negateIntResponse.headers["content-type"])
         assertEquals("-1", negateIntResponse.body)
     }
 
@@ -345,8 +341,8 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, negateIntResponse.responseStatus)
-        assertEquals("application/json", negateIntResponse.headers["Content-Type"])
+        assertEquals(HttpStatus.OK, negateIntResponse.responseStatus)
+        assertEquals("application/json", negateIntResponse.headers["content-type"])
         assertEquals("-1", negateIntResponse.body)
     }
 
@@ -358,7 +354,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, negateLongResponse.responseStatus)
+        assertEquals(HttpStatus.OK, negateLongResponse.responseStatus)
         assertEquals("-3000000000", negateLongResponse.body)
     }
 
@@ -370,7 +366,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, negateBooleanResponse.responseStatus)
+        assertEquals(HttpStatus.OK, negateBooleanResponse.responseStatus)
         assertEquals("false", negateBooleanResponse.body)
     }
 
@@ -382,7 +378,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, reverseTextResponse.responseStatus)
+        assertEquals(HttpStatus.OK, reverseTextResponse.responseStatus)
         assertEquals("text", reverseTextResponse.body)
     }
 
@@ -394,7 +390,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             GET,
             WebRequest<String>("health/sanity")
         )
-        assertEquals(HttpStatus.SC_UNAUTHORIZED, getPathResponse.responseStatus)
+        assertEquals(HttpStatus.UNAUTHORIZED, getPathResponse.responseStatus)
         assertEquals("User credentials are empty or cannot be resolved", getPathResponse.body!!.asMapFromJson()["title"])
     }
 
@@ -404,7 +400,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             GET,
             WebRequest<Any>("health/sanity")
         )
-        val headerValue = getPathResponse.headers[WWW_AUTHENTICATE]
+        val headerValue = getPathResponse.headers[Header.WWW_AUTHENTICATE.lowercase()]
         assertEquals("Basic realm=\"${UsernamePasswordAuthenticationProvider.REALM_VALUE}\"", headerValue)
     }
 
@@ -416,7 +412,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             "invalidUser",
             password
         )
-        assertEquals(HttpStatus.SC_UNAUTHORIZED, getPathResponse.responseStatus)
+        assertEquals(HttpStatus.UNAUTHORIZED, getPathResponse.responseStatus)
         assertEquals("Error during user authentication", getPathResponse.body!!.asMapFromJson()["title"])
     }
 
@@ -428,7 +424,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             "invalidPassword"
         )
-        assertEquals(HttpStatus.SC_UNAUTHORIZED, getPathResponse.responseStatus)
+        assertEquals(HttpStatus.UNAUTHORIZED, getPathResponse.responseStatus)
         assertEquals("Error during user authentication", getPathResponse.body!!.asMapFromJson()["title"])
     }
 
@@ -440,7 +436,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, getPathResponse.responseStatus)
+        assertEquals(HttpStatus.OK, getPathResponse.responseStatus)
     }
 
     @Test
@@ -451,7 +447,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, reverseTextResponse.responseStatus)
+        assertEquals(HttpStatus.OK, reverseTextResponse.responseStatus)
         assertEquals("a b", reverseTextResponse.body)
     }
 
@@ -463,7 +459,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, reverseTextResponse.responseStatus)
+        assertEquals(HttpStatus.OK, reverseTextResponse.responseStatus)
         assertEquals("null null", reverseTextResponse.body)
     }
 
@@ -475,7 +471,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, reverseTextResponse.responseStatus)
+        assertEquals(HttpStatus.OK, reverseTextResponse.responseStatus)
         assertEquals("null null", reverseTextResponse.body)
     }
 
@@ -487,7 +483,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_BAD_REQUEST, reverseTextResponse.responseStatus)
+        assertEquals(HttpStatus.BAD_REQUEST, reverseTextResponse.responseStatus)
     }
 
     @Test
@@ -498,7 +494,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_BAD_REQUEST, reverseTextResponse.responseStatus)
+        assertEquals(HttpStatus.BAD_REQUEST, reverseTextResponse.responseStatus)
     }
 
     @Test
@@ -512,7 +508,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
 
-        assertEquals(HttpStatus.SC_OK, timeCallResponse.responseStatus)
+        assertEquals(HttpStatus.OK, timeCallResponse.responseStatus)
         assertEquals("2020-01-01T11:00Z", timeCallResponse.body)
     }
 
@@ -527,7 +523,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, timeCallResponse.responseStatus)
+        assertEquals(HttpStatus.OK, timeCallResponse.responseStatus)
     }
 
     @Test
@@ -535,7 +531,7 @@ class RestServerRequestsTest : RestServerTestBase() {
         val date = "2021-07-29T13:13:14"
 
         fun WebResponse<String>.doAssert() {
-            assertEquals(HttpStatus.SC_OK, responseStatus)
+            assertEquals(HttpStatus.OK, responseStatus)
             assertThat(body!!).contains(date)
         }
 
@@ -570,7 +566,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
 
-        assertEquals(HttpStatus.SC_OK, instantCallResponse.responseStatus)
+        assertEquals(HttpStatus.OK, instantCallResponse.responseStatus)
         assertEquals(instant, instantCallResponse.body)
     }
 
@@ -583,7 +579,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
 
-        assertEquals(HttpStatus.SC_OK, timeCallResponse.responseStatus)
+        assertEquals(HttpStatus.OK, timeCallResponse.responseStatus)
         assertEquals("{\"data\":\"custom text\"}", timeCallResponse.body)
     }
 
@@ -604,7 +600,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, throwExceptionResponse.responseStatus)
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, throwExceptionResponse.responseStatus)
     }
 
     @Test
@@ -616,7 +612,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
 
-        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, createEntityResponse.responseStatus)
         assertEquals("Created using: CreationParams(name=TestName, amount=20)", createEntityResponse.body)
     }
 
@@ -624,7 +620,7 @@ class RestServerRequestsTest : RestServerTestBase() {
     fun `Call get using path on test entity`() {
         val createEntityResponse = client.call(GET, WebRequest<Any>("testentity/myId"), userName, password)
 
-        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, createEntityResponse.responseStatus)
         assertEquals("Retrieved using id: myId", createEntityResponse.body)
     }
 
@@ -637,7 +633,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
 
-        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, createEntityResponse.responseStatus)
         assertEquals("Retrieved using query: MyQuery", createEntityResponse.body)
     }
 
@@ -653,7 +649,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
 
-        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, createEntityResponse.responseStatus)
         assertEquals(
             "Updated using params: UpdateParams(id=myId, name=TestName, amount=20)",
             createEntityResponse.body
@@ -664,7 +660,7 @@ class RestServerRequestsTest : RestServerTestBase() {
     fun `Call delete using path on test entity`() {
         val createEntityResponse = client.call(DELETE, WebRequest<Any>("testentity/myId"), userName, password)
 
-        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, createEntityResponse.responseStatus)
         assertEquals("Deleted using id: myId", createEntityResponse.body)
     }
 
@@ -677,7 +673,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
 
-        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, createEntityResponse.responseStatus)
         assertEquals("Deleted using query: MyQuery", createEntityResponse.body)
     }
 
@@ -709,7 +705,7 @@ class RestServerRequestsTest : RestServerTestBase() {
 
         val expectedChecksum = ChecksumUtil.generateChecksum(text.byteInputStream())
 
-        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, createEntityResponse.responseStatus)
         assertEquals(expectedChecksum, createEntityResponse.body)
     }
 
@@ -731,7 +727,7 @@ class RestServerRequestsTest : RestServerTestBase() {
 
         val expectedResult = "some-text-as-parameter, ${ChecksumUtil.generateChecksum(text.byteInputStream())}"
 
-        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, createEntityResponse.responseStatus)
         assertEquals(expectedResult, createEntityResponse.body)
     }
 
@@ -752,7 +748,7 @@ class RestServerRequestsTest : RestServerTestBase() {
 
         val expectedResult = ChecksumUtil.generateChecksum(text.byteInputStream())
 
-        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, createEntityResponse.responseStatus)
         assertEquals(expectedResult, createEntityResponse.body)
     }
 
@@ -776,7 +772,7 @@ class RestServerRequestsTest : RestServerTestBase() {
         val expectedResult = ChecksumUtil.generateChecksum(text1.byteInputStream()) + ", " +
             ChecksumUtil.generateChecksum(text2.byteInputStream())
 
-        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, createEntityResponse.responseStatus)
         assertEquals(expectedResult, createEntityResponse.body)
     }
 
@@ -802,7 +798,7 @@ class RestServerRequestsTest : RestServerTestBase() {
         val expectedResult = ChecksumUtil.generateChecksum(text1.byteInputStream()) + ", " +
             ChecksumUtil.generateChecksum(text2.byteInputStream())
 
-        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, createEntityResponse.responseStatus)
         assertEquals(expectedResult, createEntityResponse.body)
     }
 
@@ -823,7 +819,7 @@ class RestServerRequestsTest : RestServerTestBase() {
 
         val expectedResult = ChecksumUtil.generateChecksum(text1.byteInputStream())
 
-        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, createEntityResponse.responseStatus)
         assertEquals(expectedResult, createEntityResponse.body)
     }
 
@@ -836,7 +832,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
 
-        assertEquals(HttpStatus.SC_BAD_REQUEST, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.BAD_REQUEST, createEntityResponse.responseStatus)
     }
 
     @Test
@@ -851,7 +847,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals(HttpStatus.OK, helloResponse.responseStatus)
         assertEquals("Completed foo", helloResponse.body)
     }
 
@@ -866,7 +862,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals(HttpStatus.OK, helloResponse.responseStatus)
         assertEquals("""null""", helloResponse.body)
     }
 
@@ -881,7 +877,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals(HttpStatus.OK, helloResponse.responseStatus)
         assertEquals("""null""", helloResponse.body)
     }
 
@@ -896,7 +892,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals(HttpStatus.OK, helloResponse.responseStatus)
         assertEquals("""{"str":null}""", helloResponse.body)
     }
 
@@ -916,7 +912,7 @@ class RestServerRequestsTest : RestServerTestBase() {
                 password
             )
 
-            assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus, "for $testBody")
+            assertEquals(HttpStatus.OK, createEntityResponse.responseStatus, "for $testBody")
             assertEquals(testBody, createEntityResponse.body, "for $testBody")
         }
     }
@@ -933,7 +929,7 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
 
-        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(HttpStatus.OK, createEntityResponse.responseStatus)
         assertEquals(
             "Updated using params: UpdateParams(id=myId, name=TestName%, amount=20)",
             createEntityResponse.body

@@ -1,10 +1,12 @@
 package net.corda.flow.application.messaging
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.messaging.ExternalMessaging
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -16,25 +18,46 @@ import java.util.UUID
 @Component(service = [ExternalMessaging::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE)
 class ExternalMessagingImpl(
     private val flowFiberService: FlowFiberService,
-    private val idFactoryFunc: () -> String
+    private val idFactoryFunc: () -> String,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : ExternalMessaging, UsedByFlow, SingletonSerializeAsToken {
+
+    private val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any>()
 
     @Activate
     constructor(
         @Reference(service = FlowFiberService::class)
-        flowFiberService: FlowFiberService
-    ) : this(flowFiberService, { UUID.randomUUID().toString() })
+        flowFiberService: FlowFiberService,
+        @Reference(service = CordaAvroSerializationFactory::class)
+        cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    ) : this(flowFiberService, { UUID.randomUUID().toString() }, cordaAvroSerializationFactory)
 
     @Suspendable
     override fun send(channelName: String, message: String) {
+        validateSize(message)
         send(channelName, idFactoryFunc(), message)
+    }
+
+    private fun validateSize(message: String) {
+        val bytesSize = serializer.serialize(message)?.size
+        val maxAllowedMessageSize = maxMessageSize()
+        if (bytesSize != null && maxAllowedMessageSize < bytesSize) {
+            throw CordaRuntimeException(
+                "Cannot send external messaging content as " +
+                        "it exceeds the max message size allowed. Message Size: [$bytesSize], Max Size: [$maxAllowedMessageSize}]"
+            )
+        }
     }
 
     @Suspendable
     override fun send(channelName: String, messageId: String, message: String) {
+        validateSize(message)
+
         flowFiberService
             .getExecutingFiber()
             .suspend(FlowIORequest.SendExternalMessage(channelName, messageId, message))
     }
+
+    private fun maxMessageSize() = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.maxMessageSize
 }
 

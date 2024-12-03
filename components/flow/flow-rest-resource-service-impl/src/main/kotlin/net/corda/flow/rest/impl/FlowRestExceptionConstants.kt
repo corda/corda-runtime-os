@@ -14,5 +14,7 @@ object FlowRestExceptionConstants {
     const val INVALID_ID = "Supplied clientRequestId %s is invalid, it must conform to the pattern %s."
     const val CPI_NOT_FOUND = "Failed to find a CPI for ID = %s."
     const val FLOW_STATUS_NOT_FOUND = "Failed to find the flow status for holdingId = %s and clientRequestId = %s."
+    const val MAX_FLOW_START_ARGS_SIZE = "The flow start payload has exceeded the max allowed payload size. Note: max payload size is set" +
+            " to half the value of maxAllowedMessageSize."
 
 }

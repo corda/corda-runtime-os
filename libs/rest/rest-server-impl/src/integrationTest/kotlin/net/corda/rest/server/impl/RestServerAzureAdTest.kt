@@ -1,6 +1,6 @@
 package net.corda.rest.server.impl
 
-import kong.unirest.HttpStatus
+import kong.unirest.core.HttpStatus
 import net.corda.rest.security.read.RestSecurityManager
 import net.corda.rest.server.RestServer
 import net.corda.rest.server.config.models.AzureAdSettings

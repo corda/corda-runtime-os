@@ -1,11 +1,11 @@
 package net.corda.rest.server.impl
 
 import io.javalin.http.Header
+import kong.unirest.core.HttpStatus
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.tools.HttpVerb
 import net.corda.utilities.debug
-import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.eclipse.jetty.client.HttpRequest
 import org.eclipse.jetty.client.HttpResponse
@@ -22,7 +22,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
 import java.net.URI
-import java.util.*
+import java.util.Base64
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
@@ -51,11 +51,10 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
     @Test
     fun `valid path returns 200 OK`() {
         val getPathResponse = client.call(HttpVerb.GET, WebRequest<Any>("health/sanity"), userName, password)
-        assertEquals(HttpStatus.SC_OK, getPathResponse.responseStatus)
-
-        assertEquals("http://localhost", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_ORIGIN])
-        assertEquals("true", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_CREDENTIALS])
-        assertEquals("no-cache", getPathResponse.headers[Header.CACHE_CONTROL])
+        assertEquals(HttpStatus.OK, getPathResponse.responseStatus)
+        assertEquals("http://localhost", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_ORIGIN.lowercase()])
+        assertEquals("true", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_CREDENTIALS.lowercase()])
+        assertEquals("no-cache", getPathResponse.headers[Header.CACHE_CONTROL.lowercase()])
     }
 
     @Test

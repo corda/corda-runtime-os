@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl
 
+import kong.unirest.core.HttpStatus
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.TestHealthCheckAPIImpl
 import net.corda.rest.test.utils.TestHttpClientUnirestImpl
@@ -8,7 +9,6 @@ import net.corda.rest.test.utils.WebResponse
 import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb
 import net.corda.utilities.NetworkHostAndPort
-import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -57,7 +57,7 @@ class RestServerMaxContentLengthTest : RestServerTestBase() {
     fun `Content length exceeding maxContentLength returns Bad Request`() {
         val dataExceedsMax = "1".repeat(MAX_CONTENT_LENGTH + 5)
         val pingResponse = client.call(HttpVerb.POST, WebRequest("health/ping", dataExceedsMax), userName, password)
-        assertEquals(HttpStatus.SC_BAD_REQUEST, pingResponse.responseStatus)
+        assertEquals(HttpStatus.BAD_REQUEST, pingResponse.responseStatus)
         val actual = pingResponse.body
         assertNotNull(actual)
         assertTrue(actual.contains("Content length is ${MAX_CONTENT_LENGTH + 5} which exceeds the maximum limit of $MAX_CONTENT_LENGTH."))
@@ -66,7 +66,7 @@ class RestServerMaxContentLengthTest : RestServerTestBase() {
     @Test
     fun `Content length below maxContentLength returns 200`() {
         fun WebResponse<String>.doAssert() {
-            assertEquals(HttpStatus.SC_OK, responseStatus)
+            assertEquals(HttpStatus.OK, responseStatus)
             assertEquals("Pong for str = stringdata", body)
         }
 

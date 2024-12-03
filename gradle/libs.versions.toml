@@ -5,8 +5,9 @@ apacheCommonsCodecVersion="1.17.0"
 apacheCommonsCompressVersion = "1.26.2"
 bouncycastleVersion = "1.78.1"
 braveVersion = "6.0.3"
-caffeineVersion = "3.1.8"
 commonsioVersion = "2.17.0"
+caffeineVersion = "3.1.8"
+gsonVersion = "2.11.0"
 guavaVersion = "33.2.1-jre"
 hikariCpVersion = "5.1.0"
 jacksonVersion = "2.17.2"
@@ -33,10 +34,10 @@ snappyJavaVersion="1.1.10.5"
 typeSafeConfigVersion = "1.4.3"
 okHttpVersion = { strictly = "4.9.2" }
 okioVersion = { strictly = "3.4.0" }
-unirestVersion = "3.14.5"
+unirestVersion = "4.4.5"
 zipkinCoreVersion = "2.27.1"
 zipkinReporterVersion = "3.4.0"
-nettyVersion = "4.1.112.Final"
+nettyVersion = "4.1.115.Final"
 
 # Testing
 assertjVersion = "3.26.3"
@@ -66,6 +67,7 @@ bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", versi
 brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
 brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet-jakarta", version.ref = "braveVersion" }
 caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeineVersion" }
+google-gson = { group = "com.google.code.gson", name = "gson", version.ref = "gsonVersion" }
 commonsio = { group = "commons-io", name = "commons-io", version.ref = "commonsioVersion" }
 guava = { group = "com.google.guava", name = "guava", version.ref = "guavaVersion" }
 hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikariCpVersion" }
@@ -112,8 +114,9 @@ slf4j-jul = { group = "org.slf4j", name = "jul-to-slf4j", version.ref = "slf4jVe
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4jVersion" }
 snakeyaml = { group = "org.yaml", name = "snakeyaml", version.ref = "snakeyamlVersion" }
 typesafe-config = { group = "com.typesafe", name = "config", version.ref = "typeSafeConfigVersion" }
-unirest-java = { group = "com.konghq", name = "unirest-java", version.ref = "unirestVersion"}
-unirest-objectmapper-jackson = { group = "com.konghq", name = "unirest-objectmapper-jackson", version.ref = "unirestVersion" }
+unirest-java = { group = "com.konghq", name = "unirest-java-core", version.ref = "unirestVersion"}
+unirest-objectmapper-jackson = { group = "com.konghq", name = "unirest-modules-jackson", version.ref = "unirestVersion" }
+unirest-objectmapper-gson = { group = "com.konghq", name = "unirest-modules-gson", version.ref = "unirestVersion" }
 okio = { group = "com.squareup.okio", name = "okio", version.ref = "okioVersion" }
 okHttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okHttpVersion" }
 swagger-core = { group = "io.swagger.core.v3", name = "swagger-core", version.ref = "swaggerVersion" }

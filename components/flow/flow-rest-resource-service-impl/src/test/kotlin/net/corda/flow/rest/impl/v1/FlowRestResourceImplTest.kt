@@ -1,5 +1,8 @@
 package net.corda.flow.rest.impl.v1
 
+import com.typesafe.config.ConfigValueFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.flow.FlowKey
@@ -10,6 +13,7 @@ import net.corda.flow.rest.factory.MessageFactory
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.flow.rest.v1.types.request.StartFlowParameters
 import net.corda.flow.rest.v1.types.response.FlowStatusResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -34,6 +38,7 @@ import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.RestAuthContext
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.virtualnode.OperationalStatus
@@ -46,6 +51,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doThrow
@@ -64,6 +70,8 @@ class FlowRestResourceImplTest {
 
     private lateinit var flowStatusLookupService: FlowStatusLookupService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    private lateinit var serializer: CordaAvroSerializer<Any>
     private lateinit var publisherFactory: PublisherFactory
     private lateinit var messageFactory: MessageFactory
     private lateinit var cpiInfoReadService: CpiInfoReadService
@@ -131,6 +139,11 @@ class FlowRestResourceImplTest {
         permissionValidationService = mock()
         permissionValidator = mock()
         fatalErrorFunction = mock()
+        cordaAvroSerializationFactory = mock()
+        serializer = mock()
+
+        whenever(cordaAvroSerializationFactory.createAvroSerializer<Any>(anyOrNull())).thenReturn(serializer)
+        whenever(serializer.serialize(anyOrNull())).thenReturn(byteArrayOf(1,2,3))
 
         val cpiMetadata = getMockCPIMeta()
         whenever(cpiInfoReadService.get(any())).thenReturn(cpiMetadata)
@@ -169,7 +182,7 @@ class FlowRestResourceImplTest {
         ).thenReturn(true)
     }
 
-    private fun createFlowRestResource(initialise: Boolean = true): FlowRestResource {
+    private fun createFlowRestResource(initialise: Boolean = true, messagingConfigParam: SmartConfig = messagingConfig): FlowRestResource {
         return FlowRestResourceImpl(
             virtualNodeInfoReadService,
             flowStatusLookupService,
@@ -177,8 +190,9 @@ class FlowRestResourceImplTest {
             messageFactory,
             cpiInfoReadService,
             permissionValidationService,
-            mock()
-        ).apply { if (initialise) (initialise(SmartConfigImpl.empty(), fatalErrorFunction)) }
+            mock(),
+            cordaAvroSerializationFactory
+        ).apply { if (initialise) (initialise(messagingConfigParam, fatalErrorFunction)) }
     }
 
     @Test
@@ -346,6 +360,16 @@ class FlowRestResourceImplTest {
         )
 
         assertThrows<OperationNotAllowedException> {
+            flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
+        }
+    }
+
+    @Test
+    fun `start flow fails with InvalidInputDataException when payload is too large`() {
+        val flowRestResource = createFlowRestResource(true, SmartConfigImpl.empty().withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE,
+            ConfigValueFactory.fromAnyRef(1)))
+
+        assertThrows<InvalidInputDataException> {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
     }
@@ -587,4 +611,7 @@ class FlowRestResourceImplTest {
             flowRestResource.startFlow(VALID_SHORT_HASH, StartFlowParameters("", FLOW1, TestJsonObject()))
         }
     }
+
+    private val messagingConfig = SmartConfigImpl.empty().withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef
+        (10000000))
 }

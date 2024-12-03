@@ -2,6 +2,7 @@ package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.external.ExternalEventRetryRequest
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
@@ -15,6 +16,7 @@ import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.REQUEST_ID_1
 import net.corda.flow.external.events.impl.ExternalEventManager
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
@@ -103,7 +105,7 @@ class FlowGlobalPostProcessorImplTest {
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
     private val membershipGroupReader = mock<MembershipGroupReader>()
     private val checkpoint = mock<FlowCheckpoint>()
-    private val testContext = buildFlowEventContext(checkpoint, Any())
+    private lateinit var testContext: FlowEventContext<Any>
     private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(
         externalEventManager,
         sessionManager,
@@ -114,6 +116,7 @@ class FlowGlobalPostProcessorImplTest {
     @Suppress("Unused")
     @BeforeEach
     fun setup() {
+        testContext = buildFlowEventContext(checkpoint, Any())
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2))
         whenever(checkpoint.flowKey).thenReturn(FlowKey(FLOW_ID_1, ALICE_X500_HOLDING_IDENTITY))
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
@@ -260,6 +263,20 @@ class FlowGlobalPostProcessorImplTest {
         flowGlobalPostProcessor.postProcess(testContext)
 
         verify(checkpoint).clearPendingPlatformError()
+    }
+
+    @Test
+    fun `Adds external event record when there is a retry instruction`() {
+        val externalEventState = ExternalEventState()
+
+        testContext = buildFlowEventContext(checkpoint, ExternalEventRetryRequest(REQUEST_ID_1, Instant.now()))
+        whenever(checkpoint.externalEventState).thenReturn(externalEventState)
+        whenever(externalEventManager.getRetryEvent(eq(externalEventState), any()))
+            .thenReturn(externalEventRecord)
+
+        val outputContext = flowGlobalPostProcessor.postProcess(testContext)
+
+        assertThat(outputContext.outputRecords).contains(externalEventRecord)
     }
 
     @Test

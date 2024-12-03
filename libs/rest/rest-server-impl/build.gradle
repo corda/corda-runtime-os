@@ -41,6 +41,7 @@ dependencies {
     implementation libs.jackson.datatype.jsr310
 
     testImplementation project(":libs:rest:rest-test-common")
+    testImplementation libs.google.gson
 
     testRuntimeOnly 'org.osgi:osgi.core'
     testRuntimeOnly libs.slf4j.simple
@@ -51,6 +52,8 @@ dependencies {
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
     integrationTestImplementation libs.unirest.java
+    // some tests expect Gson as this was the default in 3.X and it was not overridden previously in TestHttpClientUnirestImpl
+    integrationTestImplementation libs.unirest.objectmapper.gson
 
     integrationTestImplementation project(':libs:rest:ssl-cert-read-impl')
     integrationTestImplementation project(":testing:test-utilities")

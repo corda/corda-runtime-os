@@ -49,7 +49,15 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
             // Without `computeIfPresent`, `updateStatus` may (in theory) re-introduce just removed coordinator to `statuses` map only,
             // but not to `coordinators` map.
             val coordinatorStatus = CoordinatorStatus(name, status, reason)
-            statuses.computeIfPresent(name) { _, _ -> coordinatorStatus }
+            statuses.computeIfPresent(name) { key, currentValue ->
+                if (currentValue.status == LifecycleStatus.ERROR) {
+                    logger.warn("Attempted to update ${key.componentName} from ERROR to ${status.name}. Transition blocked as ERROR " +
+                            "is a terminal state.")
+                    currentValue
+                } else {
+                    coordinatorStatus
+                }
+            }
             logger.trace { "Coordinator status update: $name is now $status ($reason)" }
         }
     }
@@ -80,8 +88,17 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
      */
     override fun removeCoordinator(name: LifecycleCoordinatorName) {
         logger.debug { "Removing coordinator $name from registry" }
-        coordinators.remove(name)
-        statuses.remove(name)
+
+        statuses.compute(name) { _, currentStatus ->
+            if (currentStatus?.status == LifecycleStatus.ERROR) {
+                logger.warn("Attempt was made to remove coordinator $name with status ERROR. Blocked attempt to allow for worker " +
+                        "health endpoint to report ERROR correctly.")
+                return@compute currentStatus // Keep the status if it's ERROR
+            } else {
+                coordinators.remove(name)
+                return@compute null // Return null to remove the entry from the map
+            }
+        }
     }
 
     /**
