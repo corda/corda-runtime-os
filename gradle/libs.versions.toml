@@ -49,7 +49,7 @@ mockitoKotlinVersion = "5.3.1"
 # Plugins
 gradleDataVersion = "2.0.1"
 gradleEnterpriseVersion = "3.16.1"
-detektVersion = "1.23.6"
+detektVersion = "1.23.7"
 dependencyCheckVersion = "0.51.0"
 snykVersion = "0.5.1"
 cyclonedxVersion = "1.8.2"
