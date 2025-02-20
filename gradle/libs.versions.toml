@@ -36,7 +36,7 @@ okHttpVersion = { strictly = "4.9.2" }
 okioVersion = { strictly = "3.4.0" }
 unirestVersion = "4.4.5"
 zipkinCoreVersion = "2.27.1"
-zipkinReporterVersion = "3.4.0"
+zipkinReporterVersion = "3.5.0"
 nettyVersion = "4.1.115.Final"
 
 # Testing
