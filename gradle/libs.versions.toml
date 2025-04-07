@@ -27,7 +27,7 @@ postgresDriverVersion = "42.7.3"
 slf4jVersion = "2.0.16"
 snakeyamlVersion = "2.3"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
-swaggeruiVersion = "5.15.1"
+swaggeruiVersion = "5.20.6"
 swaggerVersion = "2.2.22"
 #Snappy used for compression
 snappyJavaVersion="1.1.10.5"
