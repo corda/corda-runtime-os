@@ -37,7 +37,7 @@ okioVersion = { strictly = "3.4.0" }
 unirestVersion = "4.4.5"
 zipkinCoreVersion = "2.27.1"
 zipkinReporterVersion = "3.4.0"
-nettyVersion = "4.1.115.Final"
+nettyVersion = "4.2.6.Final"
 
 # Testing
 assertjVersion = "3.26.3"
