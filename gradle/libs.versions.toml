@@ -40,7 +40,7 @@ zipkinReporterVersion = "3.4.0"
 nettyVersion = "4.1.115.Final"
 
 # Testing
-assertjVersion = "3.26.3"
+assertjVersion = "3.27.7"
 junitVersion = "5.11.0"
 junitPlatformVersion = "1.10.3"
 mockitoVersion = "5.12.0"
