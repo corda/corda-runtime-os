@@ -42,7 +42,7 @@ nettyVersion = "4.1.115.Final"
 # Testing
 assertjVersion = "3.26.3"
 junitVersion = "5.11.0"
-junitPlatformVersion = "1.10.3"
+junitPlatformVersion = "6.0.3"
 mockitoVersion = "5.12.0"
 mockitoKotlinVersion = "5.3.1"
 
